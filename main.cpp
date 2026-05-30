@@ -145,6 +145,9 @@ void infoSBRP::cplex(){
 	// Variavel de decisão W
 	IloNumVar W(env, 0, IloInfinity, ILOFLOAT);
 	numberVar++;
+
+	IloNumVar M(env, 0, IloInfinity, ILOINT);
+	numberVar++;
 	
 	// ======= VARIAVEIS DE DECISAO (x_i) binaria ==========
 
@@ -152,6 +155,13 @@ void infoSBRP::cplex(){
 	IloNumVarArray b(env);
 	for(int i = 0; i < quantidadeParadas; i++ ){
         b.add(IloIntVar(env, 0, 1));
+		numberVar++;
+	}
+
+	// z
+	IloNumVarArray z(env);
+	for(int i = 0; i < quantidadeOnibus; i++ ){
+        z.add(IloIntVar(env, 0, 1));
 		numberVar++;
 	}
 
@@ -287,7 +297,7 @@ void infoSBRP::cplex(){
 	IloExpr sum2(env); /// Expression for Sum2
 
 	
-	// 3.4
+	// 3.5
 	for(int e = 0; e < quantidadeAlunos; e++){
 	    sum.clear();
 
@@ -299,7 +309,7 @@ void infoSBRP::cplex(){
 		numberRes++;
 	}
 
-	// Rest 3.5
+	// Rest 3.6
 	for(int e = 0; e < quantidadeAlunos; e++){
 
 		// pair<parada, distancia>
@@ -311,7 +321,7 @@ void infoSBRP::cplex(){
 	}
 
 	
-	// Restricao 3.6
+	// Restricao 3.7
 	for(int e = 0; e < quantidadeAlunos; e++){
 
 	    for(int p = 0; p < alunosParadas[e].paradasPossiveis.size(); p++){
@@ -321,7 +331,7 @@ void infoSBRP::cplex(){
 	    }
 	}
 	
-	// rest 3.7
+	// rest 3.8
     for(int k = 0; k < quantidadeOnibus; k++){
 		for(int r = 0; r < quantidadeRotas; r++ ){
 			
@@ -342,7 +352,7 @@ void infoSBRP::cplex(){
         }
 	}
 
-	// rest 3.8
+	// rest 3.9
     for(int k = 0; k < quantidadeOnibus; k++){
 		for(int r = 0; r < quantidadeRotas; r++ ){
 
@@ -358,7 +368,7 @@ void infoSBRP::cplex(){
         }
 	}
 
-	// 3.9
+	// 3.10
 	for(int k = 0; k < quantidadeOnibus; k++){
 	    for(int r = 0; r < quantidadeRotas; r++){
 	        for(int i = 0; i < quantidadeParadas; i++){
@@ -375,7 +385,7 @@ void infoSBRP::cplex(){
 	    }
 	}
 
-	// 3.10
+	// 3.11
 	for(int i = 0; i < quantidadeParadas; i++){
 	    sum.clear();
 		
@@ -390,7 +400,7 @@ void infoSBRP::cplex(){
 	
 	
 	
-	// 3.11
+	// 3.12
 	sum.clear();
 	for(int k = 0; k < quantidadeOnibus; k++){
 		for(int r = 0; r < quantidadeRotas; r++){
@@ -401,7 +411,7 @@ void infoSBRP::cplex(){
 	    }
 	}
 	
-	// 3.12
+	// 3.13
     for(int k = 0; k < quantidadeOnibus; k++){
 	    for(int r = 0; r < quantidadeRotas; r++){
 
@@ -417,7 +427,7 @@ void infoSBRP::cplex(){
 	    }
 	}
 
-	// 3.13
+	// 3.14
 	for(int k = 0; k < quantidadeOnibus; k++){
 	    for(int r = 0; r < quantidadeRotas; r++){
 
@@ -429,7 +439,7 @@ void infoSBRP::cplex(){
     }
 	
 
-	// 3.14
+	// 3.15
 	for(int k = 0; k < quantidadeOnibus; k++){
 	    for(int r = 0; r < quantidadeRotas; r++){
 
@@ -442,7 +452,7 @@ void infoSBRP::cplex(){
 
 
 
-	// 3.15
+	// 3.16
 	for(int k = 0; k < quantidadeOnibus; k++){
 	    for(int r = 0; r < quantidadeRotas; r++){
 			
@@ -458,25 +468,12 @@ void infoSBRP::cplex(){
 	    }
 	}
 
-	// 3.16
-	for(int k = 0; k < quantidadeOnibus; k++){
-	    for(int r = 0; r < quantidadeRotas; r++){
-	        for(int e = 0; e < quantidadeAlunos; e++){
-	            for(int p = 0; p < alunosParadas[e].paradasPossiveis.size(); p++){
-					model.add(y[k][r][e][p] <= a[e][p]);
-					numberRes++;
-	            }
-	        }
-	    }
-	}
-
 	// 3.17
 	for(int k = 0; k < quantidadeOnibus; k++){
 	    for(int r = 0; r < quantidadeRotas; r++){
 	        for(int e = 0; e < quantidadeAlunos; e++){
 	            for(int p = 0; p < alunosParadas[e].paradasPossiveis.size(); p++){
-	                int parada = alunosParadas[e].paradasPossiveis[p].first;
-					model.add(y[k][r][e][p] <= s[k][r][parada]);
+					model.add(y[k][r][e][p] <= a[e][p]);
 					numberRes++;
 	            }
 	        }
@@ -489,6 +486,19 @@ void infoSBRP::cplex(){
 	        for(int e = 0; e < quantidadeAlunos; e++){
 	            for(int p = 0; p < alunosParadas[e].paradasPossiveis.size(); p++){
 	                int parada = alunosParadas[e].paradasPossiveis[p].first;
+					model.add(y[k][r][e][p] <= s[k][r][parada]);
+					numberRes++;
+	            }
+	        }
+	    }
+	}
+
+	// 3.19
+	for(int k = 0; k < quantidadeOnibus; k++){
+	    for(int r = 0; r < quantidadeRotas; r++){
+	        for(int e = 0; e < quantidadeAlunos; e++){
+	            for(int p = 0; p < alunosParadas[e].paradasPossiveis.size(); p++){
+	                int parada = alunosParadas[e].paradasPossiveis[p].first;
 					model.add(y[k][r][e][p] >= s[k][r][parada] + a[e][p] - 1);
 					numberRes++;
 	            }
@@ -496,6 +506,61 @@ void infoSBRP::cplex(){
 	    }
 	}
 
+	// 3.20
+	for(int k = 0; k < quantidadeOnibus; k++){
+
+		sum.clear();
+	    for(int r = 0; r < quantidadeRotas; r++){
+			sum += t[k][r];
+		}
+
+		model.add(sum >= z[k]);
+		numberRes++;
+	}
+	
+	// 3.21
+	for(int k = 0; k < quantidadeOnibus; k++){
+	    for(int r = 0; r < quantidadeRotas; r++){
+			model.add(t[k][r] <= z[k]);
+			numberRes++;
+		}
+	}
+		
+	// 3.22
+	for(int r = 0; r < quantidadeRotas; r++){
+		
+		sum.clear();
+		for(int k = 0; k < quantidadeOnibus; k++){
+		sum += t[k][r];
+		}
+	
+		model.add(sum <= 1);
+		numberRes++;
+}
+
+	// 3.23
+	for(int k = 0; k < quantidadeOnibus; k++){
+	    for(int r = 0; r < quantidadeRotas; r++){
+	        for(int i = 0; i < quantidadeParadas; i++){
+	            for(int j = 0; j < quantidadeParadas; j++){
+					model.add( x[k][r][i][j] <= t[k][r]);
+					numberRes++;
+	            }
+	        }
+	    }
+	}
+	
+	// 3.24
+	for(int k = 0; k < quantidadeOnibus; k++){
+
+	    sum.clear();
+	    for(int r = 0; r < quantidadeRotas; r++){
+	        sum += t[k][r];
+	    }
+			
+	    model.add(M >= sum);  // M >= total de rotas do ônibus k
+	    numberRes++;
+	}
 
 	//------ EXECUCAO do MODELO ----------
 	time_t timer, timer2;
@@ -523,7 +588,7 @@ void infoSBRP::cplex(){
 	// Fase 1 - primeira função objetivo
 	IloObjective FO1 = IloMinimize(env, obj1);
 	model.add(FO1);
-	cplex.solve();//COMANDO DE EXECUCAO
+	cplex.solve();
 	
 	// Fase 2
 	double melhorCusto = cplex.getObjValue();
@@ -545,6 +610,15 @@ void infoSBRP::cplex(){
 	cplex.extract(model);	
 	cplex.solve();	
 	
+	// Fase 4
+	double melhorDistW = cplex.getObjValue();
+	model.remove(FO3); 
+	model.add(W <= melhorDistW);
+
+	IloObjective FO4 = IloMinimize(env, M);
+	model.add(FO4);
+	cplex.extract(model);
+	cplex.solve();
 	
 	time(&timer2);
 	
@@ -599,7 +673,8 @@ void infoSBRP::cplex(){
 
 		cout << "Custo Total: " << melhorCusto << "\n";
 		cout << "Paradas Utilizadas: " << melhorQtdParadas << "\n";
-		cout << "W: " << objValue << "\n\n";
+		cout << "W (maior distancia de caminhada individual): " << objValue << "\n"; 
+		cout << "M (max rotas por onibus): " << cplex.getValue(M) << "\n\n";
 
 
 		cout << "Atribuicao de alunos:\n";
@@ -634,7 +709,17 @@ void infoSBRP::cplex(){
 		    }
 		}
 
-		cout << "Rotas: \n";
+		cout << "\n";
+
+		for(int k = 0; k < quantidadeOnibus; k++){
+		    int totalRotas = 0;
+		    for(int r = 0; r < quantidadeRotas; r++){
+		        if(cplex.getValue(t[k][r]) > 0.5) totalRotas++;
+		    }
+		    cout << "Onibus " << k << ": " << totalRotas << " rotas\n";
+		}
+
+		cout << "\nRotas: \n";
 		for(int k = 0; k < quantidadeOnibus; k++){
 		    for(int r = 0; r < quantidadeRotas; r++){
 		        for(int i = 0; i < quantidadeParadas; i++){
