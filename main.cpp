@@ -34,6 +34,7 @@ struct estudante{
 class infoSBRP{
 	private:
 	    // matriz de distâncias/custos entre paradas
+		int quantidadeArestas;
 	    vector<vector<int>> grafoParadas;
 
 	    // estudantes
@@ -83,13 +84,15 @@ void infoSBRP::leitura(std::string arquivoEntrada){
 	// uma rota por aluno no pior caso e vai reduzinfo. Arrumar depois a inicialização
 	quantidadeRotas = quantidadeAlunos / 2;
 
-    grafoParadas.resize(quantidadeParadas, vector<int>(quantidadeParadas));
+    grafoParadas.assign(quantidadeParadas, vector<int>(quantidadeParadas, 0));
 
-    for(int i = 0; i < quantidadeParadas; i++){
-        for(int j = 0; j < quantidadeParadas; j++){
-            arq >> grafoParadas[i][j];
-        }
-    }
+	arq >> quantidadeArestas;
+	for(int i = 0; i < quantidadeArestas; i++){
+		int pontoA, pontoB, peso; 
+		arq >> pontoA >> pontoB >> peso;
+		grafoParadas[pontoA][pontoB] = peso;
+		grafoParadas[pontoB][pontoA] = peso;
+	}
 
     alunosParadas.clear();
     maxDistancia = 0;
@@ -205,8 +208,13 @@ void infoSBRP::cplex(){
                 x[k][r].add(IloNumVarArray(env));
 
                 for(int j = 0; j < quantidadeParadas; j++){
-                    x[k][r][i].add(IloIntVar(env, 0, 1));
-                    numberVar++;
+					if(grafoParadas[i][j] == 0){
+					    x[k][r][i].add(IloIntVar(env, 0, 0));
+					}
+					else{
+					    x[k][r][i].add(IloIntVar(env, 0, 1));
+					}
+					numberVar++;
                 }
             }
         }
@@ -239,8 +247,7 @@ void infoSBRP::cplex(){
 				if(i == 0)
 				    u[k][r].add(IloIntVar(env, 0, 0));
 				else
-				    u[k][r].add(IloIntVar(env, 0, quantidadeParadas - 1));
-		            // u[k][r].add( IloIntVar(env, 1, quantidadeParadas - 1));
+		            u[k][r].add( IloIntVar(env, 0, quantidadeParadas - 1));
 	            numberVar++;
 	        }
 	    }
@@ -420,7 +427,7 @@ void infoSBRP::cplex(){
 	                if(i == j)
 	                    continue;
 
-	                model.add( u[k][r][i] - u[k][r][j] + quantidadeParadas * x[k][r][i][j] <= quantidadeParadas - 1);
+	                model.add( u[k][r][i] - u[k][r][j] + ((quantidadeParadas - 1) * x[k][r][i][j]) <= (quantidadeParadas - 1));
 	                numberRes++;
 	            }
 	        }
@@ -609,6 +616,11 @@ void infoSBRP::cplex(){
 	model.add(FO3);
 	cplex.extract(model);	
 	cplex.solve();	
+
+	if(cplex.getStatus() == IloAlgorithm::Infeasible){
+		cerr << "\n\n\n\n\n";
+		return;
+	}
 	
 	// Fase 4
 	double melhorDistW = cplex.getObjValue();
