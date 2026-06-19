@@ -6,9 +6,11 @@ LPATH=-L/opt/ibm/ILOG/CPLEX_Studio128/concert/lib/x86-64_linux/static_pic -L//op
 
 LIBRARIES=-lconcert -lilocplex -lcplex -lpthread -ldl
 
+ENTRADA ?= entrada.txt
+
 all: main.o
 	g++ -O3 main.o -o main.exe $(INCLUDE) $(FLAGS) $(LPATH) $(LIBRARIES)
-	./main.exe entrada.txt
+	./main.exe $(ENTRADA)
 
 main.o: main.cpp
 	g++ -O3 -c main.cpp $(INCLUDE) $(FLAGS) $(LPATH) $(LIBRARIES)

@@ -135,7 +135,8 @@ void infoSBRP::leitura(std::string arquivoEntrada){
 
 
 void infoSBRP::cplex(){
-    //CPLEX
+	try{
+       //CPLEX
 	IloEnv env; //Define o ambiente do CPLEX
 
 	//Variaveis --------------------------------------------- 
@@ -271,7 +272,6 @@ void infoSBRP::cplex(){
 	    }
 	}
     
-
 	//Definicao do ambiente modelo ------------------------------------------
 	IloModel model ( env );
 	
@@ -298,22 +298,21 @@ void infoSBRP::cplex(){
 		obj2 += (b[i]);
     }
 	
-    
 	//RESTRICOES ---------------------------------------------	
-	IloExpr sum(env); /// Expression for Sum
-	IloExpr sum2(env); /// Expression for Sum2
+	// IloExpr sum(env); /// Expression for Sum
+	// IloExpr sum2(env); /// Expression for Sum2
 
 	
 	// 3.5
 	for(int e = 0; e < quantidadeAlunos; e++){
-	    sum.clear();
-
+		IloExpr sum(env);
 	    for(int p = 0; p < alunosParadas[e].paradasPossiveis.size(); p++){
-	        sum += a[e][p];
+			sum += a[e][p];
 	    }
-
+		
 	    model.add(sum == 1);
 		numberRes++;
+		sum.end();
 	}
 
 	// Rest 3.6
@@ -343,9 +342,9 @@ void infoSBRP::cplex(){
 		for(int r = 0; r < quantidadeRotas; r++ ){
 			
 			for(int i = 0; i < quantidadeParadas; i++){
-				sum.clear();
-				sum2.clear();
-				
+				IloExpr sum(env);
+				IloExpr sum2(env);
+
 				for(int j = 0;  j < infoSBRP::quantidadeParadas; j++){
 					sum += (x[k][r][i][j]);
 					sum2 += (x[k][r][j][i]);
@@ -353,7 +352,8 @@ void infoSBRP::cplex(){
 				
 				model.add( sum == sum2 );
 				numberRes++;
-
+				sum.end();
+				sum2.end();
             }    
 			
         }
@@ -363,8 +363,7 @@ void infoSBRP::cplex(){
     for(int k = 0; k < quantidadeOnibus; k++){
 		for(int r = 0; r < quantidadeRotas; r++ ){
 
-			sum.clear();
-
+			IloExpr sum(env);
 			for(int i = 0; i < quantidadeParadas; i++){
 				sum += (x[k][r][0][i]);
             }
@@ -372,6 +371,7 @@ void infoSBRP::cplex(){
 			model.add( sum == t[k][r]);
 			numberRes++;
 			
+			sum.end();
         }
 	}
 
@@ -380,22 +380,22 @@ void infoSBRP::cplex(){
 	    for(int r = 0; r < quantidadeRotas; r++){
 	        for(int i = 0; i < quantidadeParadas; i++){
 
-	            sum.clear();
-
+				IloExpr sum(env);
 	            for(int j = 0; j < quantidadeParadas; j++){
-	                sum += x[k][r][i][j];
+					sum += x[k][r][i][j];
 	            }
-
+				
 	            model.add(sum == s[k][r][i]);
 	            numberRes++;
+				sum.end();
 	        }
 	    }
 	}
 
 	// 3.11
 	for(int i = 0; i < quantidadeParadas; i++){
-	    sum.clear();
-		
+
+		IloExpr sum(env);
 	    for(int k = 0; k < quantidadeOnibus; k++){
 			for(int r = 0; r < quantidadeRotas; r++){
 				sum += s[k][r][i];
@@ -403,12 +403,12 @@ void infoSBRP::cplex(){
 	    }
 		
 	    model.add(sum >= b[i]);
+		sum.end();
 	}
 	
 	
 	
 	// 3.12
-	sum.clear();
 	for(int k = 0; k < quantidadeOnibus; k++){
 		for(int r = 0; r < quantidadeRotas; r++){
 			for(int i = 0; i < quantidadeParadas; i++){
@@ -463,15 +463,16 @@ void infoSBRP::cplex(){
 	for(int k = 0; k < quantidadeOnibus; k++){
 	    for(int r = 0; r < quantidadeRotas; r++){
 			
-	        sum.clear();
+			IloExpr sum(env);
 	        for(int e = 0; e < quantidadeAlunos; e++){
-	            for(int p = 0; p < alunosParadas[e].paradasPossiveis.size(); p++){
-	                sum += y[k][r][e][p];
+				for(int p = 0; p < alunosParadas[e].paradasPossiveis.size(); p++){
+					sum += y[k][r][e][p];
 	            }
 	        }
 
 	        model.add(sum <= Q * t[k][r]);
 			numberRes++;
+			sum.end();
 	    }
 	}
 
@@ -516,13 +517,14 @@ void infoSBRP::cplex(){
 	// 3.20
 	for(int k = 0; k < quantidadeOnibus; k++){
 
-		sum.clear();
+		IloExpr sum(env);
 	    for(int r = 0; r < quantidadeRotas; r++){
 			sum += t[k][r];
 		}
-
+		
 		model.add(sum >= z[k]);
 		numberRes++;
+		sum.end();
 	}
 	
 	// 3.21
@@ -536,14 +538,15 @@ void infoSBRP::cplex(){
 	// 3.22
 	for(int r = 0; r < quantidadeRotas; r++){
 		
-		sum.clear();
+		IloExpr sum(env);
 		for(int k = 0; k < quantidadeOnibus; k++){
-		sum += t[k][r];
+			sum += t[k][r];
 		}
-	
+		
 		model.add(sum <= 1);
 		numberRes++;
-}
+		sum.end();
+	}
 
 	// 3.23
 	for(int k = 0; k < quantidadeOnibus; k++){
@@ -560,13 +563,14 @@ void infoSBRP::cplex(){
 	// 3.24
 	for(int k = 0; k < quantidadeOnibus; k++){
 
-	    sum.clear();
+		IloExpr sum(env);
 	    for(int r = 0; r < quantidadeRotas; r++){
-	        sum += t[k][r];
+			sum += t[k][r];
 	    }
-			
+		
 	    model.add(M >= sum);  // M >= total de rotas do ônibus k
 	    numberRes++;
+		sum.end();
 	}
 
 	//------ EXECUCAO do MODELO ----------
@@ -797,13 +801,15 @@ void infoSBRP::cplex(){
 
 	//Free Memory
 	cplex.end();
-	sum.end();
-	sum2.end();
 	obj1.end();
 	obj2.end();
 
 	cout << "Memory usage before end:  " << env.getMemoryUsage() / (1024. * 1024.) << " MB" << endl;
 	env.end();
+	} catch(IloException& e){
+    cerr << "CPLEX Exception: " << e << endl;
+    throw;
+	}
 }
 
 int main(int argv, char *argc[]){
