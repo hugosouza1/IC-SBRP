@@ -535,7 +535,7 @@ void infoSBRP::cplex(){
     cout << "Memory usage after variable creation:  " << env.getMemoryUsage() / (1024. * 1024.) << " MB" << endl;
     
     IloCplex cplex(env); // Inicialize apontando para o ambiente
-    cplex.extract(model); // Extrai o modelo uma única vez no início
+    cplex.extract(model); 
     
     cout << "Memory usage after cplex extraction:  " << env.getMemoryUsage() / (1024. * 1024.) << " MB" << endl;
 
@@ -551,6 +551,7 @@ void infoSBRP::cplex(){
         cerr << "Erro: Fase 1 inviável!\n";
         return;
     }
+	
     double melhorCusto = cplex.getObjValue();
     model.remove(FO1);
     model.add(obj1 <= melhorCusto + 1e-4); // Fixa o melhor custo com tolerância numérica
