@@ -414,7 +414,7 @@ void infoSBRP::cplex(){
         }
     }
 
-    // --- ELIMINAÇÃO DE SUBCICLOS (MTZ) ---
+    // ================= ELIMINAÇÃO DE SUBCICLOS (MTZ) =================
 
     for(int k = 0; k < quantidadeOnibus; k++) {
         for(int r = 0; r < quantidadeRotas; r++) {
