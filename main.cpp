@@ -783,12 +783,43 @@ void infoSBRP::cplex(){
 		    }
 		}
 
+        // ======================================================
+        // 4 ALUNOS POR ROTA
+        // ======================================================
+
+        cout << "\n[4] ALUNOS POR ÔNIBUS-ROTA\n";
+
+        for(int k = 0; k < quantidadeOnibus; k++){
+            if(cplex.getValue(z[k]) < 0.5) continue;
+
+            for(int r = 0; r < quantidadeRotas; r++){
+                if(cplex.getValue(t[k][r]) < 0.5) continue;
+
+                cout << "Onibus " << k << ", Rota " << r << ": alunos ";
+
+                bool primeiro = true;
+                for(int e = 0; e < quantidadeAlunos; e++){
+                    for(int p = 0; p < (int)alunosParadas[e].paradasPossiveis.size(); p++){
+                        if(cplex.getValue(y[k][r][e][p]) > 0.5){
+                            if(!primeiro) cout << ", ";
+                            cout << alunosParadas[e].id;
+                            primeiro = false;
+                            break; 
+                        }
+                    }
+                }
+
+                if(primeiro) cout << "(nenhum)";
+                cout << endl;
+            }
+        }
+
 
 		// ======================================================
-		// 4 PARADAS VISITADAS POR ROTA
+		// 5 PARADAS VISITADAS POR ROTA
 		// ======================================================
 
-		cout << "\n[4] PARADAS VISITADAS\n";
+		cout << "\n[5] PARADAS VISITADAS\n";
 
 		for(int k = 0; k < quantidadeOnibus; k++){
 
@@ -825,10 +856,10 @@ void infoSBRP::cplex(){
 
 
 		// ======================================================
-		// 5 ÔNIBUS
+		// 6 ÔNIBUS
 		// ======================================================
 
-		cout << "\n[5] RESUMO\n";
+		cout << "\n[6] Ônibus\n";
 
 		for(int k = 0; k < quantidadeOnibus; k++){
 
