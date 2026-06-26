@@ -860,15 +860,12 @@ void infoSBRP::cplex(){
 		// ======================================================
 
 		cout << "\n[6] Ônibus\n";
-
 		for(int k = 0; k < quantidadeOnibus; k++){
-
 		    cout
-		        << "Onibus "
-		        << k
-		        << " utilizado = "
-		        << cplex.getValue(z[k])
-		        << endl;
+                << "Onibus "
+                << k
+                << (cplex.getValue(z[k]) > 0.5 ? " utilizado" : " não utilizado")
+                << endl;
 		}
 
 		cout << "========================================================\n";
