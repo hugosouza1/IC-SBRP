@@ -28,7 +28,7 @@ int INF = INT_MAX;
 struct estudante{
     int id; // estudante A
 
-    // distancia)
+    // distancia
     vector<pair<int, int>> paradasPossiveis;
 };
 
@@ -46,7 +46,7 @@ class infoSBRP{
 	    int quantidadeOnibus;
 	    int quantidadeRotas;
 
-        // precisa de um teto
+        // precisa de um teto pro step
 	    int quantidadePassos; 
 
 	    // capacidade do ônibus
@@ -252,7 +252,7 @@ void infoSBRP::cplex(){
 	    }
 	}
     
-	//Definicao do ambiente modelo ------------------------------------------
+	//Definicao do ambiente modelo --------------------------------
 	IloModel model ( env );
 	
 	//FUNCAO OBJETIVO ---------------------------------------------
@@ -316,7 +316,7 @@ void infoSBRP::cplex(){
     for(int k = 0; k < quantidadeOnibus; k++) {
         for(int r = 0; r < quantidadeRotas; r++) {
 
-            // Encadeamento entre passos consecutivos: (nó de chegada do passo st) == (no de saida do passo st+1), para cada nó j.
+            // Encadeamento entre passos consecutivos: (nó de chegada do passo st) == (no de saida do passo st+1), para cada nó j
             for(int st = 0; st < quantidadePassos - 1; st++) {
                 for(int j = 0; j < quantidadeParadas; j++) {
                     IloExpr chegadaEm_j_no_passo_st(env);
@@ -337,7 +337,7 @@ void infoSBRP::cplex(){
                 }
             }
 
-            // No maximo um arco ativo por passo: soma de todos os arcos do passo st <= 1.
+            // No maximo um arco ativo por passo: soma de todos os arcos do passo st <= 1
             for(int st = 0; st < quantidadePassos; st++) {
                 soma.clear();
                 for(int i = 0; i < quantidadeParadas; i++) {
@@ -350,7 +350,7 @@ void infoSBRP::cplex(){
             }
 
             // O self-loop em 0 (x[k][r][st][0][0]) fica de fora dessa soma de proposito: 
-            // ele representa a rota inativa/ociosa, entao nao pode ser limitado por t.
+            // ele representa a rota inativa/ociosa, entao nao pode ser limitado por t
             for(int st = 0; st < quantidadePassos; st++) {
                 soma.clear();
                 for(int i = 0; i < quantidadeParadas; i++) {
@@ -366,7 +366,7 @@ void infoSBRP::cplex(){
             // Toda rota ativa deve sair "de verdade" da escola (0) no
             // passo 0 (arco 0->j, j!=0) exatamente quando t=1; se a
             // rota estiver inativa, o passo 0 fica em self-loop (0->0)
-            // representando que nunca saiu.
+            // representando que nunca saiu
             soma.clear();
             for(int j = 1; j < quantidadeParadas; j++) {
                 soma += x[k][r][0][0][j];
@@ -379,7 +379,7 @@ void infoSBRP::cplex(){
             numberRes++;
 
             // A escola só pode ser ponto de partida real no passo 0.
-            // Nos demais passos, se a rota ja voltou, ela deve permanecer em self-loop.
+            // Nos demais passos, se a rota ja voltou, ela deve permanecer em self-loop
             for(int st = 1; st < quantidadePassos; st++){
                 soma.clear();
                 for(int j = 1; j < quantidadeParadas; j++){
