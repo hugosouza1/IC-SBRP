@@ -510,11 +510,28 @@ void infoSBRP::cplex(){
     
 
     // Força o uso das rotas em ordem: rota r -> rota r+1
-    for(int k = 0; k < quantidadeOnibus; k++){
-        for(int r = 1; r < quantidadeRotas; r++){
-            model.add(t[k][r] <= t[k][r - 1]);
-            numberRes++;
+    // for(int k = 0; k < quantidadeOnibus; k++){
+    //     for(int r = 1; r < quantidadeRotas; r++){
+    //         model.add(t[k][r] <= t[k][r - 1]);
+    //         numberRes++;
+    //     }
+    // }
+
+    // 2.0 rota global
+    for(int r = 1; r < quantidadeRotas; r++){
+        IloExpr usoAtual(env);
+        IloExpr usoAnterior(env);
+
+        for(int k = 0; k < quantidadeOnibus; k++){
+            usoAtual    += t[k][r];
+            usoAnterior += t[k][r - 1];
         }
+
+        model.add(usoAtual <= usoAnterior);
+        numberRes++;
+
+        usoAtual.end();
+        usoAnterior.end();
     }
 
     // Força o uso dos onibus em ordem: oni k -> oni k+1
