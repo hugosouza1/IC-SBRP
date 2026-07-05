@@ -70,6 +70,7 @@ void infoSBRP::leitura(string arquivoEntrada){
     quantidadeRotas = ((quantidadeAlunos + Q) / Q) + 2; // caiu de 4min pra 30s
 
     quantidadePassos = quantidadeParadas; // de 30 do de cima pra 9s. diliça
+    quantidadePassos = quantidadeParadas * quantidadeOnibus * 2; // de 30 do de cima pra 9s. diliça
 
     grafoParadas.assign(quantidadeParadas, vector<int>(quantidadeParadas, INF));
     for(int i = 0; i < quantidadeParadas; i++){
@@ -219,16 +220,16 @@ void infoSBRP::cplex(){
 		}
 	}
 
-	// s_i^kr  (parada i visitada pela rota r do onibus k)
-    IloArray<IloArray<IloNumVarArray>> s(env);
+	// p_i^kr  (parada i visitada pela rota r do onibus k)
+    IloArray<IloArray<IloNumVarArray>> p(env);
     for(int k = 0; k < quantidadeOnibus; k++){
-        s.add(IloArray<IloNumVarArray>(env));
+        p.add(IloArray<IloNumVarArray>(env));
 
         for(int r = 0; r < quantidadeRotas; r++){
-            s[k].add(IloNumVarArray(env));
+            p[k].add(IloNumVarArray(env));
 
             for(int i = 0; i < quantidadeParadas; i++){
-                s[k][r].add(IloIntVar(env, 0, 1));
+                p[k][r].add(IloIntVar(env, 0, 1));
                 numberVar++;
             }
         }
@@ -416,9 +417,10 @@ void infoSBRP::cplex(){
                         soma += x[k][r][st][j][i];
                     }
                 }
-                model.add(soma <= quantidadePassos * s[k][r][i]);
+                model.add(soma <= quantidadePassos * p[k][r][i]);
                 numberRes++;
-                model.add(s[k][r][i] <= soma);
+
+                model.add(p[k][r][i] <= soma);
                 numberRes++;
             }
         }
@@ -429,7 +431,7 @@ void infoSBRP::cplex(){
         soma.clear();
         for(int k = 0; k < quantidadeOnibus; k++) {
             for(int r = 0; r < quantidadeRotas; r++) {
-                soma += s[k][r][i];
+                soma += p[k][r][i];
             }
         }
         model.add(soma >= b[i]);
@@ -447,6 +449,7 @@ void infoSBRP::cplex(){
                     soma += y[k][r][e][p];
                 }
             }
+            
             model.add(soma <= Q * t[k][r]); 
             numberRes++;
         }
