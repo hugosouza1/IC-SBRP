@@ -282,7 +282,7 @@ int Metaheuristica::buscaTabu(Individuo& configParada){
             Movimento mov = melhorVizinho(rotaAtual, estaNaRota, paradaObrigatoria, tabuParada, melhorDistancia);
 
             if(mov.delta == numeric_limits<int>::max()){
-                break; // sem vizinho viável. fudeu
+                break; // sem vizinho viável. 
                 cout << "moiou\n";
             }
 
