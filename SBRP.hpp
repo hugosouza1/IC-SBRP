@@ -63,7 +63,7 @@ class infoSBRP{
 	public:
 
 	    void leitura(std::string arquivoEntrada);
-	    void cplex();
+	    // void cplex();
 
 };
 

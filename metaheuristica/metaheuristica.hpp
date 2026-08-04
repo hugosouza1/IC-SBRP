@@ -12,6 +12,7 @@
 #include <algorithm>
 #include <numeric>
 #include <chrono>
+#include <climits>
 
 #include "../SBRP.hpp"
 
@@ -29,7 +30,7 @@ struct Individuo {
     // valor = rota que transporta esse aluno
     vector<int> atrAlunoRota;
 
-    int fitness;
+    double fitness;
 
     // Apenas armazenado após a avaliação pelo Tabu
     vector<vector<int>> rotasFeitas;
@@ -38,11 +39,10 @@ struct Individuo {
 // +-+--+-+-+-+-+-+-+-+-+-+-+-+-+-+---+---+--++--
 enum TipoMovimento{
     INSERIR,
-    REMOVER,
-    RELOCATE
+    REMOVER
 };
 
-// A -> B -> C // busca Tabu
+// A -> B -> C // busca Tabu // 
 struct arcoAdj{
     int a;
     int b;
@@ -65,8 +65,7 @@ struct Movimento{
     arcoAdj arcoInserido;
 };
 
-
-
+// +-+--+-++--+-++--+-+-+-+-+-+-+-+-+-+-+-+-+-+-+---+-+-+
 
 class Metaheuristica{
 	private:
@@ -82,26 +81,33 @@ class Metaheuristica{
 		}
 
 		// ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-        void AG();
+        Individuo AG();
 		
         Individuo geraSolucaoInicial();
 
         vector<Individuo> popIni(int tamanhoPopulacao);
-		
-		
+
+        int selecionaTorneio(vector<Individuo> &populacao);
+
+        vector<Individuo> novaPopTorneioElitista(vector<Individuo> &filhos, vector<Individuo> &pais, int tamanhoPopulacao, int elitismo);
+
+        vector<pair<int,int>> escolhendoPais(vector<Individuo> &populacao);
+
+        vector<Individuo> reproducao(vector<pair<int,int>> &paisEscolhidos, vector<Individuo> &populacao, int tamanhoPopulacao, double mutacao, double crossoverProb);
+
 		// ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-		vector<int> contrucaoRota(set<int> paradasMinimas);
+		vector<int> contrucaoRota(set<int> paradasMinimas, bool& sucesso);
 
 		vector<int> bfs(int a, int b);
 
-		vector<vector<int>> caminhosIniciais(vector<set<int>> conjuntoParadas);
+		vector<vector<int>> caminhosIniciais(vector<set<int>> conjuntoParadas, vector<bool>& sucesso);
 
 		Movimento melhorInsercao(vector<int>& rota, vector<bool>& estaNaRota, vector<int>& tabuParada, int melhorDistanciaGlobal, int distanciaAtual);
 
 		Movimento melhorRemocao(vector<int>& rota, vector<bool>& paradaObrigatoria, vector<int>& tabuParada, int melhorDistanciaGlobal, int distanciaAtual);
 
-		Movimento melhorRelocate(vector<int>& rota, vector<int>& tabuParada, int melhorDistanciaGlobal, int distanciaAtual);
+		// Movimento melhorRelocate(vector<int>& rota, vector<int>& tabuParada, int melhorDistanciaGlobal, int distanciaAtual);
 
 		Movimento melhorVizinho(vector<int>& rota, vector<bool>& estaNaRota, vector<bool>& paradaObrigatoria, vector<int>& tabuParada, int melhorDistanciaGlobal);
 
@@ -109,6 +115,6 @@ class Metaheuristica{
 
 		void atualizaTabu(vector<int>& tabuParada, int paradaMovida, int tenure);
 
-		int buscaTabu(Individuo& configParada);
+		double buscaTabu(Individuo& configParada);
 
 };

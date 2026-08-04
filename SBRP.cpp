@@ -12,18 +12,21 @@ void infoSBRP::leitura(string arquivoEntrada){
     quantidadePassos = quantidadeParadas; // de 30 do de cima pra 9s. diliça
     quantidadePassos = quantidadeParadas * quantidadeOnibus * 2; // de 30 do de cima pra 9s. diliça
 
-    int maxx = numeric_limits<int>::max();
-    grafoParadas.assign(quantidadeParadas, vector<int>(quantidadeParadas, maxx));
+    // int maxx = numeric_limits<int>::max();
+    // grafoParadas.assign(quantidadeParadas, vector<int>(quantidadeParadas, maxx));
+    
+    grafoParadas.assign(quantidadeParadas, vector<int>(quantidadeParadas, 0));
+    
     for(int i = 0; i < quantidadeParadas; i++){
-        grafoParadas[i][i] = 0;
+        grafoParadas[i][i] = 0; // preciso de 0 pra auto-loop do modelo
     }
 
     arq >> quantidadeArestas;
     for(int i = 0; i < quantidadeArestas; i++){
         int pontoA, pontoB, peso; 
         arq >> pontoA >> pontoB >> peso;
-        grafoParadas[pontoA][pontoB] = min(grafoParadas[pontoA][pontoB], peso);
-        grafoParadas[pontoB][pontoA] = min(grafoParadas[pontoB][pontoA], peso);
+        grafoParadas[pontoA][pontoB] = max(grafoParadas[pontoA][pontoB], peso);
+        grafoParadas[pontoB][pontoA] = max(grafoParadas[pontoB][pontoA], peso);
     }
 
 

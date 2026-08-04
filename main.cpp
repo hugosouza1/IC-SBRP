@@ -10,13 +10,24 @@ int main(int argv, char *argc[]){
 
     dados.leitura(argc[1]);
 
+
+    cout << "\nLeu dados\n\n"; fflush(stdin);
+    
+    
     Metaheuristica meta(dados);
+    // Individuo teste;
 
-    Individuo teste;
+    Individuo teste = meta.AG();
+    
+    
+    
+    // teste = meta.geraSolucaoInicial();
 
-    teste = meta.geraSolucaoInicial();
+    cout << "\Solução Inicial\n\n"; fflush(stdin);
+    
+    // meta.buscaTabu(teste);
 
-    meta.buscaTabu(teste);
+    // cout << "\\n\n"; fflush(stdin);
 
     cout << "teste fit: ";
     cout << teste.fitness << "\n";
