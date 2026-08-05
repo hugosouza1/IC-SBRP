@@ -165,11 +165,11 @@ vector<Individuo> Metaheuristica::novaPopTorneioElitista(vector<Individuo> &filh
     });
 
     vector<Individuo> novaPop(combinado.begin(), combinado.begin() + elitismo);
-    vector<Individuo> resto(combinado.begin() + elitismo + 1, combinado.end());
+    vector<Individuo> resto(combinado.begin() + elitismo, combinado.end());
 
-    while(novaPop.size() <= tamanhoPopulacao){
+    while(novaPop.size() < (size_t)tamanhoPopulacao){
         int idxRo = selecionaTorneio(resto);
-        novaPop.push_back(combinado[idxRo]);
+        novaPop.push_back(resto[idxRo]);
     }
 
     return novaPop;
@@ -179,7 +179,7 @@ vector<Individuo> Metaheuristica::novaPopTorneioElitista(vector<Individuo> &filh
 Individuo Metaheuristica::AG(){
 
     int maxGeracao = 1000;
-    int tamanhoPopulacao = 200;
+    int tamanhoPopulacao = 400;
     double crossoverProb = 0.8; 
     double mutacaoProb = 0.01; // baixa mutacao é melhor
     int elitismo = max(1, int(tamanhoPopulacao * 0.05)); // pelo menos 1 // elitismo mais baixo émellhr
@@ -193,7 +193,7 @@ Individuo Metaheuristica::AG(){
         // cout << "\t\tbacate\n"; fflush(stdin);
     } 
 
-    int idxInit = distance(fitnessInit.begin(), max_element(fitnessInit.begin(), fitnessInit.end()));
+    int idxInit = distance(fitnessInit.begin(), min_element(fitnessInit.begin(), fitnessInit.end()));
     
     Individuo melhorIndividuo = populacao[idxInit];
     double melhorFitness = fitnessInit[idxInit];
@@ -204,6 +204,8 @@ Individuo Metaheuristica::AG(){
         vector<pair<int,int>> paisEscolhidos = escolhendoPais(populacao);
         
         vector<Individuo> filhos = reproducao(paisEscolhidos, populacao, tamanhoPopulacao, mutacaoProb, crossoverProb);
+
+        for (auto& filho : filhos) buscaTabu(filho); // fit
         
         // ja chega ordenado
         vector<Individuo> novaPopulacao = novaPopTorneioElitista(filhos, populacao, tamanhoPopulacao, elitismo);
@@ -220,7 +222,7 @@ Individuo Metaheuristica::AG(){
         }
     }
     
-    // imprimeCaminho(melhorIndividuo, grafo);
-    cout << "distancia: " << melhorFitness << "\n";
+
+    return melhorIndividuo;
 
 }

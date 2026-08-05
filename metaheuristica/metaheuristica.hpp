@@ -30,7 +30,7 @@ struct Individuo {
     // valor = rota que transporta esse aluno
     vector<int> atrAlunoRota;
 
-    double fitness;
+    double fitness = numeric_limits<double>::max();
 
     // Apenas armazenado após a avaliação pelo Tabu
     vector<vector<int>> rotasFeitas;
@@ -116,5 +116,12 @@ class Metaheuristica{
 		void atualizaTabu(vector<int>& tabuParada, int paradaMovida, int tenure);
 
 		double buscaTabu(Individuo& configParada);
+
+
+
+        // -+-+--+-+-+-+-++-+
+
+        
+        void imprimeSolucao(Individuo& sol, infoSBRP& dados);
 
 };
