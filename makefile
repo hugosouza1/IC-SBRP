@@ -1,15 +1,16 @@
-INCLUDE=-I/opt/ibm/ILOG/CPLEX_Studio128/cplex/include -I/opt/ibm/ILOG/CPLEX_Studio128/concert/include
+INCLUDE = -I/opt/ibm/ILOG/CPLEX_Studio128/cplex/include \
+          -I/opt/ibm/ILOG/CPLEX_Studio128/concert/include
 
-FLAGS=-DIL_STD -fPIC -fno-strict-aliasing -fexceptions -DNDEBUG -w
+FLAGS = -DIL_STD -fPIC -fno-strict-aliasing -fexceptions -DNDEBUG -w
 
-LPATH=-L/opt/ibm/ILOG/CPLEX_Studio128/concert/lib/x86-64_linux/static_pic -L//opt/ibm/ILOG/CPLEX_Studio128/cplex/lib/x86-64_linux/static_pic
+LPATH = -L/opt/ibm/ILOG/CPLEX_Studio128/concert/lib/x86-64_linux/static_pic \
+        -L/opt/ibm/ILOG/CPLEX_Studio128/cplex/lib/x86-64_linux/static_pic
 
-LIBRARIES=-lconcert -lilocplex -lcplex -lpthread -ldl
+LIBRARIES = -lconcert -lilocplex -lcplex -lpthread -ldl
 
 # =======================================
 
 CXX = g++
-# CXXFLAGS = -Wall -Wextra -O3
 CXXFLAGS = -O3
 
 BUILD_DIR = build
@@ -18,41 +19,50 @@ METAHEURISTICA_DIR = metaheuristica
 MODELO_MAT_DIR = modelo_matematico
 
 SRC = \
-	main.cpp \
-	SBRP.cpp \
-	$(METAHEURISTICA_DIR)/buscaTabu.cpp \
-	$(METAHEURISTICA_DIR)/genetico.cpp
-
-
+    main.cpp \
+    SBRP.cpp \
+    $(METAHEURISTICA_DIR)/buscaTabu.cpp \
+    $(METAHEURISTICA_DIR)/genetico.cpp \
+    $(METAHEURISTICA_DIR)/metaheuristica.cpp \
+    $(MODELO_MAT_DIR)/modelo.cpp
 
 OBJ = $(SRC:%.cpp=$(BUILD_DIR)/%.o)
 
 EXEC = execMaster
 ENTRADA ?= entrada.txt
 
-all: build run
-
-build: $(EXEC)
+all: run
 
 run: $(EXEC)
 	./$(EXEC) $(ENTRADA)
 
-# Linkagem
-$(EXEC): $(OBJ)
-	$(CXX) $(CXXFLAGS) -o $@ $^
+# =======================================
+# LINKAGEM
+# =======================================
 
-# Compilação dos .cpp
+$(EXEC): $(OBJ)
+	$(CXX) $(CXXFLAGS) -o $@ $^ $(LPATH) $(LIBRARIES)
+
+# =======================================
+# COMPILAÇÃO
+# =======================================
+
 $(BUILD_DIR)/%.o: %.cpp
 	@mkdir -p $(dir $@)
 	$(CXX) $(CXXFLAGS) $(INCLUDE) $(FLAGS) -c $< -o $@
+
+# =======================================
+# LIMPEZA
+# =======================================
 
 clean:
 	rm -rf $(BUILD_DIR) $(EXEC)
 
 rebuild: clean all
 
-# =================================================================================================================
-# se queiser so o modelo. temporario kk
+# =======================================
+# SOMENTE MODELO
+# =======================================
 
 SO_MODELO = modelo_matematico/modelo
 

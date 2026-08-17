@@ -4,18 +4,129 @@
 #include <bits/stdc++.h>
 #include <ilcplex/ilocplex.h>
 
-#include "modelo.hpp"
-
 using namespace std;
 ILOSTLBEGIN //MACRO - "using namespace" for ILOCPEX
 
 //CPLEX Parameters
 #define CPLEX_TIME_LIM 3600 //3600 segundos
 int INF = INT_MAX;
+//#define CPLEX_COMPRESSED_TREE_MEM_LIM 8128 //8GB
+//#define CPLEX_WORK_MEM_LIM 4096 //4GB
+//#define CPLEX_VARSEL_MODE 0
+/*
+* VarSel Modes:
+* -1 Branch on variable with minimum infeasibility
+* 0 Branch variable automatically selected
+* 1 Branch on variable with maximum infeasibility
+* 2 Branch based on pseudo costs
+* 3 Strong branching
+* 4 Branch based on pseudo reduced costs
+*
+* Default: 0
+*/
+
+struct estudante{
+    int id; // estudante A
+
+    // distancia
+    vector<pair<int, int>> paradasPossiveis;
+};
+
+class infoSBRP{
+	private:
+	    // matriz de distâncias/custos entre paradas
+		int quantidadeArestas;
+	    vector<vector<int>> grafoParadas;
+
+	    // estudantes
+	    vector<estudante> alunosParadas;
+
+	    int quantidadeParadas;
+	    int quantidadeAlunos;
+	    int quantidadeOnibus;
+	    int quantidadeRotas;
+
+        // precisa de um teto pro step
+	    int quantidadePassos; 
+
+	    // capacidade do ônibus
+	    int Q;
+
+	    // maior distância permitida (W)
+	    int maxDistancia;
+
+	public:
+
+	    void leitura(std::string arquivoEntrada);
+	    void cplex();
+};
+
+void infoSBRP::leitura(string arquivoEntrada){
+    ifstream arq(arquivoEntrada);
+    if(!arq.is_open()){ cerr << "Erro ao abrir arquivo\n"; exit(1);}
+
+    arq >> quantidadeParadas >> quantidadeAlunos >> quantidadeOnibus >> Q;
+
+    quantidadeRotas = ((quantidadeAlunos + Q) / Q) + 2; // caiu de 4min pra 30s
+
+    quantidadePassos = quantidadeParadas; // de 30 do de cima pra 9s. diliça
+    quantidadePassos = quantidadeParadas * quantidadeOnibus * 2; // de 30 do de cima pra 9s. diliça
+
+    grafoParadas.assign(quantidadeParadas, vector<int>(quantidadeParadas, INF));
+    for(int i = 0; i < quantidadeParadas; i++){
+        grafoParadas[i][i] = 0;
+    }
+
+    arq >> quantidadeArestas;
+    for(int i = 0; i < quantidadeArestas; i++){
+        int pontoA, pontoB, peso; 
+        arq >> pontoA >> pontoB >> peso;
+        grafoParadas[pontoA][pontoB] = min(grafoParadas[pontoA][pontoB], peso);
+        grafoParadas[pontoB][pontoA] = min(grafoParadas[pontoB][pontoA], peso);
+    }
 
 
+    alunosParadas.clear();
+    maxDistancia = 0;
+    for(int e = 0; e < quantidadeAlunos; e++){
+        estudante aluno;
+        int quantidadeParadasPossiveis;
 
-void ModeloMatematico::cplexSolver(Individuo& solucao){
+        /*
+            exemplo:
+
+            0 2
+            1 10
+            3 15
+
+            aluno 0
+            possui 2 paradas possíveis
+        */
+
+        arq >> aluno.id;
+        arq >> quantidadeParadasPossiveis;
+
+        for(int j = 0; j < quantidadeParadasPossiveis; j++){
+            int parada;
+            int distancia;
+
+            arq >> parada >> distancia;
+
+            aluno.paradasPossiveis.push_back({ parada, distancia });
+
+            if(distancia > maxDistancia){
+                maxDistancia = distancia;
+            }
+        }
+
+        alunosParadas.push_back(aluno);
+    }
+
+    arq.close();
+}
+
+
+void infoSBRP::cplex(){
 	try{
        //CPLEX
 	IloEnv env; //Define o ambiente do CPLEX
@@ -38,14 +149,14 @@ void ModeloMatematico::cplexSolver(Individuo& solucao){
 
 	// b
     	IloNumVarArray b(env);
-	for(int i = 0; i < dados.quantidadeParadas; i++ ){
+	for(int i = 0; i < quantidadeParadas; i++ ){
         b.add(IloIntVar(env, 0, 1));
 		numberVar++;
 	}
 
 	// z
 	IloNumVarArray z(env);
-	for(int i = 0; i < dados.quantidadeOnibus; i++ ){
+	for(int i = 0; i < quantidadeOnibus; i++ ){
         z.add(IloIntVar(env, 0, 1));
 		numberVar++;
 	}
@@ -57,10 +168,10 @@ void ModeloMatematico::cplexSolver(Individuo& solucao){
 	// a_ei
 	IloArray<IloNumVarArray> a(env);
 	
-	for(int e = 0; e < dados.quantidadeAlunos; e++){
+	for(int e = 0; e < quantidadeAlunos; e++){
 		a.add(IloNumVarArray(env));
 		
-	    for(auto p : dados.alunosParadas[e].paradasPossiveis){
+	    for(auto p : alunosParadas[e].paradasPossiveis){
 			a[e].add(IloIntVar(env, 0, 1));
 	        numberVar++;
 	    }
@@ -69,10 +180,10 @@ void ModeloMatematico::cplexSolver(Individuo& solucao){
 	//  tr^k  (rota r do onibus k esta ativa)
 	IloArray<IloNumVarArray> t(env);
 	
-	for(int k = 0; k < dados.quantidadeOnibus; k++){
+	for(int k = 0; k < quantidadeOnibus; k++){
 		t.add(IloNumVarArray(env));
 		
-		for(int r = 0; r < dados.quantidadeRotas; r++){
+		for(int r = 0; r < quantidadeRotas; r++){
 			t[k].add(IloIntVar(env, 0, 1));
 			numberVar++;
 		}
@@ -80,24 +191,25 @@ void ModeloMatematico::cplexSolver(Individuo& solucao){
 
 	// x^kr-st_ij : arco i->j usado no passo "st" da rota r do onibus k.
 	IloArray<IloArray<IloArray<IloArray<IloNumVarArray>>>> x(env);
-	for(int k = 0; k < dados.quantidadeOnibus; k++){
+	for(int k = 0; k < quantidadeOnibus; k++){
 		x.add(IloArray<IloArray<IloArray<IloNumVarArray>>>(env));
 
-		for(int r = 0; r < dados.quantidadeRotas; r++){
+		for(int r = 0; r < quantidadeRotas; r++){
 			x[k].add(IloArray<IloArray<IloNumVarArray>>(env));
 
-			for(int st = 0; st < dados.quantidadePassos; st++){
+			for(int st = 0; st < quantidadePassos; st++){
 				x[k][r].add(IloArray<IloNumVarArray>(env));
 
-				for(int i = 0; i < dados.quantidadeParadas; i++){
+				for(int i = 0; i < quantidadeParadas; i++){
 					x[k][r][st].add(IloNumVarArray(env));
 
-					for(int j = 0; j < dados.quantidadeParadas; j++){
+					for(int j = 0; j < quantidadeParadas; j++){
 
                         // aresta inexistente, alto-cilco, menos na origem. precisa de loop na escola pra consumir o step
-						if((dados.grafoParadas[i][j] == 0 && i != j) || (i == j && i != 0)){
+						if((grafoParadas[i][j] == INF) || (i == j && i != 0)){
 							x[k][r][st][i].add(IloIntVar(env, 0, 0)); // Trava em 0
-						} else {
+						}
+						else{
 							x[k][r][st][i].add(IloIntVar(env, 0, 1)); // Variável binária normal
 						}
 
@@ -110,13 +222,13 @@ void ModeloMatematico::cplexSolver(Individuo& solucao){
 
 	// p_i^kr  (parada i visitada pela rota r do onibus k)
     IloArray<IloArray<IloNumVarArray>> p(env);
-    for(int k = 0; k < dados.quantidadeOnibus; k++){
+    for(int k = 0; k < quantidadeOnibus; k++){
         p.add(IloArray<IloNumVarArray>(env));
 
-        for(int r = 0; r < dados.quantidadeRotas; r++){
+        for(int r = 0; r < quantidadeRotas; r++){
             p[k].add(IloNumVarArray(env));
 
-            for(int i = 0; i < dados.quantidadeParadas; i++){
+            for(int i = 0; i < quantidadeParadas; i++){
                 p[k][r].add(IloIntVar(env, 0, 1));
                 numberVar++;
             }
@@ -125,16 +237,16 @@ void ModeloMatematico::cplexSolver(Individuo& solucao){
 
 	// y_ei^kr
 	IloArray<IloArray<IloArray<IloNumVarArray>>> y(env);
-	for(int k = 0; k < dados.quantidadeOnibus; k++){
+	for(int k = 0; k < quantidadeOnibus; k++){
 	    y.add(IloArray<IloArray<IloNumVarArray>>(env));
 
-	    for(int r = 0; r < dados.quantidadeRotas; r++){
+	    for(int r = 0; r < quantidadeRotas; r++){
 	        y[k].add(IloArray<IloNumVarArray>(env));
 
-	        for(int e = 0; e < dados.quantidadeAlunos; e++){
+	        for(int e = 0; e < quantidadeAlunos; e++){
 	            y[k][r].add(IloNumVarArray(env));
 
-	            for(int p = 0; p < dados.alunosParadas[e].paradasPossiveis.size(); p++){
+	            for(int p = 0; p < alunosParadas[e].paradasPossiveis.size(); p++){
 	                y[k][r][e].add(IloIntVar(env,0,1));
 	            }
 	        }
@@ -149,12 +261,12 @@ void ModeloMatematico::cplexSolver(Individuo& solucao){
 	IloExpr obj2(env); // qtd paradas
 
 	// Restrição 1 (custo) - com step
-    for(int k = 0; k < dados.quantidadeOnibus; k++){
-		for(int r = 0; r < dados.quantidadeRotas; r++ ){
-			for(int st = 0; st < dados.quantidadePassos; st++){
-				for(int i = 0; i < dados.quantidadeParadas; i++){
-					for(int j = 0;  j < dados.quantidadeParadas; j++){
-						obj1 += (dados.grafoParadas[i][j] * x[k][r][st][i][j]);
+    for(int k = 0; k < quantidadeOnibus; k++){
+		for(int r = 0; r < quantidadeRotas; r++ ){
+			for(int st = 0; st < quantidadePassos; st++){
+				for(int i = 0; i < quantidadeParadas; i++){
+					for(int j = 0;  j < quantidadeParadas; j++){
+						obj1 += (grafoParadas[i][j] * x[k][r][st][i][j]);
 					}
 				}
 			}
@@ -162,7 +274,7 @@ void ModeloMatematico::cplexSolver(Individuo& solucao){
 	}
 
     // Restrição 2 (quantidade de parada)
-    for(int i = 0;  i < dados.quantidadeParadas; i++){
+    for(int i = 0;  i < quantidadeParadas; i++){
 		obj2 += (b[i]);
     }
 	
@@ -173,9 +285,9 @@ void ModeloMatematico::cplexSolver(Individuo& solucao){
     // --- ALOCAÇÃO DE ESTUDANTES ÀS PARADAS ---
     
     // Cada estudante deve ser alocado a exatamente uma parada valida
-    for(int e = 0; e < dados.quantidadeAlunos; e++) {
+    for(int e = 0; e < quantidadeAlunos; e++) {
         soma.clear();
-        for(int p = 0; p < dados.alunosParadas[e].paradasPossiveis.size(); p++) {
+        for(int p = 0; p < alunosParadas[e].paradasPossiveis.size(); p++) {
             soma += a[e][p];
         }
         model.add(soma == 1);
@@ -183,38 +295,38 @@ void ModeloMatematico::cplexSolver(Individuo& solucao){
     }
 
     // Um estudante só pode ser alocado a uma parada se ela estiver ativa
-    for(int e = 0; e < dados.quantidadeAlunos; e++) {
-        for(int p = 0; p < dados.alunosParadas[e].paradasPossiveis.size(); p++) {
-            int i = dados.alunosParadas[e].paradasPossiveis[p].first;
+    for(int e = 0; e < quantidadeAlunos; e++) {
+        for(int p = 0; p < alunosParadas[e].paradasPossiveis.size(); p++) {
+            int i = alunosParadas[e].paradasPossiveis[p].first;
             model.add(a[e][p] <= b[i]);
             numberRes++;
         }
     }
 
     // Define W como a maior distância de caminhada
-    for(int e = 0; e < dados.quantidadeAlunos; e++) {
-        for(int p = 0; p < dados.alunosParadas[e].paradasPossiveis.size(); p++) {
-            int i = dados.alunosParadas[e].paradasPossiveis[p].first;
-            double d_ei = dados.alunosParadas[e].paradasPossiveis[p].second;
+    for(int e = 0; e < quantidadeAlunos; e++) {
+        for(int p = 0; p < alunosParadas[e].paradasPossiveis.size(); p++) {
+            int i = alunosParadas[e].paradasPossiveis[p].first;
+            double d_ei = alunosParadas[e].paradasPossiveis[p].second;
             model.add(d_ei * a[e][p] <= W);
             numberRes++;
         }
     }
 
     // ======== CONSERVAÇÃO DE FLUXO E ROTEAMENTO (Step) ========
-    for(int k = 0; k < dados.quantidadeOnibus; k++) {
-        for(int r = 0; r < dados.quantidadeRotas; r++) {
+    for(int k = 0; k < quantidadeOnibus; k++) {
+        for(int r = 0; r < quantidadeRotas; r++) {
 
             // Encadeamento entre passos consecutivos: (nó de chegada do passo st) == (no de saida do passo st+1), para cada nó j
-            for(int st = 0; st < dados.quantidadePassos - 1; st++) {
-                for(int j = 0; j < dados.quantidadeParadas; j++) {
+            for(int st = 0; st < quantidadePassos - 1; st++) {
+                for(int j = 0; j < quantidadeParadas; j++) {
                     IloExpr chegadaEm_j_no_passo_st(env);
                     IloExpr saidaDe_j_no_passo_stMais1(env);
 
-                    for(int i = 0; i < dados.quantidadeParadas; i++) {
+                    for(int i = 0; i < quantidadeParadas; i++) {
                         chegadaEm_j_no_passo_st += x[k][r][st][i][j];
                     }
-                    for(int i = 0; i < dados.quantidadeParadas; i++) {
+                    for(int i = 0; i < quantidadeParadas; i++) {
                         saidaDe_j_no_passo_stMais1 += x[k][r][st + 1][j][i];
                     }
 
@@ -225,13 +337,12 @@ void ModeloMatematico::cplexSolver(Individuo& solucao){
                     saidaDe_j_no_passo_stMais1.end();
                 }
             }
-            
 
             // No maximo um arco ativo por passo: soma de todos os arcos do passo st <= 1
-            for(int st = 0; st < dados.quantidadePassos; st++) {
+            for(int st = 0; st < quantidadePassos; st++) {
                 soma.clear();
-                for(int i = 0; i < dados.quantidadeParadas; i++) {
-                    for(int j = 0; j < dados.quantidadeParadas; j++) {
+                for(int i = 0; i < quantidadeParadas; i++) {
+                    for(int j = 0; j < quantidadeParadas; j++) {
                         soma += x[k][r][st][i][j];
                     }
                 }
@@ -241,10 +352,10 @@ void ModeloMatematico::cplexSolver(Individuo& solucao){
 
             // O self-loop em 0 (x[k][r][st][0][0]) fica de fora dessa soma de proposito: 
             // ele representa a rota inativa/ociosa, entao nao pode ser limitado por t
-            for(int st = 0; st < dados.quantidadePassos; st++) {
+            for(int st = 0; st < quantidadePassos; st++) {
                 soma.clear();
-                for(int i = 0; i < dados.quantidadeParadas; i++) {
-                    for(int j = 0; j < dados.quantidadeParadas; j++) {
+                for(int i = 0; i < quantidadeParadas; i++) {
+                    for(int j = 0; j < quantidadeParadas; j++) {
                         if(i == 0 && j == 0) continue; 
                         soma += x[k][r][st][i][j];
                     }
@@ -258,7 +369,7 @@ void ModeloMatematico::cplexSolver(Individuo& solucao){
             // rota estiver inativa, o passo 0 fica em self-loop (0->0)
             // representando que nunca saiu
             soma.clear();
-            for(int j = 1; j < dados.quantidadeParadas; j++) {
+            for(int j = 1; j < quantidadeParadas; j++) {
                 soma += x[k][r][0][0][j];
             }
 
@@ -270,9 +381,9 @@ void ModeloMatematico::cplexSolver(Individuo& solucao){
 
             // A escola só pode ser ponto de partida real no passo 0.
             // Nos demais passos, se a rota ja voltou, ela deve permanecer em self-loop
-            for(int st = 1; st < dados.quantidadePassos; st++){
+            for(int st = 1; st < quantidadePassos; st++){
                 soma.clear();
-                for(int j = 1; j < dados.quantidadeParadas; j++){
+                for(int j = 1; j < quantidadeParadas; j++){
                     soma += x[k][r][st][0][j];
                 }
                 model.add(soma == 0);
@@ -281,8 +392,8 @@ void ModeloMatematico::cplexSolver(Individuo& solucao){
 
             // A rota deve retornar a escola (0) pelo menos uma vez, vindo de um no diferente de 0 (chegada de verdade, não self-loop), em algum passo
             soma.clear();
-            for(int st = 0; st < dados.quantidadePassos; st++) {
-                for(int i = 1; i < dados.quantidadeParadas; i++) {
+            for(int st = 0; st < quantidadePassos; st++) {
+                for(int i = 1; i < quantidadeParadas; i++) {
                     soma += x[k][r][st][i][0];
                 }
             }
@@ -297,16 +408,16 @@ void ModeloMatematico::cplexSolver(Individuo& solucao){
     // Como agora pode haver mais de uma entrada em i (revisita):
     //   soma(entradas em i, todos os passos) <= quantidadePassos * s
     //   s <= soma(entradas em i, todos os passos)
-    for(int k = 0; k < dados.quantidadeOnibus; k++) {
-        for(int r = 0; r < dados.quantidadeRotas; r++) {
-            for(int i = 0; i < dados.quantidadeParadas; i++) {
+    for(int k = 0; k < quantidadeOnibus; k++) {
+        for(int r = 0; r < quantidadeRotas; r++) {
+            for(int i = 0; i < quantidadeParadas; i++) {
                 soma.clear();
-                for(int st = 0; st < dados.quantidadePassos; st++) {
-                    for(int j = 0; j < dados.quantidadeParadas; j++) {
+                for(int st = 0; st < quantidadePassos; st++) {
+                    for(int j = 0; j < quantidadeParadas; j++) {
                         soma += x[k][r][st][j][i];
                     }
                 }
-                model.add(soma <= dados.quantidadePassos * p[k][r][i]);
+                model.add(soma <= quantidadePassos * p[k][r][i]);
                 numberRes++;
 
                 model.add(p[k][r][i] <= soma);
@@ -316,10 +427,10 @@ void ModeloMatematico::cplexSolver(Individuo& solucao){
     }
 
     // Se a parada b_i está ativa, pelo menos uma rota deve visitá-la
-    for(int i = 0; i < dados.quantidadeParadas; i++) {
+    for(int i = 0; i < quantidadeParadas; i++) {
         soma.clear();
-        for(int k = 0; k < dados.quantidadeOnibus; k++) {
-            for(int r = 0; r < dados.quantidadeRotas; r++) {
+        for(int k = 0; k < quantidadeOnibus; k++) {
+            for(int r = 0; r < quantidadeRotas; r++) {
                 soma += p[k][r][i];
             }
         }
@@ -330,27 +441,27 @@ void ModeloMatematico::cplexSolver(Individuo& solucao){
     // ============= CAPACIDADE DOS VEÍCULOS =============
 
     // Limita a quantidade de estudantes atendidos na rota à capacidade máxima Q 
-    for(int k = 0; k < dados.quantidadeOnibus; k++) {
-        for(int r = 0; r < dados.quantidadeRotas; r++) {
+    for(int k = 0; k < quantidadeOnibus; k++) {
+        for(int r = 0; r < quantidadeRotas; r++) {
             soma.clear();
-            for(int e = 0; e < dados.quantidadeAlunos; e++) {
-                for(int p = 0; p < dados.alunosParadas[e].paradasPossiveis.size(); p++) {
+            for(int e = 0; e < quantidadeAlunos; e++) {
+                for(int p = 0; p < alunosParadas[e].paradasPossiveis.size(); p++) {
                     soma += y[k][r][e][p];
                 }
             }
             
-            model.add(soma <= dados.Q * t[k][r]); 
+            model.add(soma <= Q * t[k][r]); 
             numberRes++;
         }
     }
     
     // ============= LINEARIZAÇÃO DA VARIÁVEL AUXILIAR Y (y = a * s) =============
 
-    for(int k = 0; k < dados.quantidadeOnibus; k++) {
-        for(int r = 0; r < dados.quantidadeRotas; r++) {
-            for(int e = 0; e < dados.quantidadeAlunos; e++) {
-                for(int pp = 0; pp < dados.alunosParadas[e].paradasPossiveis.size(); pp++) {
-                    int i = dados.alunosParadas[e].paradasPossiveis[pp].first;
+    for(int k = 0; k < quantidadeOnibus; k++) {
+        for(int r = 0; r < quantidadeRotas; r++) {
+            for(int e = 0; e < quantidadeAlunos; e++) {
+                for(int pp = 0; pp < alunosParadas[e].paradasPossiveis.size(); pp++) {
+                    int i = alunosParadas[e].paradasPossiveis[pp].first;
 
                     // y <= a
                     model.add(y[k][r][e][pp] <= a[e][pp]);
@@ -370,9 +481,9 @@ void ModeloMatematico::cplexSolver(Individuo& solucao){
     // ============= RELAÇÃO ÔNIBUS-ROTA =============
 
     // Ativa z_k se o ônibus k operar ao menos uma rota
-    for(int k = 0; k < dados.quantidadeOnibus; k++) {
+    for(int k = 0; k < quantidadeOnibus; k++) {
         soma.clear();
-        for(int r = 0; r < dados.quantidadeRotas; r++) {
+        for(int r = 0; r < quantidadeRotas; r++) {
             soma += t[k][r];
         }
         model.add(soma >= z[k]);
@@ -380,8 +491,8 @@ void ModeloMatematico::cplexSolver(Individuo& solucao){
     }
 
     // Impede rotas em ônibus desativados
-    for(int k = 0; k < dados.quantidadeOnibus; k++) {
-        for(int r = 0; r < dados.quantidadeRotas; r++) {
+    for(int k = 0; k < quantidadeOnibus; k++) {
+        for(int r = 0; r < quantidadeRotas; r++) {
             model.add(t[k][r] <= z[k]);
             numberRes++;
         }
@@ -410,11 +521,11 @@ void ModeloMatematico::cplexSolver(Individuo& solucao){
     // }
 
     // 2.0 rota global
-    for(int r = 1; r < dados.quantidadeRotas; r++){
+    for(int r = 1; r < quantidadeRotas; r++){
         IloExpr usoAtual(env);
         IloExpr usoAnterior(env);
 
-        for(int k = 0; k < dados.quantidadeOnibus; k++){
+        for(int k = 0; k < quantidadeOnibus; k++){
             usoAtual    += t[k][r];
             usoAnterior += t[k][r - 1];
         }
@@ -427,7 +538,7 @@ void ModeloMatematico::cplexSolver(Individuo& solucao){
     }
 
     // Força o uso dos onibus em ordem: oni k -> oni k+1
-    for(int k = 1; k < dados.quantidadeOnibus; k++){
+    for(int k = 1; k < quantidadeOnibus; k++){
         model.add(z[k] <= z[k - 1]);
         numberRes++;
     }
@@ -437,9 +548,9 @@ void ModeloMatematico::cplexSolver(Individuo& solucao){
     // ============= BALANCEAMENTO =============
 
     // M
-    for(int k = 0; k < dados.quantidadeOnibus; k++) {
+    for(int k = 0; k < quantidadeOnibus; k++) {
         soma.clear();
-        for(int r = 0; r < dados.quantidadeRotas; r++) {
+        for(int r = 0; r < quantidadeRotas; r++) {
             soma += t[k][r];
         }
         model.add(M >= soma);
@@ -447,221 +558,7 @@ void ModeloMatematico::cplexSolver(Individuo& solucao){
     }
 
     soma.end();
-
-
-    // cout << "alunos modelo: " << dados.quantidadeAlunos << endl;
-    // cout << "atrAlunoParada: " << solucao.atrAlunoParada.size() << endl;
-    // cout << "atrAlunoRota: " << solucao.atrAlunoRota.size() << endl;
-    // cout << "rotasFeitas: " << solucao.rotasFeitas.size() << endl;
-
-    
-    
-    IloCplex cplex(env);
-    cplex.extract(model);
-    
-    
-    // tem algum lugar dando errado na inicializaçaõ. modelo ignora o erro, descarte o warm. por enquanto usar o '4' no coisa em baixo
-    bool quente = true; // abracadabra
-
-    IloNumVarArray vars(env);// abracadabra
-    IloNumArray vals(env);   // abracadabra
-    
-    if(quente){ // abracadabra
-
-    // ============================================================
-    // WARM START
-    // ============================================================
-
-
-    // ------------------------------------------------------------
-    // Alocação aluno -> parada
-    // ------------------------------------------------------------
-
-    for (int e = 0; e < dados.quantidadeAlunos; ++e) {
-
-        int paradaEscolhida = solucao.atrAlunoParada[e];
-
-        const vector<pair<int, int>>& paradasPossiveis = dados.alunosParadas[e].paradasPossiveis;
-
-        bool encontrada = false;
-
-        for (const auto& par : paradasPossiveis) {
-
-            int parada = par.first;
-
-            if (parada == paradaEscolhida) {
-                encontrada = true;
-                break;
-            }
-        }
-
-        if (!encontrada) {
-
-            cerr << "ERRO no warm start: aluno " << e << " recebeu parada " << paradaEscolhida << ", mas ela nao esta entre as paradas possiveis." << endl;
-            return;
-        }
-
-        for (int pos = 0; pos < (int)paradasPossiveis.size(); ++pos) {
-
-            int parada = paradasPossiveis[pos].first;
-
-            vars.add(a[e][pos]);
-
-            if (parada == paradaEscolhida)
-                vals.add(1.0);
-            else
-                vals.add(0.0);
-        }
-    }
-
-
-    // ------------------------------------------------------------
-    // 2. Alocação ônibus -> rota + construção dos arcos
-    // ------------------------------------------------------------
-
-    int proximoOnibus = 0;
-
-    for (int r = 0; r < dados.quantidadeRotas; ++r) {
-
-        bool rotaUtilizada = r < (int)solucao.rotasFeitas.size() && !solucao.rotasFeitas[r].empty();
-
-        for (int k = 0; k < dados.quantidadeOnibus; ++k) {
-            // t[k][r]
-            vars.add(t[k][r]);
-
-            if (rotaUtilizada && k == proximoOnibus)
-                vals.add(1.0);
-            else
-                vals.add(0.0);
-        }
-
-        if (rotaUtilizada) {
-
-            const vector<int>& rota = solucao.rotasFeitas[r];
-
-            // ----------------------------------------------------
-            // Preenche os arcos x da rota
-            // ----------------------------------------------------
-
-            for (int st = 0; st + 1 < (int)rota.size(); ++st) {
-
-                int i = rota[st];
-                int j = rota[st + 1];
-
-                vars.add(x[proximoOnibus][r][st][i][j]);
-                vals.add(1.0);
-            }
-
-            // ----------------------------------------------------
-            // Preenche p: parada visitada pela rota
-            // ----------------------------------------------------
-
-            set<int> paradasVisitadas(rota.begin(), rota.end());
-            for (int i : paradasVisitadas) {
-                vars.add(p[proximoOnibus][r][i]);
-                vals.add(1.0);
-            }
-           
-            // ----------------------------------------------------
-            // Próximo ônibus
-            // ----------------------------------------------------
-
-            proximoOnibus++;
-
-            if (proximoOnibus >= dados.quantidadeOnibus)
-                proximoOnibus = dados.quantidadeOnibus - 1;
-        }
-    }
-
-
-    // ------------------------------------------------------------
-    // 3. Completar b[i], z[k], y[k][r][e][p], self-loops de fim de rota, W e M
-    // ------------------------------------------------------------
-
-    // mapa rota -> onibus 
-    vector<int> rotaParaOnibus(dados.quantidadeRotas, -1);
-    vector<int> rotasPorOnibus(dados.quantidadeOnibus, 0);
-    {
-        int prox = 0;
-        for (int r = 0; r < dados.quantidadeRotas; ++r) {
-            bool usada = r < (int)solucao.rotasFeitas.size() && !solucao.rotasFeitas[r].empty();
-            if (usada) {
-                rotaParaOnibus[r] = prox;
-                rotasPorOnibus[prox]++;
-                if (prox < dados.quantidadeOnibus - 1) prox++;
-            }
-        }
-    }
-
-    // b[i]: ativa toda parada atribuida a algum aluno
-    {
-        vector<bool> paradaAtiva(dados.quantidadeParadas, false);
-        for (int e = 0; e < dados.quantidadeAlunos; ++e)
-            paradaAtiva[solucao.atrAlunoParada[e]] = true;
-
-        for (int i = 0; i < dados.quantidadeParadas; ++i) {
-            vars.add(b[i]);
-            vals.add(paradaAtiva[i] ? 1.0 : 0.0);
-        }
-    }
-
-    // z[k]: ativo se o onibus tem alguma rota
-    for (int k = 0; k < dados.quantidadeOnibus; ++k) {
-        vars.add(z[k]);
-        vals.add(rotasPorOnibus[k] > 0 ? 1.0 : 0.0);
-    }
-
-    // M: maior numero de rotas atribuidas a um unico onibus
-    {
-        int maiorM = *max_element(rotasPorOnibus.begin(), rotasPorOnibus.end());
-        vars.add(M);
-        vals.add((double) maiorM);
-    }
-
-    // W: maior distancia aluno-parada da alocacao. acho que ainda tira isso de tudo
-    {
-        double maiorW = 0;
-        for (int e = 0; e < dados.quantidadeAlunos; ++e) {
-            int paradaEscolhida = solucao.atrAlunoParada[e];
-            for (auto& par : dados.alunosParadas[e].paradasPossiveis)
-                if (par.first == paradaEscolhida)
-                    maiorW = max(maiorW, (double) par.second);
-        }
-        vars.add(W);
-        vals.add(maiorW);
-    }
-
-    // y[k][r][e][p] = a[e][p] AND (rota do aluno == r)
-    for (int e = 0; e < dados.quantidadeAlunos; ++e) {
-        int rotaDoAluno = solucao.atrAlunoRota[e];
-        if (rotaDoAluno < 0 || rotaDoAluno >= dados.quantidadeRotas) continue;
-        int onibusDaRota = rotaParaOnibus[rotaDoAluno];
-        if (onibusDaRota == -1) continue;
-
-        int paradaEscolhida = solucao.atrAlunoParada[e];
-        const auto& poss = dados.alunosParadas[e].paradasPossiveis;
-        for (int pos = 0; pos < (int)poss.size(); ++pos) {
-            vars.add(y[onibusDaRota][rotaDoAluno][e][pos]);
-            vals.add(poss[pos].first == paradaEscolhida ? 1.0 : 0.0);
-        }
-    }
-
-    // x residual: fecha os passos depois que a rota ja voltou pra escola,
-    for (int r = 0; r < dados.quantidadeRotas; ++r) {
-        int k = rotaParaOnibus[r];
-        if (k == -1) continue;
-        int tamanhoRota = (int) solucao.rotasFeitas[r].size(); 
-        for (int st = tamanhoRota - 1; st < dados.quantidadePassos; ++st) {
-            vars.add(x[k][r][st][0][0]);
-            vals.add(1.0);
-        }
-    }
-
-    } //  abracadabra
-
-
-    // ==================================== //
-    // ==================================== //
+	
 	//------ EXECUCAO do MODELO ----------
     // time_t timer, timer2;
     IloNum objValue;
@@ -673,8 +570,8 @@ void ModeloMatematico::cplexSolver(Individuo& solucao){
     printf("#Restricoes: %d\n", numberRes);
     cout << "Memory usage after variable creation:  " << env.getMemoryUsage() / (1024. * 1024.) << " MB" << endl;
     
-    // IloCplex cplex(env); // Inicialize apontando para o ambiente
-    // cplex.extract(model); 
+    IloCplex cplex(env); // Inicialize apontando para o ambiente
+    cplex.extract(model); 
     
     cout << "Memory usage after cplex extraction:  " << env.getMemoryUsage() / (1024. * 1024.) << " MB" << endl;
 
@@ -694,14 +591,6 @@ void ModeloMatematico::cplexSolver(Individuo& solucao){
     IloObjective FO1 = IloMinimize(env, obj1);
     model.add(FO1);
     cplex.extract(model); // Atualiza o modelo no solver
-    
-    if(quente){ // abracadabra
-        cplex.addMIPStart(vars, vals, IloCplex::MIPStartEffort(4));  // abracadabra
-        // 1 = CPX_MIPSTART_CHECKFEAS 4 = REPAIr // abracadabra
-        vars.end(); vals.end(); // abracadabra
-    } // abracadabra
-    
-
     if (!cplex.solve()) {
         cerr << "Erro: Fase 1 inviável!\n";
         return;
@@ -784,14 +673,14 @@ void ModeloMatematico::cplexSolver(Individuo& solucao){
         cout << "\n\n\n\n\n\n\n";
 
         printf("\n================= CENÁRIO DE ENTRADA =================\n");
-        printf("Paradas (incluindo escola 0): %d\n", dados.quantidadeParadas);
-        printf("Estudantes: %d\n", dados.quantidadeAlunos);
-        printf("Onibus disponiveis: %d\n", dados.quantidadeOnibus);
-        printf("Rotas possiveis por onibus (limite superior): %d\n", dados.quantidadeRotas);
-        printf("Capacidade maxima por onibus (Q): %d\n", dados.Q);
-        printf("Passos maximos por rota: %d\n", dados.quantidadePassos);
-        printf("Arestas no grafo de paradas: %d\n", dados.quantidadeArestas);
-        printf("Maior distancia aluno-parada no arquivo: %d\n", dados.maxDistancia);
+        printf("Paradas (incluindo escola 0): %d\n", quantidadeParadas);
+        printf("Estudantes: %d\n", quantidadeAlunos);
+        printf("Onibus disponiveis: %d\n", quantidadeOnibus);
+        printf("Rotas possiveis por onibus (limite superior): %d\n", quantidadeRotas);
+        printf("Capacidade maxima por onibus (Q): %d\n", Q);
+        printf("Passos maximos por rota: %d\n", quantidadePassos);
+        printf("Arestas no grafo de paradas: %d\n", quantidadeArestas);
+        printf("Maior distancia aluno-parada no arquivo: %d\n", maxDistancia);
 
         cout << "=========================================================\n\n\n";
         cout << "=========================================================\n";
@@ -819,13 +708,13 @@ void ModeloMatematico::cplexSolver(Individuo& solucao){
         cout << "\n[1] ROTAS DOS ONIBUS\n";
         cout << "--------------------------------------------------------\n";
 
-        for(int k = 0; k < dados.quantidadeOnibus; k++){
+        for(int k = 0; k < quantidadeOnibus; k++){
 
             if(cplex.getValue(z[k]) < 0.5) continue;
 
             cout << "\n>> Onibus " << k << "\n";
 
-            for(int r = 0; r < dados.quantidadeRotas; r++){
+            for(int r = 0; r < quantidadeRotas; r++){
 
                 if(cplex.getValue(t[k][r]) < 0.5) continue;
 
@@ -833,11 +722,11 @@ void ModeloMatematico::cplexSolver(Individuo& solucao){
                 vector<int> caminho = {0};
                 double custoRota = 0;
 
-                for(int st = 0; st < dados.quantidadePassos; st++){
+                for(int st = 0; st < quantidadePassos; st++){
                     int de = -1, para = -1;
 
-                    for(int i = 0; i < dados.quantidadeParadas && de == -1; i++){
-                        for(int j = 0; j < dados.quantidadeParadas; j++){
+                    for(int i = 0; i < quantidadeParadas && de == -1; i++){
+                        for(int j = 0; j < quantidadeParadas; j++){
                             double val = cplex.getValue(x[k][r][st][i][j]);
                             if(IloRound(val) >= 1){ de = i; para = j; break; }
                         }
@@ -846,28 +735,27 @@ void ModeloMatematico::cplexSolver(Individuo& solucao){
                     if(de == -1) continue;      // passo sem arco detectado, segue tentando
                     if(de == 0 && para == 0) continue; // self-loop ocioso
 
-                    custoRota += dados.grafoParadas[de][para];
-
+                    custoRota += grafoParadas[de][para];
                     caminho.push_back(para);
                 }
 
                 // conta alunos e ocupacao dessa rota
                 int alunosNaRota = 0;
                 vector<string> passageiros;
-                for(int e = 0; e < dados.quantidadeAlunos; e++){
-                    for(int p = 0; p < (int) dados.alunosParadas[e].paradasPossiveis.size(); p++){
+                for(int e = 0; e < quantidadeAlunos; e++){
+                    for(int p = 0; p < (int) alunosParadas[e].paradasPossiveis.size(); p++){
                         if(cplex.getValue(y[k][r][e][p]) > 0.5){
                             alunosNaRota++;
                             passageiros.push_back(
-                                "Aluno " + to_string(dados.alunosParadas[e].id) +
-                                " (parada " + to_string(dados.alunosParadas[e].paradasPossiveis[p].first) + ")");
+                                "Aluno " + to_string(alunosParadas[e].id) +
+                                " (parada " + to_string(alunosParadas[e].paradasPossiveis[p].first) + ")");
                         }
                     }
                 }
 
                 // paradas visitadas por essa rota
                 vector<int> paradasRota;
-                for(int i = 0; i < dados.quantidadeParadas; i++)
+                for(int i = 0; i < quantidadeParadas; i++)
                     if(cplex.getValue(p[k][r][i]) > 0.5) paradasRota.push_back(i);
 
                 cout << "   Rota " << r << ":\n";
@@ -884,8 +772,8 @@ void ModeloMatematico::cplexSolver(Individuo& solucao){
                     if(idx + 1 < paradasRota.size()) cout << ", ";
                 }
                 cout << "\n";
-                cout << "     Ocupacao: " << alunosNaRota << " / " << dados.Q << " alunos"
-                     << " (" << (100.0 * alunosNaRota / dados.Q) << "% da capacidade)\n";
+                cout << "     Ocupacao: " << alunosNaRota << " / " << Q << " alunos"
+                     << " (" << (100.0 * alunosNaRota / Q) << "% da capacidade)\n";
                 cout << "     Passageiros:\n";
                 for(auto &p : passageiros) cout << "       - " << p << "\n";
                 cout << "\n";
@@ -899,12 +787,12 @@ void ModeloMatematico::cplexSolver(Individuo& solucao){
         cout << "--------------------------------------------------------\n";
 
         vector<int> paradasUsadas, paradasNaoUsadas;
-        for(int i = 0; i < dados.quantidadeParadas; i++){
+        for(int i = 0; i < quantidadeParadas; i++){
             if(cplex.getValue(b[i]) > 0.5) paradasUsadas.push_back(i);
             else paradasNaoUsadas.push_back(i);
         }
 
-        cout << "Usadas (" << paradasUsadas.size() << "/" << dados.quantidadeParadas << "): ";
+        cout << "Usadas (" << paradasUsadas.size() << "/" << quantidadeParadas << "): ";
         for(size_t idx = 0; idx < paradasUsadas.size(); idx++){
             cout << paradasUsadas[idx];
             if(idx + 1 < paradasUsadas.size()) cout << ", ";
@@ -927,26 +815,26 @@ void ModeloMatematico::cplexSolver(Individuo& solucao){
         int naoAlocados = 0;
         double somaDist = 0, maiorDist = 0;
 
-        for(int e = 0; e < dados.quantidadeAlunos; e++){
+        for(int e = 0; e < quantidadeAlunos; e++){
 
             bool encontrou = false;
 
-            for(int p = 0; p < (int) dados.alunosParadas[e].paradasPossiveis.size(); p++){
+            for(int p = 0; p < (int) alunosParadas[e].paradasPossiveis.size(); p++){
 
                 if(cplex.getValue(a[e][p]) > 0.5){
 
-                    int parada = dados.alunosParadas[e].paradasPossiveis[p].first;
-                    int distancia = dados.alunosParadas[e].paradasPossiveis[p].second;
+                    int parada = alunosParadas[e].paradasPossiveis[p].first;
+                    int distancia = alunosParadas[e].paradasPossiveis[p].second;
 
                     somaDist += distancia;
                     maiorDist = max(maiorDist, (double) distancia);
 
-                    cout << "  Aluno " << dados.alunosParadas[e].id
+                    cout << "  Aluno " << alunosParadas[e].id
                          << " -> Parada " << parada
                          << " (caminhada: " << distancia << ")";
 
-                    for(int k = 0; k < dados.quantidadeOnibus; k++){
-                        for(int r = 0; r < dados.quantidadeRotas; r++){
+                    for(int k = 0; k < quantidadeOnibus; k++){
+                        for(int r = 0; r < quantidadeRotas; r++){
                             if(cplex.getValue(y[k][r][e][p]) > 0.5){
                                 cout << " | Onibus " << k << ", Rota " << r;
                                 break;
@@ -962,12 +850,12 @@ void ModeloMatematico::cplexSolver(Individuo& solucao){
 
             if(!encontrou){
                 naoAlocados++;
-                cout << "  Aluno " << dados.alunosParadas[e].id << " -> NAO ALOCADO !!\n";
+                cout << "  Aluno " << alunosParadas[e].id << " -> NAO ALOCADO !!\n";
             }
         }
 
         cout << "\nResumo de caminhada: media = "
-             << (dados.quantidadeAlunos - naoAlocados > 0 ? somaDist / (dados.quantidadeAlunos - naoAlocados) : 0)
+             << (quantidadeAlunos - naoAlocados > 0 ? somaDist / (quantidadeAlunos - naoAlocados) : 0)
              << " | maior individual = " << maiorDist
              << " | alunos nao alocados = " << naoAlocados << "\n\n";
 
@@ -977,9 +865,9 @@ void ModeloMatematico::cplexSolver(Individuo& solucao){
         cout << "[4] ONIBUS\n";
         cout << "--------------------------------------------------------\n";
 
-        for(int k = 0; k < dados.quantidadeOnibus; k++){
+        for(int k = 0; k < quantidadeOnibus; k++){
             int rotasDoOnibus = 0;
-            for(int r = 0; r < dados.quantidadeRotas; r++)
+            for(int r = 0; r < quantidadeRotas; r++)
                 if(cplex.getValue(t[k][r]) > 0.5) rotasDoOnibus++;
 
             cout << "  Onibus " << k << ": "
@@ -991,13 +879,13 @@ void ModeloMatematico::cplexSolver(Individuo& solucao){
         cout << "========================================================\n";
         cout << "                   RESUMO GERAL\n";
         cout << "========================================================\n";
-        cout << "Alunos atendidos:      " << (dados.quantidadeAlunos - naoAlocados) << " / " << dados.quantidadeAlunos << "\n";
-        cout << "Paradas ativas:        " << paradasUsadas.size() << " / " << dados.quantidadeParadas << "\n";
+        cout << "Alunos atendidos:      " << (quantidadeAlunos - naoAlocados) << " / " << quantidadeAlunos << "\n";
+        cout << "Paradas ativas:        " << paradasUsadas.size() << " / " << quantidadeParadas << "\n";
         cout << "Onibus utilizados:     ";
         {
             int cont = 0;
-            for(int k = 0; k < dados.quantidadeOnibus; k++) if(cplex.getValue(z[k]) > 0.5) cont++;
-            cout << cont << " / " << dados.quantidadeOnibus << "\n";
+            for(int k = 0; k < quantidadeOnibus; k++) if(cplex.getValue(z[k]) > 0.5) cont++;
+            cout << cont << " / " << quantidadeOnibus << "\n";
         }
         cout << "Custo total das rotas: " << melhorCusto << "\n";
         cout << "Maior caminhada (W):   " << melhorDistW << "\n";
@@ -1020,4 +908,18 @@ void ModeloMatematico::cplexSolver(Individuo& solucao){
     cerr << "CPLEX Exception: " << e << endl;
     throw;
 	}
+}
+
+int main(int argv, char *argc[]){
+    if(argv < 2){
+        cerr << "ERRO: falta nome do arquivo de vertices e alunos\n";
+    }
+
+    infoSBRP dados;
+
+    dados.leitura(argc[1]);
+
+    dados.cplex();
+
+    return 0;
 }
