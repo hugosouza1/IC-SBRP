@@ -300,7 +300,7 @@ Individuo Metaheuristica::AG(){
     double estagnado = 0;
     
     // max iter e estagnação
-    for(int i = 0; i < maxGeracao && estagnado <= 50 + i; ++i){
+    for(int i = 0; i < maxGeracao && estagnado + 20 >= i; ++i){
 
         vector<pair<int,int>> paisEscolhidos = escolhendoPais(populacao);
         
@@ -316,6 +316,7 @@ Individuo Metaheuristica::AG(){
             melhorFitness = novaPopulacao[0].fitness;
             estagnado = i;
         }
+        // cout << estagnado + 20 << ">" << i << "\n";
 
         populacao.swap(novaPopulacao);
 

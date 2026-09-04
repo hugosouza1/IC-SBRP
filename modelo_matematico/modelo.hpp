@@ -1,3 +1,5 @@
+#pragma once
+
 #include "../SBRP.hpp"
 
 #include <iostream>
