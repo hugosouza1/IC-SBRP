@@ -92,7 +92,7 @@ class Metaheuristica{
 
     public:
 	    Metaheuristica(infoSBRP& p) : problema(p) {
-			quantidadeMaxRota = (p.quantidadeAlunos + p.Q - 1) / p.Q;
+			quantidadeMaxRota = (p.quantidadeAlunos + p.Q) / p.Q;
 		}
 		// ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 

@@ -63,7 +63,8 @@ vector<Individuo> Metaheuristica::popIni(int tamanhoPopulacao){
 
 bool Metaheuristica::maisViavel(const Individuo &a, const Individuo &b){
     if(a.alunosInviaveisQuant != b.alunosInviaveisQuant)
-        return a.alunosInviaveisQuant < b.alunosInviaveisQuant;  // menos alunos prejudicados vence
+        return a.alunosInviaveisQuant < b.alunosInviaveisQuant;  // menos alunos prejudicados vence 
+        // cout << "bacate=";
     return a.fitness < b.fitness;
 }
 
@@ -245,10 +246,37 @@ vector<Individuo> Metaheuristica::novaPopTorneioElitista(vector<Individuo> &filh
 }
 
 
+void compactarRotas(Individuo& individuo) {
+
+    vector<vector<int>> novasRotas;
+    vector<int> mapa(individuo.rotasFeitas.size(), -1);
+
+    for(int i = 0; i < individuo.rotasFeitas.size(); ++i) {
+
+        if(individuo.rotasFeitas[i].empty())
+            continue;
+
+        mapa[i] = novasRotas.size();
+        novasRotas.push_back(move(individuo.rotasFeitas[i]));
+    }
+
+    for(int e = 0; e < individuo.atrAlunoRota.size(); ++e) {
+
+        int rota = individuo.atrAlunoRota[e];
+
+        if(rota >= 0 && rota < mapa.size()) {
+            individuo.atrAlunoRota[e] = mapa[rota];
+        }
+    }
+
+    individuo.rotasFeitas = move(novasRotas);
+}
+
+
 Individuo Metaheuristica::AG(){
 
-    int maxGeracao = 50;
-    int tamanhoPopulacao = 100;
+    int maxGeracao = 200;
+    int tamanhoPopulacao = 200;
     double crossoverProb = 0.8; 
     double mutacaoProb = 0.08; // baixa mutacao é melhor
     int elitismo = max(3, int(tamanhoPopulacao * 0.05)); // pelo menos 1 // elitismo mais baixo émellhr
@@ -269,8 +297,10 @@ Individuo Metaheuristica::AG(){
     
     Individuo melhorIndividuo = populacao[idxInit];
     double melhorFitness = fitnessInit[idxInit];
+    double estagnado = 0;
     
-    for(int i = 0; i < maxGeracao; ++i){
+    // max iter e estagnação
+    for(int i = 0; i < maxGeracao && estagnado <= 50 + i; ++i){
 
         vector<pair<int,int>> paisEscolhidos = escolhendoPais(populacao);
         
@@ -284,6 +314,7 @@ Individuo Metaheuristica::AG(){
         if (maisViavel(novaPopulacao[0], melhorIndividuo)){
             melhorIndividuo = novaPopulacao[0];
             melhorFitness = novaPopulacao[0].fitness;
+            estagnado = i;
         }
 
         populacao.swap(novaPopulacao);
@@ -293,5 +324,8 @@ Individuo Metaheuristica::AG(){
         }
     }
     
+    
+    compactarRotas(melhorIndividuo);
+
     return melhorIndividuo;
 }

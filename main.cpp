@@ -14,13 +14,11 @@ int main(int argv, char *argc[]){
     
     Metaheuristica meta(dados);
     Individuo fulano = meta.warmStart();
-
-    cout << "\nMetaheuristica concluida\n\n"; fflush(stdin);
-
-    // cout << fulano.alunosInviaveisQuant << "\n"; fflush(stdin);
+    // cout << "\nMetaheuristica concluida\n\n"; fflush(stdin);
     
     ModeloMatematico modMat(dados);
-    modMat.cplexSolver(fulano);
+    modMat.cplexSolver(&fulano);
+    // modMat.cplexSolver();
     
     cout << "\nModelo Mat concluido\n\n"; fflush(stdin);
     // dados.cplex();

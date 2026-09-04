@@ -7,10 +7,11 @@ void infoSBRP::leitura(string arquivoEntrada){
 
     arq >> quantidadeParadas >> quantidadeAlunos >> quantidadeOnibus >> Q;
 
-    quantidadeRotas = ((quantidadeAlunos + Q) / Q) + 2; // caiu de 4min pra 30s
+    // quantidadeRotas = 5; 
+    quantidadeRotas = ((quantidadeAlunos + Q) / Q) + 1; // caiu de 4min pra 30s
 
-    quantidadePassos = quantidadeParadas; // de 30 do de cima pra 9s. diliça
-    quantidadePassos = quantidadeParadas * quantidadeOnibus * 2; // de 30 do de cima pra 9s. diliça
+    quantidadePassos = quantidadeParadas * 1.5; 
+    // quantidadePassos = quantidadeParadas * quantidadeOnibus * 1.5; 
 
     // int maxx = numeric_limits<int>::max();
     // grafoParadas.assign(quantidadeParadas, vector<int>(quantidadeParadas, maxx));

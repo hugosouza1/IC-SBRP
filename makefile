@@ -28,7 +28,7 @@ SRC = \
 
 OBJ = $(SRC:%.cpp=$(BUILD_DIR)/%.o)
 
-EXEC = execMaster
+EXEC = execMaster.exe
 ENTRADA ?= entrada.txt
 
 all: run
