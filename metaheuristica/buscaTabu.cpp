@@ -75,7 +75,30 @@ vector<int> Metaheuristica::contrucaoRota(vector<int> obrigatorias, bool& sucess
     return rota;
 }
 
-vector<vector<int>> Metaheuristica::caminhosIniciais(vector<vector<int>> conjuntoParadas, vector<bool>& sucesso){
+vector<vector<int>> Metaheuristica::caminhosIniciais(Individuo &configParada, vector<bool>& sucesso, vector<vector<int>> *paradaDasRotas){
+
+    configParada.rotaViavel.assign(quantidadeMaxRota, true);
+    
+    vector<unordered_set<int>> paradasDaRotaSetAux(quantidadeMaxRota);
+
+    configParada.alunoPorRota.assign(quantidadeMaxRota, 0);
+    
+    for(int aluno = 0; aluno < problema.quantidadeAlunos; aluno++){
+        int rota   = configParada.atrAlunoRota[aluno];
+        int parada = configParada.atrAlunoParada[aluno];
+        paradasDaRotaSetAux[rota].insert(parada);
+        configParada.alunoPorRota[rota]++;
+    }
+
+    vector<vector<int>> conjuntoParadas(quantidadeMaxRota);
+    for (int r = 0; r < quantidadeMaxRota; ++r) {
+        conjuntoParadas[r].assign(paradasDaRotaSetAux[r].begin(), paradasDaRotaSetAux[r].end());
+    }
+
+    if(paradaDasRotas) *paradaDasRotas = conjuntoParadas;
+    
+    pertubacaoRota(conjuntoParadas, configParada.intensidadePermutaRota);
+
     vector<vector<int>> rotasIniciais(conjuntoParadas.size());
     sucesso.assign(conjuntoParadas.size(), true);
 
@@ -85,6 +108,37 @@ vector<vector<int>> Metaheuristica::caminhosIniciais(vector<vector<int>> conjunt
         sucesso[i] = ok;
     }
     return rotasIniciais;
+}
+
+
+//  pro genetico
+void Metaheuristica::finalizaSolucao(Individuo& configParada, vector<vector<int>>& rotas, const vector<bool>& sucesso) {
+    // Garante que o vetor tenha todas as rotas
+    configParada.rotasFeitas.assign(quantidadeMaxRota, {});
+
+    double distanciaTotal = 0.0;
+    int alunosAfetados = 0;
+
+    for(int r = 0; r < quantidadeMaxRota; ++r){
+
+        // Se a rota não foi construída ou é inviável
+        if(r >= (int)rotas.size() || r >= (int)sucesso.size() || !sucesso[r] || rotas[r].empty()) {
+
+            configParada.rotasFeitas[r] = {};
+            configParada.rotaViavel[r] = false;
+            alunosAfetados += configParada.alunoPorRota[r];
+            continue;
+        }
+
+        // Rota válida
+        configParada.rotasFeitas[r] = rotas[r];
+        configParada.rotaViavel[r] = true;
+
+        distanciaTotal += distancia(rotas[r], problema.grafoParadas);
+    }
+
+    configParada.alunosInviaveisQuant = alunosAfetados;
+    configParada.fitness = distanciaTotal;
 }
 
 
@@ -248,26 +302,11 @@ void Metaheuristica::pertubacaoRota(vector<vector<int>> &paradasRotas, vector<do
 
 double Metaheuristica::buscaTabu(Individuo& configParada){
 
-    configParada.rotaViavel.assign(quantidadeMaxRota, true);
     int alunosAfetados = 0;
 
-    vector<unordered_set<int>> paradasDaRotaSetAux(quantidadeMaxRota);
-    vector<int> alunosPorRota(quantidadeMaxRota, 0);
-
-    for(int aluno = 0; aluno < problema.quantidadeAlunos; aluno++){
-        int rota   = configParada.atrAlunoRota[aluno];
-        int parada = configParada.atrAlunoParada[aluno];
-        paradasDaRotaSetAux[rota].insert(parada);
-        alunosPorRota[rota]++;
-    }
-
-    vector<vector<int>> paradasDaRota(quantidadeMaxRota);
-    for (int r = 0; r < quantidadeMaxRota; ++r) {
-        paradasDaRota[r].assign(paradasDaRotaSetAux[r].begin(), paradasDaRotaSetAux[r].end());
-    }
-
     vector<bool> sucessoConstrucao;
-    vector<vector<int>> rotasIniciais = caminhosIniciais(paradasDaRota, sucessoConstrucao);
+    vector<vector<int>> paradasDaRota;
+    vector<vector<int>> rotasIniciais = caminhosIniciais(configParada, sucessoConstrucao, &paradasDaRota);
 
     vector<vector<int>> rotasFinais(rotasIniciais.size());
     double distanciaTotal = 0.0;
@@ -277,9 +316,10 @@ double Metaheuristica::buscaTabu(Individuo& configParada){
         if(!sucessoConstrucao[r]){
             rotasFinais[r] = {};
             configParada.rotaViavel[r] = false;
-            alunosAfetados += alunosPorRota[r];
+            alunosAfetados += configParada.alunoPorRota[r];
             continue;
         }
+        
         vector<int> rotaAtual = rotasIniciais[r];
 
         if(rotaAtual.empty()){ rotasFinais[r] = rotaAtual; continue; }
@@ -324,6 +364,10 @@ double Metaheuristica::buscaTabu(Individuo& configParada){
             }
 
             it++;
+
+            if(it % 10 == 0){
+                // cout << "iteracao=" << it << " // melhor valor = " << melhorDistancia << "\n";
+            }
         }
 
         rotasFinais[r] = melhorRota;

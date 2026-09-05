@@ -31,6 +31,7 @@ struct Individuo {
     vector<bool> rotaViavel;
 
     int alunosInviaveisQuant;
+	vector<int> alunoPorRota;
 
     // Apenas armazenado após a avaliação pelo Tabu
     vector<vector<int>> rotasFeitas;

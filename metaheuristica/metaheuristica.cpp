@@ -1,22 +1,35 @@
 #include "metaheuristica.hpp"
+#include "../SBRP.hpp"
 
 
+int main(int argv, char *argc[]){
+    if(argv < 2){
+        cerr << "ERRO: falta nome do arquivo de vertices e alunos\n";
+    }
+
+    infoSBRP dados;
+    dados.leitura(argc[1]);
+
+    cout << "\nLeitura de dados concluida\n\n"; fflush(stdin);
+    
+    Metaheuristica meta(dados);
+    
+    cout << "AG-BT:\n";
+    Individuo ciclano = meta.AG(1);
+    
+    cout << "AG:\n";
+    Individuo fulano = meta.AG(0);
+    
+    cout << "BT:\n";
+    Individuo beltrano = meta.geraSolucaoInicial();   
+    meta.buscaTabu(beltrano);
+    cout << "Melhor valor: " << beltrano.fitness << "\n";
 
 
-
-
-
-Individuo Metaheuristica::warmStart(){
-    return AG();
+    // cout << "\nMetaheuristica concluida\n\n"; fflush(stdin);
+    
+    return 0;
 }
-
-
-
-
-
-
-
-
 
 void Metaheuristica::imprimeSolucao(Individuo& sol, infoSBRP& dados){
     cout << "\n========================================\n";

@@ -99,7 +99,7 @@ class Metaheuristica{
         Individuo warmStart();
 
 		// ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-        Individuo AG();
+        Individuo AG(int opc);
 		
         Individuo geraSolucaoInicial();
 
@@ -121,7 +121,9 @@ class Metaheuristica{
 
 		vector<int> bfs(int a, int b);
 
-		vector<vector<int>> caminhosIniciais(vector<vector<int>> conjuntoParadas, vector<bool>& sucesso);
+		vector<vector<int>> caminhosIniciais(Individuo &configParada, vector<bool>& sucesso, vector<vector<int>> *paradaDasRotas = {});
+
+        void finalizaSolucao(Individuo& configParada, vector<vector<int>>& rotas, const vector<bool>& sucesso);
 
         Movimento melhorInsercao(vector<int>& rota, vector<bool>& estaNaRota, unordered_map<ChaveTabu, int>& tabu, int melhorDistanciaGlobal, int distanciaAtual, int iteracao);
 

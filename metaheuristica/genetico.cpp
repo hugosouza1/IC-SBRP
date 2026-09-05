@@ -273,9 +273,9 @@ void compactarRotas(Individuo& individuo) {
 }
 
 
-Individuo Metaheuristica::AG(){
+Individuo Metaheuristica::AG(int opc){
 
-    int maxGeracao = 200;
+    int maxGeracao = 1000;
     int tamanhoPopulacao = 200;
     double crossoverProb = 0.8; 
     double mutacaoProb = 0.08; // baixa mutacao é melhor
@@ -285,11 +285,20 @@ Individuo Metaheuristica::AG(){
 
     // inicializa melhor
     vector<double> fitnessInit(tamanhoPopulacao);
-
-    for(int i = 0; i < tamanhoPopulacao; i++){
-        fitnessInit[i] = buscaTabu(populacao[i]);
-        // cout << "\t\tbacate\n"; fflush(stdin);
-    } 
+    
+    // criar um enum class depois
+    if(opc){
+        for(int i = 0; i < tamanhoPopulacao; i++){
+            fitnessInit[i] = buscaTabu(populacao[i]);
+        } 
+    } else {
+        for(int i = 0; i < tamanhoPopulacao; i++){
+            vector<bool> sucesso;
+            vector<vector<int>> rotasTemp = caminhosIniciais(populacao[i], sucesso);
+            finalizaSolucao(populacao[i], rotasTemp, sucesso);
+            fitnessInit[i] = populacao[i].fitness;
+        } 
+    }
 
     int idxInit = 0;
     for(int i = 1; i < tamanhoPopulacao; ++i)
@@ -300,13 +309,23 @@ Individuo Metaheuristica::AG(){
     double estagnado = 0;
     
     // max iter e estagnação
-    for(int i = 0; i < maxGeracao && estagnado + 20 >= i; ++i){
+    for(int i = 0; i < maxGeracao  &&  estagnado + 20 >= i ; ++i){
 
         vector<pair<int,int>> paisEscolhidos = escolhendoPais(populacao);
         
         vector<Individuo> filhos = reproducao(paisEscolhidos, populacao, tamanhoPopulacao, mutacaoProb, crossoverProb);
 
-        for (auto& filho : filhos) buscaTabu(filho); // fit
+        // for (auto& filho : filhos) buscaTabu(filho); // fit
+        
+        if(opc){
+            for (auto& filho : filhos) buscaTabu(filho); // fit
+        } else {
+            for (auto& filho : filhos){
+                vector<bool> sucesso;
+                vector<vector<int>> rotasTemp = caminhosIniciais(filho, sucesso);
+                finalizaSolucao(filho, rotasTemp, sucesso);
+            } 
+        }
         
         // ja chega ordenado
         vector<Individuo> novaPopulacao = novaPopTorneioElitista(filhos, populacao, tamanhoPopulacao, elitismo);
@@ -321,7 +340,7 @@ Individuo Metaheuristica::AG(){
         populacao.swap(novaPopulacao);
 
         if ((i % 10) == 0){
-            cout << "Geracao:" << i << " // melhor fitness atual = " << melhorFitness << " / " << melhorFitness << "\n";
+            cout << "Geracao:" << i << " // melhor fitness atual = " << melhorFitness << "\n";
         }
     }
     
