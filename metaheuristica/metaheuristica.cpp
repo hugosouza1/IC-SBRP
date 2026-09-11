@@ -1,6 +1,26 @@
 #include "metaheuristica.hpp"
 #include "../SBRP.hpp"
 
+double desvioPadrao(const vector<double>& valores) {
+    if (valores.empty())
+        return 0.0;
+
+    double soma = 0.0;
+
+    for (double x : valores)
+        soma += x;
+
+    double media = soma / valores.size();
+
+    double somaQuadrados = 0.0;
+
+    for (double x : valores)
+        somaQuadrados += pow(x - media, 2);
+
+    double variancia = somaQuadrados / valores.size();
+
+    return sqrt(variancia);
+}
 
 int main(int argv, char *argc[]){
     if(argv < 2){
@@ -14,22 +34,59 @@ int main(int argv, char *argc[]){
     
     Metaheuristica meta(dados);
     
-    cout << "AG-BT:\n";
+    cout << "\nAG-BT:\n";
     Individuo ciclano = meta.AG(1);
     
-    cout << "AG:\n";
+    cout << "\nAG:\n";
     Individuo fulano = meta.AG(0);
     
-    cout << "BT:\n";
-    Individuo beltrano = meta.geraSolucaoInicial();   
-    meta.buscaTabu(beltrano);
-    cout << "Melhor valor: " << beltrano.fitness << "\n";
+    cout << "\nBT:\n";
+    
+    int geracion = 1000;
+    Individuo melhorInd;
+    vector<double> valores;
+    for(int i = 0; i < geracion; ++i){
+        Individuo beltrano = meta.geraSolucaoInicial();   
+        meta.buscaTabu(beltrano);
+        if(beltrano.fitness < melhorInd.fitness){
+            melhorInd = beltrano;
+        }
+        cout << beltrano.fitness << "\t";
+        if(i%16==0){
+            cout << "\n";
+        }
 
+        valores.push_back(beltrano.fitness);
+    }
+
+    double dp = desvioPadrao(valores);
+    double media = accumulate(valores.begin(), valores.end(), 0);
+
+    cout << "\nMelhor valor: " << melhorInd.fitness << "\n";
+    cout << "Desvio Padrao: " << dp << "\nMedia: " << media / valores.size() << "\n";
 
     // cout << "\nMetaheuristica concluida\n\n"; fflush(stdin);
     
     return 0;
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 void Metaheuristica::imprimeSolucao(Individuo& sol, infoSBRP& dados){
     cout << "\n========================================\n";

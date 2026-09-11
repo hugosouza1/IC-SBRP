@@ -1,0 +1,26 @@
+Análise principal — AG-BT (Tabela 1)
+- Uma tabela única, todas as instâncias (pequenas, médias, grandes) com ID
+- Colunas: ID | parâmetros (n paradas, n alunos, etc.) | valor AG-BT | valor modelo (CPLEX) | gap % | tempo AG-BT | tempo modelo
+- Nas instâncias grandes, onde o CPLEX não resolve em tempo viável, as colunas de valor/tempo do modelo ficam em branco 
+    (ou preenchidas com o gap contra um lower bound obtido com limite de tempo no CPLEX, igual ao Schittekat)
+- argumento: apresentar o AG-BT como solução válida e boa pro problema — resultado próximo do ótimo onde o modelo consegue resolver, 
+    e viável/consistente onde não consegue
+
+Análise secundária — destrinchando o AG-BT (Tabela 2)
+- Mesma tabela de IDs, sem repetir parâmetros
+- Colunas: ID | valor híbrido (AG-BT) | valor GA puro | valor BT puro | valor modelo | melhor GA | pior GA | melhor BT | pior BT | média GA | média BT | desvio padrão
+- Cada instância roda 10x com seeds diferentes — melhor/pior/média/desvio padrão resumem essas 10 execuções por linha
+- argumento GA: sozinho converge rápido demais e perde diversidade — estagna numa vizinhança ruim, e sem o BT não escapa dela
+- argumento BT: sozinho é instável e depende da solução inicial/sorte — variância alta entre runs, que cai quando o GA 
+    fornece os pontos de partida
+- Os dois problemas diferentes (perda de diversidade no GA, instabilidade no BT), medidos nas mesmas instâncias onde o 
+    AG-BT resolve ambos, é o que prova que a combinação não foi arbitrária — cada componente cobre uma fraqueza concreta e 
+    medida do outro, não só "juntei dois algoritmos conhecidos"(e foi)
+
+Gráficos — um pro GA, um pro BT
+Ambos de uma instância média. Demonstração do comportamento, não validação.
+
+- GA: eixo x é geração. Gráfico de linha: fitness x geração, e desvio padrão da população x geração, no mesmo eixo x. (dois em um)
+- BT: eixo x é execução/seed (10 execuções independentes). Gráfico de coluna/barras: uma barra por execução com o valor final, 
+    e uma linha horizontal marcando a média, pra deixar visualmente clara a dispersão em torno dela. Além disso, barra de 
+    erro na média (+/- desvio padrão), além das barras individuais(barra horizontal que tem a linha da media no meio).

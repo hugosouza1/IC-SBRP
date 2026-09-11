@@ -273,10 +273,32 @@ void compactarRotas(Individuo& individuo) {
 }
 
 
+double desvio(const vector<double>& valores) {
+    if (valores.empty())
+        return 0.0;
+
+    double soma = 0.0;
+
+    for (double x : valores)
+        soma += x;
+
+    double media = soma / valores.size();
+
+    double somaQuadrados = 0.0;
+
+    for (double x : valores)
+        somaQuadrados += pow(x - media, 2);
+
+    double variancia = somaQuadrados / valores.size();
+
+    return sqrt(variancia);
+}
+
+
 Individuo Metaheuristica::AG(int opc){
 
     int maxGeracao = 1000;
-    int tamanhoPopulacao = 200;
+    int tamanhoPopulacao = 100;
     double crossoverProb = 0.8; 
     double mutacaoProb = 0.08; // baixa mutacao é melhor
     int elitismo = max(3, int(tamanhoPopulacao * 0.05)); // pelo menos 1 // elitismo mais baixo émellhr
@@ -309,7 +331,10 @@ Individuo Metaheuristica::AG(int opc){
     double estagnado = 0;
     
     // max iter e estagnação
-    for(int i = 0; i < maxGeracao  &&  estagnado + 20 >= i ; ++i){
+    
+    vector<double> valores;
+
+    for(int i = 0; i < maxGeracao /* &&  estagnado + 20 >= i */ ; ++i){
 
         vector<pair<int,int>> paisEscolhidos = escolhendoPais(populacao);
         
@@ -337,15 +362,28 @@ Individuo Metaheuristica::AG(int opc){
         }
         // cout << estagnado + 20 << ">" << i << "\n";
 
-        populacao.swap(novaPopulacao);
+        valores.push_back(novaPopulacao[0].fitness);
 
-        if ((i % 10) == 0){
-            cout << "Geracao:" << i << " // melhor fitness atual = " << melhorFitness << "\n";
+
+        populacao.swap(novaPopulacao);
+        
+        cout << novaPopulacao[0].fitness << "\t";
+        
+        if ((i % 20) == 0){
+            cout << "\n";
+            // cout << "Geracao:" << i << " // melhor fitness atual = " << melhorFitness << "\n";
         }
     }
     
+    cout << "\n";
+    double dp = desvio(valores);
+    double media = accumulate(valores.begin(), valores.end(), 0) / valores.size();
+
+    cout << "Melhor valor: " << melhorFitness << "\n";
+    cout << "Desvio padrao: " << dp << "\n";
+    cout << "Media: " << media << "\n";
     
-    compactarRotas(melhorIndividuo);
+    compactarRotas(melhorIndividuo); 
 
     return melhorIndividuo;
 }

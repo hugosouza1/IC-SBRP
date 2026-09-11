@@ -1,0 +1,1 @@
+--n_paradas 20  --n_alunos 100 --n_onibus 4  --capacidade 40 --largura 100 --altura 100 --dispersao cluster  --raio_max_caminhada 15  --seed 42  --out instancia_01.txt

@@ -19,10 +19,8 @@ LIBRARIES = -lconcert -lilocplex -lcplex -lpthread -ldl
 
 CXX = g++
 CXXFLAGS = -O3
-
 BUILD_DIR = build
-
-ENTRADA ?= entrada.txt
+ENTRADA ?= entradaGrande.txt
 
 
 # =======================================
@@ -105,7 +103,7 @@ $(BUILD_DIR)/%.o: %.cpp
 # EXECUTAR METAHEURÍSTICA
 # =======================================
 
-runHeuristica: $(EXEC_HEURISTICA)
+runHeuristica: $(EXEC_HEURISTICA) heuristica
 	./$(EXEC_HEURISTICA) $(ENTRADA)
 
 
@@ -113,7 +111,7 @@ runHeuristica: $(EXEC_HEURISTICA)
 # EXECUTAR MODELO
 # =======================================
 
-runModelo: $(EXEC_MODELO)
+runModelo: $(EXEC_MODELO) modelo
 	./$(EXEC_MODELO) $(ENTRADA)
 
 

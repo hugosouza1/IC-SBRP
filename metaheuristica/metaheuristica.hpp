@@ -20,7 +20,7 @@
 #include "../SBRP.hpp"
 
 inline std::random_device rd;
-inline std::mt19937 gen(12345);
+inline std::mt19937 gen(rd());
 
 
 using namespace chrono;

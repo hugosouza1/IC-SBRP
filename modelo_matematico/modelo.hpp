@@ -14,9 +14,8 @@
 
 
 using namespace std;
-ILOSTLBEGIN //MACRO - "using namespace" for ILOCPEX
+ILOSTLBEGIN 
 
-//CPLEX Parameters
 #define CPLEX_TIME_LIM 3600 //3600 segundos
 // int INF = INT_MAX;
 
