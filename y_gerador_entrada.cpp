@@ -30,7 +30,6 @@ struct Atribuicao {
     int alunoId;
     int paradaId;
     double distancia;
-    bool dentroRaio;
 };
 
 struct Aresta {
@@ -50,7 +49,6 @@ struct Parametros {
     // string dispersao = "uniforme";      // paradas: "uniforme" ou "cluster"
     
     string modoAlunos = "ancorado";    // "ancorado" (ao redor das paradas) ou "independente" (nuvem separada)
-    // string modoAlunos = "independente";    // "ancorado" (ao redor das paradas) ou "independente" (nuvem separada)
 
     double raioMaxCaminhada = 20.0;
     int kVizinhos = 4; // quantos vizinhos mais proximos cada no da malha se conecta
@@ -96,67 +94,61 @@ static vector<Ponto> gerarPontosCluster(int n, double largura, double altura, mt
     return pontos;
 }
 
-static vector<Ponto> gerarAlunosAoRedorDeParadas(int nAlunos,
-                                                       const vector<Ponto>& paradas,
-                                                       double raioMaxCaminhada,
-                                                       double largura, double altura,
-                                                       mt19937& rng) 
-    {
+static vector<Ponto> gerarAlunosAoRedorDeParadas (
+    int nAlunos, const vector<Ponto>& paradas, double raioMaxCaminhada, double largura, double altura, mt19937& rng) {
+
     uniform_int_distribution<int> escolhaParada(0, static_cast<int>(paradas.size()) - 1);
     uniform_real_distribution<double> u01(0.0, 1.0);
+    uniform_int_distribution<int> porPonto(1, 4);
 
     vector<Ponto> alunos;
-    alunos.reserve(nAlunos);
-    for (int i = 0; i < nAlunos; ++i) {
+    // int quantPontos = 0;
+
+    // while(quantPontos < nAlunos){
+    int totale = 0;
+    for(int i = 0; i < nAlunos; ++i){
+        
         const Ponto& casa = paradas[escolhaParada(rng)];
         double angulo = 2.0 * M_PI * u01(rng);
         // sqrt(u) para distribuicao uniforme na AREA do disco, nao concentrada no centro
         double raio = raioMaxCaminhada * sqrt(u01(rng));
+    
         double x = min(max(casa.x + raio * cos(angulo), 0.0), largura);
         double y = min(max(casa.y + raio * sin(angulo), 0.0), altura);
-        alunos.push_back({x, y});
+
+        int add = porPonto(rng);
+
+        totale += add;
+        
+        for(int j = 0; j < add; ++j) alunos.push_back({x,y});
     }
+
+    // cout << totale << "\n";
+    // exit(EXIT_SUCCESS);
+
     return alunos;
 }
 
 
-static void atribuirAlunosAParadas(const vector<Ponto>& alunos,
-                                    const vector<Ponto>& paradas,
-                                    double raioMax,
-                                    vector<Atribuicao>& atribuicoes,
-                                    vector<int>& forcados) {
+static void atribuirAlunosAParadas(
+    const vector<Ponto>& alunos, const vector<Ponto>& paradas, double raioMax, vector<Atribuicao>& atribuicoes, vector<int>& forcados) {
     for (size_t i = 0; i < alunos.size(); ++i) {
         vector<pair<int, double>> possiveisParadas;
-        int maisProxima = -1;
-        double distMaisProxima = numeric_limits<double>::infinity();
 
         for (size_t j = 0; j < paradas.size(); ++j) {
             double d = distancia(alunos[i], paradas[j]);
-            if (d < distMaisProxima) {
-                distMaisProxima = d;
-                maisProxima = static_cast<int>(j);
-            }
+
             if (d <= raioMax) {
                 possiveisParadas.push_back(make_pair(static_cast<int>(j), d));
             }
         }
 
-        bool forcado = false;
-        if (possiveisParadas.empty()) {
-            if (maisProxima < 0) continue; // sem paradas geradas na instancia — nada a fazer
-            possiveisParadas.push_back(make_pair(maisProxima, distMaisProxima));
-            forcados.push_back(static_cast<int>(i));
-            forcado = true;
-        }
-
         for (const auto& p : possiveisParadas)
-            atribuicoes.push_back({static_cast<int>(i), p.first, p.second, !forcado});
+            atribuicoes.push_back({static_cast<int>(i), p.first, p.second});
     }
 }
 
-// Conecta cada no aos k vizinhos mais proximos por distancia real (nao por
-// ordenacao de eixo). Isso aproxima o grafo de uma malha urbana: cada
-// "esquina" so se liga as esquinas vizinhas, nao a todas as outras.
+
 static vector<Aresta> construirGrafoMalha(const vector<Ponto>& nos, int kVizinhos) {
     size_t n = nos.size();
     vector<vector<pair<double, int>>> vizinhosOrdenados(n);
@@ -237,7 +229,7 @@ static void salvarInstancia(const Parametros& args,
     f << "raio_max_caminhada " << args.raioMaxCaminhada << "\n";
     f << "k_vizinhos " << args.kVizinhos << "\n\n";
 
-    f << "ESCOLA\n";
+    f << "ESCOLA id x y\n";
     f << "0 " << escola.x << " " << escola.y << "\n\n";
 
     f << "PARADAS id x y\n";
@@ -246,7 +238,7 @@ static void salvarInstancia(const Parametros& args,
     }
     f << "\n";
 
-    f << "ALUNOS id x y\n";
+    f << "ALUNOS id x y quantidade\n";
     for (size_t i = 0; i < alunos.size(); ++i) {
         f << i << " " << alunos[i].x << " " << alunos[i].y << "\n";
     }
@@ -254,21 +246,17 @@ static void salvarInstancia(const Parametros& args,
 
     // dentro_raio=0 significa atribuicao forcada (aluno sem nenhuma parada
     // dentro de raio_max_caminhada)
-    f << "ATRIBUICOES aluno_id parada_id distancia dentro_raio\n";
+    f << "ATRIBUICOES aluno_id parada_id distancia\n";
     for (const auto& a : atribuicoes) {
-        f << a.alunoId << " " << (a.paradaId + 1) << " " << a.distancia << " " << (a.dentroRaio ? 1 : 0) << "\n";
+        f << a.alunoId << " " << (a.paradaId + 1) << " " << a.distancia << "\n";
     }
     f << "\n";
 
-    f << "ALUNOS_ATRIBUICAO_FORCADA\n";
-    for (int id : forcados) f << id << " ";
-    f << "\n\n";
-
-    f << "ONIBUS id capacidade\n";
-    for (int k = 0; k < args.nOnibus; ++k) f << k << " " << args.capacidade << "\n";
+    f << "ONIBUS quantidade capacidade\n";
+    f << args.nOnibus << " " << args.capacidade << "\n";
     f << "\n";
 
-    f << "ARESTAS " << arestas.size() << "\n";
+    f << "ARESTAS id id distancia" << "\n";
     for (const auto& a : arestas) {
         f << a.a << " " << a.b << " " << a.peso << "\n";
     }
@@ -295,7 +283,7 @@ static Parametros parseArgs(int argc, char** argv) {
         else if (arg == "--capacidade") p.capacidade = stoi(next("--capacidade"));
         else if (arg == "--largura") p.largura = stod(next("--largura"));
         else if (arg == "--altura") p.altura = stod(next("--altura"));
-        else if (arg == "--dispersao") p.dispersao = next("--dispersao");
+        else if (arg == "--dispersao") p.dispersao = next("--dispersao"); // parada
         else if (arg == "--modo_alunos") p.modoAlunos = next("--modo_alunos");
         else if (arg == "--raio_max_caminhada") p.raioMaxCaminhada = stod(next("--raio_max_caminhada"));
         else if (arg == "--k_vizinhos") p.kVizinhos = stoi(next("--k_vizinhos"));
@@ -328,15 +316,15 @@ int main(int argc, char** argv) {
     }
 
     vector<Ponto> alunos;
-    if (args.modoAlunos == "independente") {
-        // tende a gerar mais atribuicoes forcadas
-        alunos = (args.dispersao == "uniforme")
-            ? gerarPontosUniformes(args.nAlunos, args.largura, args.altura, rng)
-            : gerarPontosCluster(args.nAlunos, args.largura, args.altura, rng);
-    } else {
+    // if (args.modoAlunos == "independente") {
+    //     // tende a gerar mais atribuicoes forcadas
+    //     alunos = (args.dispersao == "uniforme")
+    //         ? gerarPontosUniformes(args.nAlunos, args.largura, args.altura, rng)
+    //         : gerarPontosCluster(args.nAlunos, args.largura, args.altura, rng);
+    // } else {
         alunos = gerarAlunosAoRedorDeParadas(args.nAlunos, paradas, args.raioMaxCaminhada,
                                               args.largura, args.altura, rng);
-    }
+    // }
 
     vector<Atribuicao> atribuicoes;
     vector<int> forcados;

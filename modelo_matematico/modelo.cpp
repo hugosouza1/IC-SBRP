@@ -1,7 +1,7 @@
 #include "modelo.hpp"
 
 
-void ModeloMatematico::cplexSolver(Individuo* solucao){
+void ModeloMatematico::cplexSolver(){
 	try{
        //CPLEX
 	IloEnv env; //Define o ambiente do CPLEX
@@ -481,7 +481,6 @@ void ModeloMatematico::cplexSolver(Individuo* solucao){
     double melhorCusto = cplex.getObjValue();
     model.remove(FO1);
     model.add(obj1 <= melhorCusto + 1e-4); 
-    // return;
     
     // ==============
     time(&tFimFase1);
@@ -560,7 +559,6 @@ void ModeloMatematico::cplexSolver(Individuo* solucao){
         printf("Capacidade maxima por onibus (Q): %d\n", dados.Q);
         printf("Passos maximos por rota: %d\n", dados.quantidadePassos);
         printf("Arestas no grafo de paradas: %d\n", dados.quantidadeArestas);
-        printf("Maior distancia aluno-parada no arquivo: %d\n", dados.maxDistancia);
 
         cout << "=========================================================\n\n\n";
         cout << "=========================================================\n";
@@ -574,7 +572,7 @@ void ModeloMatematico::cplexSolver(Individuo* solucao){
         cout << "Tempo Fase 1 (custo): " << tFase1 << " s\n";
         cout << "Tempo Fase 2 (paradas): " << tFase2 << " s\n";
         // cout << "Tempo Fase 3 (caminhada W): " << tFase3 << " s\n";
-        cout << "Tempo Fase 3 (balanceamento M): " << tFase4 << " s\n";
+        cout << "Tempo Fase 3 (balanceamento M): " << tFase3 << " s\n";
         cout << "Tempo total: " << tTotal << " s\n\n";
 
 		cout << "\n";

@@ -1,8 +1,8 @@
 #include "metaheuristica.hpp"
 
 
-int distancia(vector<int>& caminho, vector<vector<int>>& grafo){
-    int soma = 0;
+double Metaheuristica::distancia(vector<int>& caminho, vector<vector<double>>& grafo){
+    double soma = 0;
     for (int i = 0; i + 1 < (int)caminho.size(); i++) {
         soma += grafo[caminho[i]][caminho[i+1]];
     }
@@ -111,45 +111,14 @@ vector<vector<int>> Metaheuristica::caminhosIniciais(Individuo &configParada, ve
 }
 
 
-//  pro genetico
-void Metaheuristica::finalizaSolucao(Individuo& configParada, vector<vector<int>>& rotas, const vector<bool>& sucesso) {
-    // Garante que o vetor tenha todas as rotas
-    configParada.rotasFeitas.assign(quantidadeMaxRota, {});
-
-    double distanciaTotal = 0.0;
-    int alunosAfetados = 0;
-
-    for(int r = 0; r < quantidadeMaxRota; ++r){
-
-        // Se a rota não foi construída ou é inviável
-        if(r >= (int)rotas.size() || r >= (int)sucesso.size() || !sucesso[r] || rotas[r].empty()) {
-
-            configParada.rotasFeitas[r] = {};
-            configParada.rotaViavel[r] = false;
-            alunosAfetados += configParada.alunoPorRota[r];
-            continue;
-        }
-
-        // Rota válida
-        configParada.rotasFeitas[r] = rotas[r];
-        configParada.rotaViavel[r] = true;
-
-        distanciaTotal += distancia(rotas[r], problema.grafoParadas);
-    }
-
-    configParada.alunosInviaveisQuant = alunosAfetados;
-    configParada.fitness = distanciaTotal;
-}
-
-
 // ---------- geração de vizinhos por tipo de movimento ----------
 
 Movimento Metaheuristica::melhorInsercao(vector<int>& rota, vector<bool>& estaNaRota, unordered_map<ChaveTabu, 
-    int>& tabu, int melhorDistanciaGlobal, int distanciaAtual, int iteracao ){
+    int>& tabu, double melhorDistanciaGlobal, double distanciaAtual, int iteracao ){
 
     Movimento melhor;
     melhor.tipo = INSERIR;
-    melhor.delta = numeric_limits<int>::max();
+    melhor.delta = numeric_limits<double>::max();
 
     for(int pos = 0; pos + 1 < (int)rota.size(); ++pos){
 
@@ -163,7 +132,7 @@ Movimento Metaheuristica::melhorInsercao(vector<int>& rota, vector<bool>& estaNa
             if(problema.grafoParadas[A][C] == 0 || problema.grafoParadas[C][B] == 0)
                 continue;
 
-            int delta =
+            double delta =
                 problema.grafoParadas[A][C] +
                 problema.grafoParadas[C][B] -
                 problema.grafoParadas[A][B];
@@ -189,11 +158,11 @@ Movimento Metaheuristica::melhorInsercao(vector<int>& rota, vector<bool>& estaNa
 }
 
 Movimento Metaheuristica::melhorRemocao(vector<int>& rota, vector<bool>& paradaObrigatoria, 
-    unordered_map<ChaveTabu, int>& tabu, int melhorDistanciaGlobal, int distanciaAtual, int iteracao){
+    unordered_map<ChaveTabu, int>& tabu, double melhorDistanciaGlobal, double distanciaAtual, int iteracao){
     
     Movimento melhor;
     melhor.tipo = REMOVER;
-    melhor.delta = numeric_limits<int>::max();
+    melhor.delta = numeric_limits<double>::max();
 
     for(int i = 1; i + 1 < (int)rota.size(); i++){
         int A = rota[i-1], B = rota[i], C = rota[i+1];
@@ -202,12 +171,11 @@ Movimento Metaheuristica::melhorRemocao(vector<int>& rota, vector<bool>& paradaO
         if(problema.grafoParadas[A][C] == 0) continue; // precisa existir A->C direto
         
         // bota AC e tira AB e BC
-        int delta = problema.grafoParadas[A][C] - problema.grafoParadas[A][B] - problema.grafoParadas[B][C];
+        double delta = problema.grafoParadas[A][C] - problema.grafoParadas[A][B] - problema.grafoParadas[B][C];
 
         bool tabuAtivo = movimentoTabu(tabu, REMOVER, A, B, C, iteracao);
 
-        bool aspiracao =
-            (distanciaAtual + delta) < melhorDistanciaGlobal;
+        bool aspiracao = (distanciaAtual + delta) < melhorDistanciaGlobal;
 
         if((!tabuAtivo || aspiracao) &&
            delta < melhor.delta){
@@ -223,17 +191,76 @@ Movimento Metaheuristica::melhorRemocao(vector<int>& rota, vector<bool>& paradaO
     return melhor;
 }
 
+Movimento Metaheuristica::melhorTroca(vector<int>& rota, unordered_map<ChaveTabu, int>& tabu, double melhorDistanciaGlobal, double distanciaAtual, int iteracao){
+
+    Movimento melhor;
+    melhor.tipo = TROCAR;
+    melhor.delta = numeric_limits<double>::max();
+
+    if(rota.size() < 4) return melhor; 
+
+    int amostras = rota.size();
+    uniform_int_distribution<int> distIdx(1, rota.size() - 2); // evita as pontas 
+
+    for(int t = 0; t < amostras; ++t){
+
+        int a = distIdx(gen);
+        int b = distIdx(gen);
+        if(a == b) continue;
+        if(a > b) swap(a, b);
+
+        int prevA = rota[a - 1], noA = rota[a], nextA = rota[a + 1];
+        int prevB = rota[b - 1], noB = rota[b], nextB = rota[b + 1];
+
+        bool valido;
+        if(b == a + 1){
+            valido = problema.grafoParadas[prevA][noB] > 0 &&
+                     problema.grafoParadas[noA][nextB] > 0;
+        } else {
+            valido = problema.grafoParadas[prevA][noB] > 0 &&
+                     problema.grafoParadas[noB][nextA] > 0 &&
+                     problema.grafoParadas[prevB][noA] > 0 &&
+                     problema.grafoParadas[noA][nextB] > 0;
+        }
+
+        if(!valido) continue;
+
+        double delta =
+              (problema.grafoParadas[prevA][noB] + problema.grafoParadas[noB][nextA]
+             + problema.grafoParadas[prevB][noA] + problema.grafoParadas[noA][nextB])
+            - (problema.grafoParadas[prevA][noA] + problema.grafoParadas[noA][nextA]
+             + problema.grafoParadas[prevB][noB] + problema.grafoParadas[noB][nextB]);
+
+        bool tabuAtivo = movimentoTabu(tabu, TROCAR, min(noA, noB), max(noA, noB), 0, iteracao);
+        bool aspiracao = (distanciaAtual + delta) < melhorDistanciaGlobal;
+
+        if((!tabuAtivo || aspiracao) && delta < melhor.delta){
+            melhor.delta = delta;
+            melhor.trocaA = a;
+            melhor.trocaB = b;
+            melhor.anterior = min(noA, noB); 
+            melhor.parada   = max(noA, noB);
+            melhor.proximo  = 0;
+        }
+    }
+
+    return melhor;
+}
+
 Movimento Metaheuristica::melhorVizinho(vector<int>& rota, vector<bool>& estaNaRota,
-    vector<bool>& paradaObrigatoria, unordered_map<ChaveTabu, int>& tabu, int melhorDistanciaGlobal, int iteracao){
+    vector<bool>& paradaObrigatoria, unordered_map<ChaveTabu, int>& tabu, double melhorDistanciaGlobal, int iteracao){
 
-    int distanciaAtual = distancia(rota, problema.grafoParadas);
+    double distanciaAtual = distancia(rota, problema.grafoParadas);
 
-    Movimento ins = melhorInsercao(rota, estaNaRota, tabu, melhorDistanciaGlobal, distanciaAtual,iteracao);
+    Movimento ins = melhorInsercao(rota, estaNaRota, tabu, melhorDistanciaGlobal, distanciaAtual, iteracao);
 
     Movimento rem = melhorRemocao(rota, paradaObrigatoria, tabu, melhorDistanciaGlobal, distanciaAtual, iteracao);
 
+    Movimento tr = melhorTroca(rota, tabu, melhorDistanciaGlobal, distanciaAtual, iteracao);
+
     Movimento melhor = ins;
     if(rem.delta < melhor.delta) melhor = rem;
+    if(tr.delta < melhor.delta) melhor = tr;
 
     return melhor;
 }
@@ -244,9 +271,14 @@ void Metaheuristica::aplicaMovimento(vector<int>& rota, vector<bool>& estaNaRota
             rota.insert(rota.begin() + mov.posicao, mov.parada);
             estaNaRota[mov.parada] = true;
             break;
+
         case REMOVER:
             rota.erase(rota.begin() + mov.posicao);
             estaNaRota[mov.parada] = false;
+            break;
+
+        case  TROCAR:
+            swap(rota[mov.trocaA], rota[mov.trocaB]);
             break;
     }
 }
@@ -255,16 +287,16 @@ void Metaheuristica::aplicaMovimento(vector<int>& rota, vector<bool>& estaNaRota
 ChaveTabu Metaheuristica::chaveTabu(TipoMovimento tipo, int anterior, int parada, int proximo){
     ChaveTabu chave = 0;
 
-    chave |= ((ChaveTabu)tipo     << (64 - 1)); // 1 bit
-    chave |= ((ChaveTabu)anterior << (64 - 1 - 21)); // 21 bit
-    chave |= ((ChaveTabu)parada   << (64 - 1 - 21 * 2)); // 21 bit
-    chave |= (ChaveTabu)proximo; // 21 bit
+    chave |= ((ChaveTabu)tipo     << (64 - 4));            // 4 bit
+    chave |= ((ChaveTabu)anterior << (64 - 4 - 21));      // 20 bit
+    chave |= ((ChaveTabu)parada   << (64 - 4 - 21 * 2)); // 20 bit
+    chave |= (ChaveTabu)proximo;                        // 20 bit
 
     return chave;
 }
 
-bool Metaheuristica::movimentoTabu(unordered_map<ChaveTabu, 
-    int>& tabu, TipoMovimento tipo, int anterior, int parada, int proximo, int iteracao){
+bool Metaheuristica::movimentoTabu(unordered_map<ChaveTabu, int>& tabu, 
+    TipoMovimento tipo, int anterior, int parada, int proximo, int iteracao){
 
     ChaveTabu chave = chaveTabu(tipo, anterior, parada, proximo);
 
@@ -281,22 +313,40 @@ void Metaheuristica::atualizaTabu(unordered_map<ChaveTabu, int>& tabu, Movimento
 
     if(mov.tipo == INSERIR)
         tipoReverso = REMOVER;
-    else
+    else if(mov.tipo == REMOVER)
         tipoReverso = INSERIR;
+    else 
+        tipoReverso = TROCAR;
 
-    ChaveTabu chave = chaveTabu(tipoReverso, mov.anterior, mov.parada, mov.proximo);
+    ChaveTabu chave;
+
+    chave = chaveTabu(tipoReverso, mov.anterior, mov.parada, mov.proximo);
 
     tabu[chave] = iteracao + tenure;
 }
-        
-void Metaheuristica::pertubacaoRota(vector<vector<int>> &paradasRotas, vector<double> intensidade){
-    for(size_t r = 0; r < paradasRotas.size(); r++){
-        if(paradasRotas[r].size() < 2) continue;
 
-        uniform_int_distribution<int> dist(0, paradasRotas[r].size() - 1);
-        int a = dist(gen);
-        int b = dist(gen);
-        swap(paradasRotas[r][a], paradasRotas[r][b]);
+       
+void Metaheuristica::pertubacaoRota(vector<vector<int>> &paradasRotas, vector<double> intensidade){
+
+    for(size_t r = 0; r < paradasRotas.size(); r++){
+
+        int tamanhoRota = paradasRotas[r].size();
+        if(tamanhoRota < 2) continue;
+
+        double intens = (r < intensidade.size()) ? intensidade[r] : 0.5;
+
+        int maxSwaps = max(1, tamanhoRota / 2);
+        int quantSwaps = 1 + (int)round(intens * (maxSwaps - 1));
+
+        uniform_int_distribution<int> dist(0, tamanhoRota - 1);
+        
+        // cout << intensidade[r] << "\n";
+
+        for(int s = 0; s < quantSwaps; ++s){
+            int a = dist(gen);
+            int b = dist(gen);
+            swap(paradasRotas[r][a], paradasRotas[r][b]);
+        }
     }
 }
 
@@ -332,42 +382,76 @@ double Metaheuristica::buscaTabu(Individuo& configParada){
 
         unordered_map<ChaveTabu, int> tabu;
         
-        int tenure = max(5, (int)(rotaAtual.size() * 2));  // depois ver com calma um melhor
-        // int tenure =  10;
+        // int tenure = max(5, (int)(rotaAtual.size() / 4));  // depois ver com calma um melhor
+
+        int tenure =  3;
+        // cout << "<tt: " << tenure << ", " <<rotaAtual.size() <<  ">";
 
         vector<int> melhorRota = rotaAtual;
-        int melhorDistancia = distancia(rotaAtual, problema.grafoParadas);
+        double melhorDistancia = distancia(rotaAtual, problema.grafoParadas);
 
-        int it = 0, itSemMelhora = 0;
-        const int maxIter = 5000, maxSemMelhora = 100;
+        int it = 0;
+        // const int maxIter = rotaAtual.size() * 10;
+        const int maxIter = 100;
 
-        while(it < maxIter && itSemMelhora < maxSemMelhora){
+        while(it < maxIter){
 
             Movimento mov = melhorVizinho(rotaAtual, estaNaRota, paradaObrigatoria, tabu, melhorDistancia, it);
 
-            if(mov.delta == numeric_limits<int>::max()){
-                break;
+            if(mov.delta == numeric_limits<double>::max()){
+                // travou: sem vizinho admissível.
+                bool kickAplicado = false;
+
+                if(rotaAtual.size() >= 4){ // precisa de folga
+                    const int maxTentativas = 5;
+
+                    for(int tent = 0; tent < maxTentativas && !kickAplicado; ++tent){
+                        uniform_int_distribution<int> distIdx(1, rotaAtual.size() - 2); // evita escola nas pontas
+
+                        int a = distIdx(gen);
+                        int b = distIdx(gen);
+                        if(a == b) continue;
+                        if(a > b) swap(a, b);
+
+                        int prevA = rotaAtual[a - 1], noA = rotaAtual[a], nextA = rotaAtual[a + 1];
+                        int prevB = rotaAtual[b - 1], noB = rotaAtual[b], nextB = rotaAtual[b + 1];
+
+                        // checa se as arestas resultantes da troca existem no grafo
+                        bool valido;
+                        if(b == a + 1){
+                            // posições adjacentes: só as arestas das pontas mudam
+                            valido = problema.grafoParadas[prevA][noB] > 0 &&
+                                     problema.grafoParadas[noA][nextB] > 0;
+                        } else {
+                            valido = problema.grafoParadas[prevA][noB] > 0 &&
+                                     problema.grafoParadas[noB][nextA] > 0 &&
+                                     problema.grafoParadas[prevB][noA] > 0 &&
+                                     problema.grafoParadas[noA][nextB] > 0;
+                        }
+
+                        if(valido){
+                            swap(rotaAtual[a], rotaAtual[b]);
+                            estaNaRota[rotaAtual[a]] = true;
+                            estaNaRota[rotaAtual[b]] = true;
+                            kickAplicado = true;
+                        }
+                    }
+                }
+
+                it++;
+                continue;
             }
 
             aplicaMovimento(rotaAtual, estaNaRota, mov);
-
             atualizaTabu(tabu, mov, tenure, it);
 
-            int distAtual = distancia(rotaAtual, problema.grafoParadas);
-
+            double distAtual = distancia(rotaAtual, problema.grafoParadas);
             if(distAtual < melhorDistancia){
                 melhorDistancia = distAtual;
                 melhorRota = rotaAtual;
-                itSemMelhora = 0;
-            } else {
-                itSemMelhora++;
             }
 
             it++;
-
-            if(it % 10 == 0){
-                // cout << "iteracao=" << it << " // melhor valor = " << melhorDistancia << "\n";
-            }
         }
 
         rotasFinais[r] = melhorRota;

@@ -8,7 +8,7 @@ Análise principal — AG-BT (Tabela 1)
 
 Análise secundária — destrinchando o AG-BT (Tabela 2)
 - Mesma tabela de IDs, sem repetir parâmetros
-- Colunas: ID | valor híbrido (AG-BT) | valor GA puro | valor BT puro | valor modelo | melhor GA | pior GA | melhor BT | pior BT | média GA | média BT | desvio padrão
+- Colunas: ID | valor híbrido (AG-BT) | valor GA puro | valor BT puro | valor modelo | melhor GA | pior GA | melhor BT | pior BT | média GA | média BT | desvio padrão | tempo medio
 - Cada instância roda 10x com seeds diferentes — melhor/pior/média/desvio padrão resumem essas 10 execuções por linha
 - argumento GA: sozinho converge rápido demais e perde diversidade — estagna numa vizinhança ruim, e sem o BT não escapa dela
 - argumento BT: sozinho é instável e depende da solução inicial/sorte — variância alta entre runs, que cai quando o GA 

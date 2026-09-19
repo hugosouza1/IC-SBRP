@@ -28,37 +28,5 @@ class ModeloMatematico{
     public:
         ModeloMatematico(infoSBRP& p) : dados(p){}
 
-        void cplexSolver(Individuo* WarmStartConfig = nullptr);
-
-        bool montarWarmStart(
-            Individuo* solucao,
-            IloEnv& env,
-            IloArray<IloNumVarArray>& a,
-            IloNumVarArray& b,
-            IloNumVarArray& z,
-            IloArray<IloNumVarArray>& t,
-            IloArray<IloArray<IloArray<IloArray<IloNumVarArray>>>>& x,
-            IloArray<IloArray<IloNumVarArray>>& p,
-            IloArray<IloArray<IloArray<IloNumVarArray>>>& y,
-            IloNumVar& W,
-            IloNumVar& M,
-            IloNumVarArray& vars,
-            IloNumArray& vals);
-
-        void verificarWarmStart(
-            Individuo* solucao,
-            const vector<bool>& rotaUsada,
-            const vector<int>& rotaParaOnibus,
-            IloArray<IloNumVarArray>& a,
-            IloNumVarArray& b,
-            IloNumVarArray& z,
-            IloArray<IloNumVarArray>& t,
-            IloArray<IloArray<IloArray<IloArray<IloNumVarArray>>>>& x,
-            IloArray<IloArray<IloNumVarArray>>& p,
-            IloArray<IloArray<IloArray<IloNumVarArray>>>& y,
-            IloNumVar& W,
-            IloNumVar& M,
-            IloNumVarArray& vars,
-            IloNumArray& vals);
-        
+        void cplexSolver();        
 };

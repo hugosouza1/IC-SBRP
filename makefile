@@ -20,7 +20,7 @@ LIBRARIES = -lconcert -lilocplex -lcplex -lpthread -ldl
 CXX = g++
 CXXFLAGS = -O3
 BUILD_DIR = build
-ENTRADA ?= entradaGrande.txt
+ENTRADA ?= instancia.txt
 
 
 # =======================================
@@ -57,6 +57,7 @@ OBJ_HEURISTICA = $(SRC_HEURISTICA:%.cpp=$(BUILD_DIR)/%.o)
 # =======================================
 
 SRC_MODELO = \
+	SBRP.cpp \
     $(MODELO_MAT_DIR)/modeloMain.cpp \
     $(MODELO_MAT_DIR)/modelo.cpp
 

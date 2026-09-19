@@ -28,32 +28,11 @@ using namespace chrono;
 class infoSBRP;
 
 
-// struct Individuo {
-
-//     // índice = aluno
-//     // valor = parada escolhida para esse aluno
-//     vector<int> atrAlunoParada;
-
-//     // índice = aluno
-//     // valor = rota que transporta esse aluno
-//     vector<int> atrAlunoRota;
-
-//     vector<double> intensidadePermutaRota; // pro tabu
-
-//     double fitness = numeric_limits<double>::max();
-
-//     vector<bool> rotaViavel;
-
-//     int alunosInviaveisQuant;
-
-//     // Apenas armazenado após a avaliação pelo Tabu
-//     vector<vector<int>> rotasFeitas;
-// };
-
 // +-+--+-+-+-+-+-+-+-+-+-+-+-+-+-+---+---+--++--
 enum TipoMovimento{
     INSERIR,
-    REMOVER
+    REMOVER,
+    TROCAR
 };
 
 struct Movimento{
@@ -66,16 +45,19 @@ struct Movimento{
     int parada;
     int proximo;
 
-    int delta;
+    int trocaA;
+    int trocaB;
+
+    double delta;
 };
 
 
 
 // 64 bits:
-// 1 : inserir / remover
-// 21: anterior
-// 21: parada
-// 21: proximo
+// 4 : inserir / remover
+// 20: anterior
+// 20: parada
+// 20: proximo
 // arco : anterior -> parada -> proximo
 using ChaveTabu = uint64_t;
 
@@ -95,13 +77,12 @@ class Metaheuristica{
 			quantidadeMaxRota = (p.quantidadeAlunos + p.Q) / p.Q;
 		}
 		// ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-
-        Individuo warmStart();
-
 		// ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
         Individuo AG(int opc);
 		
         Individuo geraSolucaoInicial();
+
+        double distancia(vector<int>& caminho, vector<vector<double>>& grafo);
 
         vector<Individuo> popIni(int tamanhoPopulacao);
 
@@ -125,11 +106,13 @@ class Metaheuristica{
 
         void finalizaSolucao(Individuo& configParada, vector<vector<int>>& rotas, const vector<bool>& sucesso);
 
-        Movimento melhorInsercao(vector<int>& rota, vector<bool>& estaNaRota, unordered_map<ChaveTabu, int>& tabu, int melhorDistanciaGlobal, int distanciaAtual, int iteracao);
+        Movimento melhorInsercao(vector<int>& rota, vector<bool>& estaNaRota, unordered_map<ChaveTabu, int>& tabu, double melhorDistanciaGlobal, double distanciaAtual, int iteracao);
 
-    	Movimento melhorRemocao(vector<int>& rota, vector<bool>& paradaObrigatoria, unordered_map<ChaveTabu, int>& tabu, int melhorDistanciaGlobal, int distanciaAtual, int iteracao);
+        Movimento melhorTroca(vector<int>& rota, unordered_map<ChaveTabu, int>& tabu, double melhorDistanciaGlobal, double distanciaAtual, int iteracao);
 
-        Movimento melhorVizinho(vector<int>& rota, vector<bool>& estaNaRota, vector<bool>& paradaObrigatoria, unordered_map<ChaveTabu, int>& tabu, int melhorDistanciaGlobal, int iteracao);
+    	Movimento melhorRemocao(vector<int>& rota, vector<bool>& paradaObrigatoria, unordered_map<ChaveTabu, int>& tabu, double melhorDistanciaGlobal, double distanciaAtual, int iteracao);
+
+        Movimento melhorVizinho(vector<int>& rota, vector<bool>& estaNaRota, vector<bool>& paradaObrigatoria, unordered_map<ChaveTabu, int>& tabu, double melhorDistanciaGlobal, int iteracao);
 
 		void aplicaMovimento(vector<int>& rota, vector<bool>& estaNaRota, Movimento mov);
 
@@ -144,7 +127,6 @@ class Metaheuristica{
         void pertubacaoRota(vector<vector<int>> &rota, vector<double> intensidade);
 
         // -+-+--+-+-+-+-++-+
-
         
         void imprimeSolucao(Individuo& sol, infoSBRP& dados);
 

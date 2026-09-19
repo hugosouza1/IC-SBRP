@@ -11,6 +11,9 @@
 #include <algorithm>
 #include <numeric>
 #include <chrono>
+#include <sstream>
+#include <unordered_map>
+
 
 using namespace std;
 
@@ -55,7 +58,7 @@ class infoSBRP{
 	private:
 	    // matriz de distâncias/custos entre paradas
 		int quantidadeArestas;
-	    vector<vector<int>> grafoParadas;
+	    vector<vector<double>> grafoParadas;
 
 	    // estudantes
 	    vector<estudante> alunosParadas;
@@ -71,10 +74,8 @@ class infoSBRP{
 	    // capacidade do ônibus
 	    int Q;
 
-	    // maior distância permitida (W)
-	    int maxDistancia;
-
 	public:
 
-	    void leitura(std::string arquivoEntrada);
+	    void leitura(string arquivoEntrada);
+		// void leitura_two(string arquivoEntrada);
 };

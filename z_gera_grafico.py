@@ -1,61 +1,99 @@
 import re
-import math
 from pathlib import Path
 
 import matplotlib.pyplot as plt
 
 
+# ============================================================
+# CONFIGURAÇÃO
+# ============================================================
+
 arquivo = Path("instancia.txt")
+saida = "grafo_sbrp.png"
+
 texto = arquivo.read_text(encoding="utf-8")
 
 
-# ------------------------------------------------------------
-# Leitura das seções
-# ------------------------------------------------------------
+# ============================================================
+# LEITURA DAS SEÇÕES
+# ============================================================
 
-def ler_secao(texto, inicio, fim=None):
-    if fim is not None:
-        padrao = (
-            re.escape(inicio)
-            + r"\n(.*?)(?=\n"
-            + re.escape(fim)
-            + r"|\Z)"
-        )
-    else:
-        padrao = re.escape(inicio) + r"\n(.*?)(?:\Z)"
+def ler_secao(texto, nome_secao, proxima_secao=None):
 
-    m = re.search(padrao, texto, flags=re.S)
+    padrao_inicio = rf"(?m)^{re.escape(nome_secao)}(?:\s.*)?$"
 
-    return m.group(1) if m else ""
+    inicio = re.search(padrao_inicio, texto)
+
+    if not inicio:
+        return ""
+
+    pos_inicio = inicio.end()
+
+    if proxima_secao is None:
+        return texto[pos_inicio:]
+
+    padrao_fim = rf"(?m)^{re.escape(proxima_secao)}(?:\s.*)?$"
+
+    fim = re.search(
+        padrao_fim,
+        texto[pos_inicio:]
+    )
+
+    if not fim:
+        return texto[pos_inicio:]
+
+    return texto[
+        pos_inicio:
+        pos_inicio + fim.start()
+    ]
 
 
-# ------------------------------------------------------------
-# Escola
-# ------------------------------------------------------------
+# ============================================================
+# ESCOLA
+# ============================================================
 
-m = re.search(
-    r"^0\s+([-\d.]+)\s+([-\d.]+)\s*$",
-    ler_secao(texto, "ESCOLA", "PARADAS id x y"),
-    re.M
+sec_escola = ler_secao(
+    texto,
+    "ESCOLA",
+    "PARADAS"
 )
 
-if not m:
-    raise ValueError("Não foi possível encontrar a escola.")
+escola = None
 
-escola = (
-    float(m.group(1)),
-    float(m.group(2))
-)
+for linha in sec_escola.strip().splitlines():
+
+    partes = linha.split()
+
+    if len(partes) < 3:
+        continue
+
+    try:
+        identificador = int(partes[0])
+        x = float(partes[1])
+        y = float(partes[2])
+
+    except ValueError:
+        continue
+
+    if identificador == 0:
+        escola = (x, y)
+        break
 
 
-# ------------------------------------------------------------
-# Paradas: id x y
-# ------------------------------------------------------------
+if escola is None:
+    raise ValueError(
+        "Não foi possível encontrar a escola."
+    )
+
+
+# ============================================================
+# PARADAS
+# ============================================================
 
 sec_paradas = ler_secao(
     texto,
-    "PARADAS id x y",
-    "ALUNOS id x y"
+    "PARADAS",
+    "ALUNOS"
 )
 
 paradas = {}
@@ -64,28 +102,32 @@ for linha in sec_paradas.strip().splitlines():
 
     partes = linha.split()
 
-    if len(partes) == 3:
+    if len(partes) < 3:
+        continue
 
+    try:
         pid = int(partes[0])
-
         x = float(partes[1])
         y = float(partes[2])
 
-        paradas[pid] = (x, y)
+    except ValueError:
+        continue
+
+    paradas[pid] = (x, y)
 
 
-# O vértice 0 representa a escola
+# Vértice 0 = escola
 paradas[0] = escola
 
 
-# ------------------------------------------------------------
-# Alunos: id x y
-# ------------------------------------------------------------
+# ============================================================
+# ALUNOS
+# ============================================================
 
 sec_alunos = ler_secao(
     texto,
-    "ALUNOS id x y",
-    "ATRIBUICOES aluno_id parada_id distancia dentro_raio"
+    "ALUNOS",
+    "ATRIBUICOES"
 )
 
 alunos = {}
@@ -94,70 +136,45 @@ for linha in sec_alunos.strip().splitlines():
 
     partes = linha.split()
 
-    if len(partes) == 3:
+    if len(partes) < 3:
+        continue
 
+    try:
         aid = int(partes[0])
-
         x = float(partes[1])
         y = float(partes[2])
 
-        alunos[aid] = (x, y)
+    except ValueError:
+        continue
+
+    alunos[aid] = (x, y)
 
 
-# ------------------------------------------------------------
-# Arestas: origem destino custo
-# ------------------------------------------------------------
+# ============================================================
+# ATRIBUIÇÕES
+# ============================================================
 
-m = re.search(
-    r"ARESTAS\s+(\d+)\s*\n(.*?)(?:\Z)",
+sec_atribuicoes = ler_secao(
     texto,
-    flags=re.S
+    "ATRIBUICOES",
+    "ONIBUS"
 )
 
-arestas = []
-
-if m:
-
-    for linha in m.group(2).strip().splitlines():
-
-        partes = linha.split()
-
-        if len(partes) >= 3:
-
-            u = int(partes[0])
-            v = int(partes[1])
-            custo = float(partes[2])
-
-            arestas.append((u, v, custo))
-
-
-
-# ------------------------------------------------------------
-
-sec_atr = ler_secao(
-    texto,
-    "ATRIBUICOES aluno_id parada_id distancia dentro_raio",
-    "ALUNOS_ATRIBUICAO_FORCADA"
-)
-
-
-# aluno -> lista de (parada, distancia)
 atribuicoes = {}
 
-for linha in sec_atr.strip().splitlines():
+for linha in sec_atribuicoes.strip().splitlines():
 
     partes = linha.split()
 
-    if len(partes) != 4:
+    if len(partes) < 3:
         continue
 
-    aluno = int(partes[0])
-    parada = int(partes[1])
-    distancia = float(partes[2])
-    dentro = int(partes[3])
+    try:
+        aluno = int(partes[0])
+        parada = int(partes[1])
+        distancia = float(partes[2])
 
-    # Só considera subparadas dentro do raio
-    if dentro != 1:
+    except ValueError:
         continue
 
     if aluno not in atribuicoes:
@@ -168,10 +185,7 @@ for linha in sec_atr.strip().splitlines():
     )
 
 
-# ------------------------------------------------------------
-# Ordena as subparadas de cada aluno pela distância
-# ------------------------------------------------------------
-
+# Ordena pelas distâncias
 for aluno in atribuicoes:
 
     atribuicoes[aluno].sort(
@@ -179,16 +193,185 @@ for aluno in atribuicoes:
     )
 
 
-# ------------------------------------------------------------
-# Plot
-# ------------------------------------------------------------
+# ============================================================
+# ÔNIBUS
+# ============================================================
 
-fig, ax = plt.subplots(figsize=(12, 10))
+sec_onibus = ler_secao(
+    texto,
+    "ONIBUS",
+    "ARESTAS"
+)
+
+quantidade_onibus = None
+capacidade_onibus = None
+
+for linha in sec_onibus.strip().splitlines():
+
+    partes = linha.split()
+
+    if len(partes) < 2:
+        continue
+
+    try:
+        quantidade_onibus = int(partes[0])
+        capacidade_onibus = int(partes[1])
+
+    except ValueError:
+        continue
+
+    break
 
 
-# ------------------------------------------------------------
-# 1. Arestas entre paradas
-# ------------------------------------------------------------
+# ============================================================
+# ARESTAS
+# ============================================================
+
+sec_arestas = ler_secao(
+    texto,
+    "ARESTAS"
+)
+
+arestas = []
+
+for linha in sec_arestas.strip().splitlines():
+
+    partes = linha.split()
+
+    if len(partes) < 3:
+        continue
+
+    try:
+        u = int(partes[0])
+        v = int(partes[1])
+        custo = float(partes[2])
+
+    except ValueError:
+        continue
+
+    arestas.append(
+        (u, v, custo)
+    )
+
+
+# ============================================================
+# AGRUPAR ALUNOS
+# ============================================================
+#
+# Os alunos estão ordenados no arquivo.
+#
+# Exemplo:
+#
+# 50 10.0 20.0
+# 51 10.0 20.0
+# 52 10.0 20.0
+#
+# vira:
+#
+# 50-52
+#
+# Se houver somente:
+#
+# 53 30.0 40.0
+#
+# fica:
+#
+# 53
+#
+# ============================================================
+
+grupos_alunos = []
+
+alunos_ordenados = list(alunos.items())
+
+i = 0
+
+while i < len(alunos_ordenados):
+
+    primeiro_id, (x, y) = alunos_ordenados[i]
+
+    ultimo_id = primeiro_id
+
+    j = i + 1
+
+    while j < len(alunos_ordenados):
+
+        aid2, (x2, y2) = alunos_ordenados[j]
+
+        # Mesma coordenada
+        if x2 == x and y2 == y:
+
+            ultimo_id = aid2
+            j += 1
+
+        else:
+            break
+
+    grupos_alunos.append({
+        "primeiro": primeiro_id,
+        "ultimo": ultimo_id,
+        "x": x,
+        "y": y
+    })
+
+    i = j
+
+
+# ============================================================
+# INFORMAÇÕES
+# ============================================================
+
+print()
+print("=" * 60)
+print("DADOS LIDOS")
+print("=" * 60)
+
+print(f"Escola:                {escola}")
+print(f"Paradas:               {len(paradas) - 1}")
+print(f"Alunos:                {len(alunos)}")
+print(f"Grupos de alunos:      {len(grupos_alunos)}")
+print(f"Arestas:               {len(arestas)}")
+print(f"Alunos com atribuição: {len(atribuicoes)}")
+
+print(
+    f"Ligações aluno-parada: "
+    f"{sum(len(x) for x in atribuicoes.values())}"
+)
+
+print(f"Ônibus:                {quantidade_onibus}")
+print(f"Capacidade:            {capacidade_onibus}")
+
+print()
+print("GRUPOS DE ALUNOS")
+
+for grupo in grupos_alunos:
+
+    primeiro = grupo["primeiro"]
+    ultimo = grupo["ultimo"]
+
+    if primeiro == ultimo:
+        nome = str(primeiro)
+    else:
+        nome = f"{primeiro}-{ultimo}"
+
+    print(
+        f"  {nome}: "
+        f"({grupo['x']:.3f}, {grupo['y']:.3f})"
+    )
+
+
+# ============================================================
+# PLOT
+# ============================================================
+
+fig, ax = plt.subplots(
+    figsize=(14, 11)
+)
+
+
+# ============================================================
+# 1. ARESTAS ENTRE PARADAS
+# ============================================================
 
 for u, v, custo in arestas:
 
@@ -203,23 +386,61 @@ for u, v, custo in arestas:
         [y1, y2],
         linestyle="-",
         linewidth=1.0,
-        alpha=0.45,
+        alpha=0.55,
         zorder=1
     )
 
+    # Custo da aresta
+    xm = (x1 + x2) / 2
+    ym = (y1 + y2) / 2
 
-# ------------------------------------------------------------
-# 2. Ligações aluno -> TODAS as subparadas
-# ------------------------------------------------------------
+    ax.annotate(
+        f"{custo:.1f}",
+        (xm, ym),
+        fontsize=7,
+        ha="center",
+        va="center",
+        alpha=0.8,
+        zorder=2
+    )
 
-for aluno, lista_paradas in atribuicoes.items():
 
-    if aluno not in alunos:
-        continue
+# ============================================================
+# 2. LIGAÇÕES ALUNO -> PARADA
+# ============================================================
+#
+# Para cada grupo de alunos:
+#
+# 50
+# 51
+# 52
+#
+# se todos estão no mesmo ponto, não desenhamos
+# 3 linhas iguais.
+#
+# Pegamos a união das paradas possíveis dos alunos
+# pertencentes ao grupo.
+#
+# ============================================================
 
-    xa, ya = alunos[aluno]
+for grupo in grupos_alunos:
 
-    for parada, distancia in lista_paradas:
+    primeiro = grupo["primeiro"]
+    ultimo = grupo["ultimo"]
+
+    xa = grupo["x"]
+    ya = grupo["y"]
+
+    paradas_grupo = set()
+
+    for aid in range(primeiro, ultimo + 1):
+
+        for parada, distancia in atribuicoes.get(aid, []):
+
+            paradas_grupo.add(parada)
+
+
+    for parada in paradas_grupo:
 
         if parada not in paradas:
             continue
@@ -230,120 +451,156 @@ for aluno, lista_paradas in atribuicoes.items():
             [xa, xp],
             [ya, yp],
             linestyle="--",
-            linewidth=0.7,
-            alpha=0.18,
+            linewidth=0.8,
+            alpha=0.25,
             zorder=2
         )
 
 
-# ------------------------------------------------------------
-# 3. Alunos
-# ------------------------------------------------------------
-
-if alunos:
-
-    ax.scatter(
-        [p[0] for p in alunos.values()],
-        [p[1] for p in alunos.values()],
-        marker="o",
-        s=24,
-        alpha=0.65,
-        label="Aluno",
-        zorder=4
-    )
-
-
-# ------------------------------------------------------------
-# 4. Paradas
+# ============================================================
+# 3. DESENHAR PARADAS
+# ============================================================
 #
-# O vértice 0 não é desenhado como quadrado,
-# pois representa a escola.
-# ------------------------------------------------------------
+# IMPORTANTE:
+# Antes as paradas não estavam sendo desenhadas
+# explicitamente.
+#
+# Agora cada parada aparece como quadrado.
+#
+# ============================================================
 
-paradas_normais = {
+paradas_sem_escola = {
     pid: ponto
     for pid, ponto in paradas.items()
     if pid != 0
 }
 
 
-if paradas_normais:
+if paradas_sem_escola:
 
     ax.scatter(
-        [p[0] for p in paradas_normais.values()],
-        [p[1] for p in paradas_normais.values()],
+        [ponto[0] for ponto in paradas_sem_escola.values()],
+        [ponto[1] for ponto in paradas_sem_escola.values()],
         marker="s",
-        s=85,
+        s=90,
         facecolors="white",
         edgecolors="black",
-        linewidths=1.5,
+        linewidths=1.4,
         label="Parada",
         zorder=5
     )
 
 
-# ------------------------------------------------------------
-# 5. Números das paradas
-# ------------------------------------------------------------
+# ============================================================
+# 4. ID DAS PARADAS
+# ============================================================
 
-for pid, (x, y) in paradas_normais.items():
+for pid, (x, y) in paradas_sem_escola.items():
 
     ax.annotate(
         str(pid),
         (x, y),
         xytext=(5, 5),
         textcoords="offset points",
-        fontsize=9,
+        fontsize=8,
         fontweight="bold",
+        zorder=7
+    )
+
+
+# ============================================================
+# 5. DESENHAR ALUNOS
+# ============================================================
+
+if grupos_alunos:
+
+    ax.scatter(
+        [grupo["x"] for grupo in grupos_alunos],
+        [grupo["y"] for grupo in grupos_alunos],
+        marker="o",
+        s=55,
+        facecolors="white",
+        edgecolors="black",
+        linewidths=1.2,
+        label="Aluno(s)",
         zorder=6
     )
 
 
-# ------------------------------------------------------------
-# 6. Identificadores dos alunos
-# ------------------------------------------------------------
+# ============================================================
+# 6. IDENTIFICADORES DOS GRUPOS
+# ============================================================
+#
+# Aqui NÃO desenhamos os alunos individualmente.
+#
+# Só desenhamos:
+#
+# 22
+# 22-24
+# 38-42
+# 40
+#
+# dependendo dos grupos reais.
+#
+# ============================================================
 
-for aid, (x, y) in alunos.items():
+for grupo in grupos_alunos:
+
+    primeiro = grupo["primeiro"]
+    ultimo = grupo["ultimo"]
+
+    x = grupo["x"]
+    y = grupo["y"]
+
+    if primeiro == ultimo:
+
+        texto = str(primeiro)
+
+    else:
+
+        texto = f"{primeiro}-{ultimo}"
 
     ax.annotate(
-        str(aid),
+        texto,
         (x, y),
-        xytext=(4, 4),
+        xytext=(7, 7),
         textcoords="offset points",
         fontsize=8,
-        alpha=0.8,
-        zorder=6
+        fontweight="bold",
+        zorder=8
     )
 
 
-# ------------------------------------------------------------
-# 7. Escola / vértice 0
-# ------------------------------------------------------------
+# ============================================================
+# 7. ESCOLA
+# ============================================================
 
 ax.scatter(
     [escola[0]],
     [escola[1]],
     marker="*",
-    s=280,
+    s=350,
+    facecolors="white",
+    edgecolors="black",
+    linewidths=1.5,
     label="Escola (0)",
-    zorder=7
+    zorder=9
 )
-
 
 ax.annotate(
     "0 - Escola",
     escola,
-    xytext=(8, 8),
+    xytext=(9, 9),
     textcoords="offset points",
     fontsize=11,
     fontweight="bold",
-    zorder=8
+    zorder=10
 )
 
 
-# ------------------------------------------------------------
-# Estética
-# ------------------------------------------------------------
+# ============================================================
+# ESTÉTICA
+# ============================================================
 
 ax.set_title(
     "Representação espacial do grafo de transporte escolar",
@@ -365,14 +622,13 @@ ax.set_aspect(
 
 ax.legend()
 
+
 plt.tight_layout()
 
 
-# ------------------------------------------------------------
-# Salvar
-# ------------------------------------------------------------
-
-saida = "grafo_sbrp.png"
+# ============================================================
+# SALVAR
+# ============================================================
 
 plt.savefig(
     saida,
@@ -383,34 +639,21 @@ plt.savefig(
 plt.show()
 
 
-# ------------------------------------------------------------
-# Informações
-# ------------------------------------------------------------
+# ============================================================
+# ATRIBUIÇÕES
+# ============================================================
 
-total_atribuicoes = sum(
-    len(lista)
-    for lista in atribuicoes.values()
-)
-
-print(f"Imagem salva em: {saida}")
-print(f"Paradas: {len(paradas) - 1}")
-print(f"Alunos: {len(alunos)}")
-print(f"Arestas: {len(arestas)}")
-print(f"Alunos com atribuições: {len(atribuicoes)}")
-print(f"Ligações aluno -> subparada: {total_atribuicoes}")
-
-
-# ------------------------------------------------------------
-# Mostra as subparadas de cada aluno
-# ------------------------------------------------------------
-
-print("\nSubparadas por aluno:")
+print()
+print("=" * 60)
+print("SUBPARADAS POR ALUNO")
+print("=" * 60)
 
 for aluno in sorted(atribuicoes):
 
     subparadas = [
         parada
-        for parada, distancia in atribuicoes[aluno]
+        for parada, distancia
+        in atribuicoes[aluno]
     ]
 
     print(

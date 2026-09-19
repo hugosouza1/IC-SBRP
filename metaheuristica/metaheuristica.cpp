@@ -30,40 +30,48 @@ int main(int argv, char *argc[]){
     infoSBRP dados;
     dados.leitura(argc[1]);
 
-    cout << "\nLeitura de dados concluida\n\n"; fflush(stdin);
+    cout << "\nLeitura de dados concluida: " << argc[1] << "\n\n"; fflush(stdin);
     
     Metaheuristica meta(dados);
-    
-    cout << "\nAG-BT:\n";
-    Individuo ciclano = meta.AG(1);
-    
-    cout << "\nAG:\n";
-    Individuo fulano = meta.AG(0);
-    
-    cout << "\nBT:\n";
-    
-    int geracion = 1000;
-    Individuo melhorInd;
-    vector<double> valores;
-    for(int i = 0; i < geracion; ++i){
-        Individuo beltrano = meta.geraSolucaoInicial();   
-        meta.buscaTabu(beltrano);
-        if(beltrano.fitness < melhorInd.fitness){
-            melhorInd = beltrano;
-        }
-        cout << beltrano.fitness << "\t";
-        if(i%16==0){
-            cout << "\n";
-        }
 
-        valores.push_back(beltrano.fitness);
+
+    {
+        cout << "\nAG-BT:\n";
+        Individuo ciclano = meta.AG(1);
     }
 
-    double dp = desvioPadrao(valores);
-    double media = accumulate(valores.begin(), valores.end(), 0);
-
-    cout << "\nMelhor valor: " << melhorInd.fitness << "\n";
-    cout << "Desvio Padrao: " << dp << "\nMedia: " << media / valores.size() << "\n";
+    return 0;
+     
+    {
+        cout << "\nAG:\n";
+        Individuo fulano = meta.AG(0);
+    }
+    
+    {
+        cout << "\nBT:\n";
+        int geracion = 100;
+        Individuo melhorInd;
+        vector<double> valores;
+        for(int i = 0; i < geracion; ++i){
+            Individuo beltrano = meta.geraSolucaoInicial();   
+            meta.buscaTabu(beltrano);
+            if(beltrano.fitness < melhorInd.fitness){
+                melhorInd = beltrano;
+            }
+            cout << beltrano.fitness << "\t";
+            if(i%16==0){
+                cout << "\n";
+            }
+            
+            valores.push_back(beltrano.fitness);
+        }
+        
+        double dp = desvioPadrao(valores);
+        double media = accumulate(valores.begin(), valores.end(), 0);
+        
+        cout << "\nMelhor valor: " << melhorInd.fitness << "\n";
+        cout << "Desvio Padrao: " << dp << "\nMedia: " << media / valores.size() << "\n";
+    }
 
     // cout << "\nMetaheuristica concluida\n\n"; fflush(stdin);
     
