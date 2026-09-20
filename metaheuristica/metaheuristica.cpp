@@ -39,7 +39,7 @@ int main(int argv, char *argc[]){
         cout << "\nAG-BT:\n";
         Individuo ciclano = meta.AG(1);
 
-        cout << "fitness real: " << ciclano.fitness - ciclano.penalidadeFitness << "\n";
+        cout << "::fitness real: " << ciclano.fitness - ciclano.penalidadeFitness << "[" << ciclano.penalidadeFitness << "]" << "\n";
         
         cout << "rotas: \n";
         for(int i = 0; i < ciclano.rotasFeitas.size(); ++i){

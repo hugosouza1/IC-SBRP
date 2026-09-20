@@ -92,11 +92,11 @@ class Metaheuristica{
 
         bool maisViavel(const Individuo &a, const Individuo &b);
 
-        int selecionaTorneio(vector<Individuo> &populacao, double chanceAceitarPior);
+        int selecionaTorneio(vector<Individuo> &populacao, double temperatura);
 
-        vector<Individuo> novaPopTorneioElitista(vector<Individuo> &filhos, vector<Individuo> &pais, int tamanhoPopulacao, int elitismo);
+        vector<Individuo> novaPopTorneioElitista(vector<Individuo> &filhos, vector<Individuo> &pais, int tamanhoPopulacao, int elitismo, double temperaturaSelecao);
 
-        vector<pair<int,int>> escolhendoPais(vector<Individuo> &populacao);
+        vector<pair<int,int>> escolhendoPais(vector<Individuo> &populacao, double temperaturaSelecao);
 
         vector<Individuo> reproducao(vector<pair<int,int>> &paisEscolhidos, vector<Individuo> &populacao, int tamanhoPopulacao, double mutacao, double crossoverProb);
 

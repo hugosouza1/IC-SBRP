@@ -261,16 +261,42 @@ Movimento Metaheuristica::melhorVizinho(vector<int>& rota, vector<bool>& estaNaR
     nenhum.delta = numeric_limits<double>::max();
 
     if(candidatos.empty()) return nenhum;
+    
+
+
+    // +++
 
     sort(candidatos.begin(), candidatos.end(), [](const Movimento& a, const Movimento& b){
         return a.delta < b.delta;
     });
-
-    const int tamanhoRCL = 5; // maior = mais exploração; menor = mais guloso
+    
+    const int tamanhoRCL = 150;
     int limite = min((int)candidatos.size(), tamanhoRCL);
 
-    uniform_int_distribution<int> distRCL(0, limite - 1);
-    return candidatos[distRCL(gen)];
+    // 
+    // double deltaMin = candidatos[0].delta;
+
+    // vector<double> pesos(limite);
+    // const double temperatura = 10.0; // maior = mais uniforme; menor = mais guloso
+
+    // for(int i = 0; i < limite; ++i){
+    //     double diferenca = candidatos[i].delta - deltaMin; // sempre >= 0
+    //     pesos[i] = exp(-diferenca / temperatura);
+    // }
+
+    // discrete_distribution<int> distPeso(pesos.begin(), pesos.end());
+    // return candidatos[distPeso(gen)];
+
+
+    vector<double> pesos(limite);
+    const double decaimento = 0.45; // menor = mais concentrado nos melhores; maior = mais uniforme
+
+    for(int i = 0; i < limite; ++i){
+        pesos[i] = exp(-decaimento * i); // rank 0 tem peso 1, rank 1 tem peso menor, etc.
+    }
+
+    discrete_distribution<int> distPeso(pesos.begin(), pesos.end());
+    return candidatos[distPeso(gen)];
 }
 
 void Metaheuristica::aplicaMovimento(vector<int>& rota, vector<bool>& estaNaRota, Movimento mov){
