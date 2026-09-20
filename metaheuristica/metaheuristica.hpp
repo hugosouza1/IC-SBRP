@@ -12,6 +12,7 @@
 #include <algorithm>
 #include <numeric>
 #include <chrono>
+#include <iomanip>
 #include <climits>
 
 #include <unordered_set>
@@ -74,8 +75,9 @@ class Metaheuristica{
 
     public:
 	    Metaheuristica(infoSBRP& p) : problema(p) {
-			quantidadeMaxRota = (p.quantidadeAlunos + p.Q) / p.Q;
+			quantidadeMaxRota = p.quantidadeRotas; // n precisava, mas depois arrumo
 		}
+        int qr(){return quantidadeMaxRota;};
 		// ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 		// ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
         Individuo AG(int opc);
@@ -85,6 +87,8 @@ class Metaheuristica{
         double distancia(vector<int>& caminho, vector<vector<double>>& grafo);
 
         vector<Individuo> popIni(int tamanhoPopulacao);
+            
+        double aplicaPenalidades(Individuo& individuo);
 
         bool maisViavel(const Individuo &a, const Individuo &b);
 
@@ -106,11 +110,13 @@ class Metaheuristica{
 
         void finalizaSolucao(Individuo& configParada, vector<vector<int>>& rotas, const vector<bool>& sucesso);
 
-        Movimento melhorInsercao(vector<int>& rota, vector<bool>& estaNaRota, unordered_map<ChaveTabu, int>& tabu, double melhorDistanciaGlobal, double distanciaAtual, int iteracao);
+        vector<Movimento> candidatosInsercao(vector<int>& rota, vector<bool>& estaNaRota, unordered_map<ChaveTabu,int>& tabu, double melhorDistanciaGlobal, double distanciaAtual, int iteracao);
+        vector<Movimento> candidatosRemocao(vector<int>& rota, vector<bool>& paradaObrigatoria, unordered_map<ChaveTabu,int>& tabu, double melhorDistanciaGlobal, double distanciaAtual, int iteracao);
+        vector<Movimento> candidatosTroca(vector<int>& rota, unordered_map<ChaveTabu,int>& tabu, double melhorDistanciaGlobal, double distanciaAtual, int iteracao);
 
-        Movimento melhorTroca(vector<int>& rota, unordered_map<ChaveTabu, int>& tabu, double melhorDistanciaGlobal, double distanciaAtual, int iteracao);
-
-    	Movimento melhorRemocao(vector<int>& rota, vector<bool>& paradaObrigatoria, unordered_map<ChaveTabu, int>& tabu, double melhorDistanciaGlobal, double distanciaAtual, int iteracao);
+        // Movimento melhorInsercao(vector<int>& rota, vector<bool>& estaNaRota, unordered_map<ChaveTabu, int>& tabu, double melhorDistanciaGlobal, double distanciaAtual, int iteracao);
+        // Movimento melhorTroca(vector<int>& rota, unordered_map<ChaveTabu, int>& tabu, double melhorDistanciaGlobal, double distanciaAtual, int iteracao);
+    	// Movimento melhorRemocao(vector<int>& rota, vector<bool>& paradaObrigatoria, unordered_map<ChaveTabu, int>& tabu, double melhorDistanciaGlobal, double distanciaAtual, int iteracao);
 
         Movimento melhorVizinho(vector<int>& rota, vector<bool>& estaNaRota, vector<bool>& paradaObrigatoria, unordered_map<ChaveTabu, int>& tabu, double melhorDistanciaGlobal, int iteracao);
 

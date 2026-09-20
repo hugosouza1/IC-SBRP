@@ -1,1 +1,1 @@
---n_paradas 10 --n_alunos 40 --n_onibus 4  --capacidade 40 --largura 100 --altura 100 --dispersao independente  --raio_max_caminhada 15  --seed 42 --out instancia.txt
+--n_paradas 10 --n_alunos 20 --n_onibus 4  --capacidade 40 --largura 100 --altura 100 --dispersao independente  --raio_max_caminhada 15  --seed 42 --out instancia.txt

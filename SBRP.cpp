@@ -1,76 +1,6 @@
 #include "SBRP.hpp"
 
 
-// void infoSBRP::leitura(string arquivoEntrada){
-//     ifstream arq(arquivoEntrada);
-//     if(!arq.is_open()){ cerr << "Erro ao abrir arquivo\n"; exit(1);}
-
-//     arq >> quantidadeParadas >> quantidadeAlunos >> quantidadeOnibus >> Q;
-
-//     // quantidadeRotas = 5; 
-//     quantidadeRotas = ((quantidadeAlunos + Q) / Q) + 1; // caiu de 4min pra 30s
-
-//     quantidadePassos = quantidadeParadas * 1.5; 
-//     // quantidadePassos = quantidadeParadas * quantidadeOnibus * 1.5; 
-
-//     // int maxx = numeric_limits<int>::max();
-//     // grafoParadas.assign(quantidadeParadas, vector<int>(quantidadeParadas, maxx));
-    
-//     grafoParadas.assign(quantidadeParadas, vector<int>(quantidadeParadas, 0));
-    
-//     for(int i = 0; i < quantidadeParadas; i++){
-//         grafoParadas[i][i] = 0; // preciso de 0 pra auto-loop do modelo
-//     }
-
-//     arq >> quantidadeArestas;
-//     for(int i = 0; i < quantidadeArestas; i++){
-//         int pontoA, pontoB, peso; 
-//         arq >> pontoA >> pontoB >> peso;
-//         grafoParadas[pontoA][pontoB] = max(grafoParadas[pontoA][pontoB], peso);
-//         grafoParadas[pontoB][pontoA] = max(grafoParadas[pontoB][pontoA], peso);
-//     }
-
-
-//     alunosParadas.clear();
-//     for(int e = 0; e < quantidadeAlunos; e++){
-//         estudante aluno;
-//         int quantidadeParadasPossiveis;
-
-//         /*
-//             exemplo:
-
-//             0 2
-//             1 10
-//             3 15
-
-//             aluno 0
-//             possui 2 paradas possíveis
-//         */
-
-//         arq >> aluno.id;
-//         arq >> quantidadeParadasPossiveis;
-
-//         for(int j = 0; j < quantidadeParadasPossiveis; j++){
-//             int parada;
-//             int distancia;
-
-//             arq >> parada >> distancia;
-
-//             aluno.paradasPossiveis.push_back({ parada, distancia });
-
-//             // if(distancia > maxDistancia){
-//             //     maxDistancia = distancia;
-//             // }
-//         }
-
-//         alunosParadas.push_back(aluno);
-//     }
-
-//     arq.close();
-// }
-
-
-
 void infoSBRP::leitura(string arquivoEntrada){
     ifstream arq(arquivoEntrada);
     if(!arq.is_open()){ cerr << "Erro ao abrir arquivo\n"; exit(1); }
@@ -132,7 +62,8 @@ void infoSBRP::leitura(string arquivoEntrada){
             }
 
             case ATRIBUICOES: {
-                int alunoId, parada, distancia;
+                int alunoId, parada;
+                double distancia;
                 iss >> alunoId >> parada >> distancia;
 
                 alunosParadas[alunoId].paradasPossiveis.push_back({ parada, distancia });
@@ -156,9 +87,8 @@ void infoSBRP::leitura(string arquivoEntrada){
     }
 
     quantidadeAlunos  = (int)alunosParadas.size();
-    quantidadeRotas   = ((quantidadeAlunos + Q) / Q) + 1;
+    quantidadeRotas   = (((quantidadeAlunos + Q) / Q) + 1) * 2;
     quantidadePassos  = quantidadeParadas * 1.5;
-
     arq.close();
 }
 

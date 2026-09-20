@@ -38,13 +38,16 @@ struct Individuo {
 
     // Apenas armazenado após a avaliação pelo Tabu
     vector<vector<int>> rotasFeitas;
+	
+	// custo final de penalidade aplicada
+	double penalidadeFitness;
 };
 
 struct estudante{
     int id; // estudante A
 
     // parada, distancia
-    vector<pair<int, int>> paradasPossiveis;
+    vector<pair<int, double>> paradasPossiveis;
 };
 
 
