@@ -1,19 +1,4 @@
 # =======================================
-# CONFIGURAÇÃO CPLEX
-# =======================================
-
-INCLUDE = -I/opt/ibm/ILOG/CPLEX_Studio128/cplex/include \
-          -I/opt/ibm/ILOG/CPLEX_Studio128/concert/include
-
-FLAGS = -DIL_STD -fPIC -fno-strict-aliasing -fexceptions -DNDEBUG -w
-
-LPATH = -L/opt/ibm/ILOG/CPLEX_Studio128/concert/lib/x86-64_linux/static_pic \
-        -L/opt/ibm/ILOG/CPLEX_Studio128/cplex/lib/x86-64_linux/static_pic
-
-LIBRARIES = -lconcert -lilocplex -lcplex -lpthread -ldl
-
-
-# =======================================
 # COMPILADOR
 # =======================================
 
@@ -21,6 +6,21 @@ CXX = g++
 CXXFLAGS = -O3
 BUILD_DIR = build
 ENTRADA ?= instancia.txt
+
+
+# =======================================
+# CPLEX
+# =======================================
+
+CPLEX_INCLUDE = -I/opt/ibm/ILOG/CPLEX_Studio128/cplex/include \
+                 -I/opt/ibm/ILOG/CPLEX_Studio128/concert/include
+
+CPLEX_LPATH = -L/opt/ibm/ILOG/CPLEX_Studio128/concert/lib/x86-64_linux/static_pic \
+              -L/opt/ibm/ILOG/CPLEX_Studio128/cplex/lib/x86-64_linux/static_pic
+
+CPLEX_LIBRARIES = -lconcert -lilocplex -lcplex -lpthread -ldl
+
+FLAGS = -DIL_STD -fPIC -fno-strict-aliasing -fexceptions -DNDEBUG -w
 
 
 # =======================================
@@ -57,7 +57,7 @@ OBJ_HEURISTICA = $(SRC_HEURISTICA:%.cpp=$(BUILD_DIR)/%.o)
 # =======================================
 
 SRC_MODELO = \
-	SBRP.cpp \
+    SBRP.cpp \
     $(MODELO_MAT_DIR)/modeloMain.cpp \
     $(MODELO_MAT_DIR)/modelo.cpp
 
@@ -78,7 +78,7 @@ all: heuristica modelo
 heuristica: $(EXEC_HEURISTICA)
 
 $(EXEC_HEURISTICA): $(OBJ_HEURISTICA)
-	$(CXX) $(CXXFLAGS) -o $@ $^ $(LPATH) $(LIBRARIES)
+	$(CXX) $(CXXFLAGS) -o $@ $^
 
 
 # =======================================
@@ -88,23 +88,36 @@ $(EXEC_HEURISTICA): $(OBJ_HEURISTICA)
 modelo: $(EXEC_MODELO)
 
 $(EXEC_MODELO): $(OBJ_MODELO)
-	$(CXX) $(CXXFLAGS) -o $@ $^ $(LPATH) $(LIBRARIES)
+	$(CXX) $(CXXFLAGS) -o $@ $^ $(CPLEX_LPATH) $(CPLEX_LIBRARIES)
 
 
 # =======================================
-# COMPILAÇÃO DOS .CPP
+# COMPILAÇÃO DA METAHEURÍSTICA
 # =======================================
 
-$(BUILD_DIR)/%.o: %.cpp
+$(BUILD_DIR)/SBRP.o: SBRP.cpp
 	@mkdir -p $(dir $@)
-	$(CXX) $(CXXFLAGS) $(INCLUDE) $(FLAGS) -c $< -o $@
+	$(CXX) $(CXXFLAGS) $(FLAGS) -c $< -o $@
+
+$(BUILD_DIR)/$(METAHEURISTICA_DIR)/%.o: $(METAHEURISTICA_DIR)/%.cpp
+	@mkdir -p $(dir $@)
+	$(CXX) $(CXXFLAGS) $(FLAGS) -c $< -o $@
+
+
+# =======================================
+# COMPILAÇÃO DO MODELO
+# =======================================
+
+$(BUILD_DIR)/$(MODELO_MAT_DIR)/%.o: $(MODELO_MAT_DIR)/%.cpp
+	@mkdir -p $(dir $@)
+	$(CXX) $(CXXFLAGS) $(CPLEX_INCLUDE) $(FLAGS) -c $< -o $@
 
 
 # =======================================
 # EXECUTAR METAHEURÍSTICA
 # =======================================
 
-runHeuristica: $(EXEC_HEURISTICA) heuristica
+runHeuristica: clean $(EXEC_HEURISTICA) heuristica 
 	./$(EXEC_HEURISTICA) $(ENTRADA)
 
 
@@ -112,7 +125,7 @@ runHeuristica: $(EXEC_HEURISTICA) heuristica
 # EXECUTAR MODELO
 # =======================================
 
-runModelo: $(EXEC_MODELO) modelo
+runModelo: $(EXEC_MODELO)
 	./$(EXEC_MODELO) $(ENTRADA)
 
 

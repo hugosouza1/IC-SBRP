@@ -7,36 +7,115 @@ double Metaheuristica::distancia(vector<int>& caminho, vector<vector<double>>& g
         soma += grafo[caminho[i]][caminho[i+1]];
     }
     // soma += grafo[caminho.back()][caminho.front()];
-
+    
     return soma;
 }
 
 
 // ---------- geração inicial da rota ----------
 
-vector<int> Metaheuristica::bfs(int a, int b){
-    vector<int> pai(problema.quantidadeParadas, -1);
-    vector<bool> visitado(problema.quantidadeParadas, false);
-    queue<int> fila;
+// vector<int> Metaheuristica::bfs(int a, int b){
+//     vector<int> pai(problema.quantidadeParadas, -1);
+//     vector<bool> visitado(problema.quantidadeParadas, false);
+//     queue<int> fila;
+
+//     visitado[a] = true;
+//     if(b) visitado[0] = true;
+//     fila.push(a);
+
+//     while(!fila.empty()){
+//         int u = fila.front(); fila.pop();
+//         if(u == b) break;
+
+//         for(int v = 0; v < (int)problema.grafoParadas[u].size(); v++){
+//             if(!visitado[v] && problema.grafoParadas[u][v] > 0){
+//                 visitado[v] = true;
+//                 pai[v] = u;
+//                 fila.push(v);
+//             }
+//         }
+//     }
+
+//     if(!visitado[b]) return {};
+
+//     vector<int> caminho;
+//     for(int v = b; v != -1; v = pai[v]) caminho.push_back(v);
+//     reverse(caminho.begin(), caminho.end());
+//     return caminho;
+// }
+
+
+// vector<int> Metaheuristica::contrucaoRota(vector<int> obrigatorias, bool& sucesso){
+//     sucesso = true;
+//     if(obrigatorias.empty()) return {};
+
+//     vector<int> rota;
+//     int atual = 0;
+
+//     for(int parada : obrigatorias){
+//         if(find(rota.begin(), rota.end(), parada) != rota.end()) continue;
+
+//         vector<int> trecho = bfs(atual, parada);
+//         if(trecho.empty()){ sucesso = false; return {}; }  
+
+//         if(atual != 0)
+//             trecho.erase(trecho.begin()); 
+
+//         rota.insert(rota.end(), trecho.begin(), trecho.end());
+
+//         atual = parada;
+//     }
+
+//     vector<int> volta = bfs(atual, 0);
+//     if(volta.empty()){ sucesso = false; return {}; }
+
+//     volta.erase(volta.begin());
+//     rota.insert(rota.end(), volta.begin(), volta.end());
+
+//     return rota;
+// }
+
+// ++++++++++----------+++++++++
+
+
+vector<int> Metaheuristica::dijkstra(int a, int b){
+    int n = problema.quantidadeParadas;
+    vector<double> dist(n, numeric_limits<double>::max());
+    vector<int> pai(n, -1);
+    vector<bool> visitado(n, false);
+
+    priority_queue<pair<double,int>, vector<pair<double,int>>, greater<pair<double,int>>> fila;
 
     visitado[a] = true;
-    if(b) visitado[0] = true;
-    fila.push(a);
+    if(b) visitado[0] = true; 
+
+    dist[a] = 0.0;
+    fila.push({0.0, a});
 
     while(!fila.empty()){
-        int u = fila.front(); fila.pop();
+        auto [d, u] = fila.top(); fila.pop();
+
+        if(d > dist[u]) continue; 
         if(u == b) break;
 
         for(int v = 0; v < (int)problema.grafoParadas[u].size(); v++){
-            if(!visitado[v] && problema.grafoParadas[u][v] > 0){
-                visitado[v] = true;
+            if(visitado[v]) continue;
+
+            double peso = problema.grafoParadas[u][v];
+            if(peso <= 0) continue;
+
+            double novaDist = dist[u] + peso;
+            if(novaDist < dist[v]){
+                dist[v] = novaDist;
                 pai[v] = u;
-                fila.push(v);
+                fila.push({novaDist, v});
             }
         }
+
+        visitado[u] = true;
     }
 
-    if(!visitado[b]) return {};
+    if(dist[b] == numeric_limits<double>::max()) return {};
 
     vector<int> caminho;
     for(int v = b; v != -1; v = pai[v]) caminho.push_back(v);
@@ -55,7 +134,8 @@ vector<int> Metaheuristica::contrucaoRota(vector<int> obrigatorias, bool& sucess
     for(int parada : obrigatorias){
         if(find(rota.begin(), rota.end(), parada) != rota.end()) continue;
 
-        vector<int> trecho = bfs(atual, parada);
+        vector<int> trecho = dijkstra(atual, parada); 
+
         if(trecho.empty()){ sucesso = false; return {}; }  
 
         if(atual != 0)
@@ -66,7 +146,8 @@ vector<int> Metaheuristica::contrucaoRota(vector<int> obrigatorias, bool& sucess
         atual = parada;
     }
 
-    vector<int> volta = bfs(atual, 0);
+    vector<int> volta = dijkstra(atual, 0); 
+
     if(volta.empty()){ sucesso = false; return {}; }
 
     volta.erase(volta.begin());
@@ -74,6 +155,7 @@ vector<int> Metaheuristica::contrucaoRota(vector<int> obrigatorias, bool& sucess
 
     return rota;
 }
+
 
 vector<vector<int>> Metaheuristica::caminhosIniciais(Individuo &configParada, vector<bool>& sucesso, vector<vector<int>> *paradaDasRotas){
 
@@ -113,44 +195,6 @@ vector<vector<int>> Metaheuristica::caminhosIniciais(Individuo &configParada, ve
 
 // ---------- geração de vizinhos por tipo de movimento ----------
 
-vector<Movimento> Metaheuristica::candidatosInsercao(vector<int>& rota, vector<bool>& estaNaRota,
-    unordered_map<ChaveTabu, int>& tabu, double melhorDistanciaGlobal, double distanciaAtual, int iteracao){
-
-    vector<Movimento> candidatos;
-
-    for(int pos = 0; pos + 1 < (int)rota.size(); ++pos){
-
-        int A = rota[pos];
-        int B = rota[pos + 1];
-
-        for(int C = 1; C < problema.quantidadeParadas; ++C){
-
-            if(problema.grafoParadas[A][C] == 0 || problema.grafoParadas[C][B] == 0)
-                continue;
-
-            double delta =
-                problema.grafoParadas[A][C] +
-                problema.grafoParadas[C][B] -
-                problema.grafoParadas[A][B];
-
-            bool tabuAtivo = movimentoTabu(tabu, INSERIR, A, C, B, iteracao);
-            bool aspiracao = (distanciaAtual + delta) < melhorDistanciaGlobal;
-
-            if(!tabuAtivo || aspiracao){
-                Movimento m;
-                m.tipo = INSERIR;
-                m.delta = delta;
-                m.posicao = pos + 1;
-                m.anterior = A;
-                m.parada = C;
-                m.proximo = B;
-                candidatos.push_back(m);
-            }
-        }
-    }
-
-    return candidatos;
-}
 
 vector<Movimento> Metaheuristica::candidatosRemocao(vector<int>& rota, vector<bool>& paradaObrigatoria,
     unordered_map<ChaveTabu, int>& tabu, double melhorDistanciaGlobal, double distanciaAtual, int iteracao){
@@ -183,11 +227,54 @@ vector<Movimento> Metaheuristica::candidatosRemocao(vector<int>& rota, vector<bo
     return candidatos;
 }
 
+vector<Movimento> Metaheuristica::candidatosInsercao(vector<int>& rota, vector<bool>& estaNaRota,
+    unordered_map<ChaveTabu, int>& tabu, double melhorDistanciaGlobal, double distanciaAtual, int iteracao){
+
+    vector<Movimento> candidatos;
+
+    for(int pos = 0; pos + 1 < (int)rota.size(); ++pos){
+
+        int A = rota[pos];
+        int B = rota[pos + 1];
+
+        for(int C = 1; C < problema.quantidadeParadas; ++C){
+
+            if(estaNaRota[C]) continue;
+            if(problema.grafoParadas[A][C] == 0 || problema.grafoParadas[C][B] == 0)
+                continue;
+
+            double delta =
+                problema.grafoParadas[A][C] +
+                problema.grafoParadas[C][B] -
+                problema.grafoParadas[A][B];
+
+            bool tabuAtivo = movimentoTabu(tabu, INSERIR, A, C, B, iteracao);
+            bool aspiracao = (distanciaAtual + delta) < melhorDistanciaGlobal;
+
+            if(!tabuAtivo || aspiracao){
+                Movimento m;
+                m.tipo = INSERIR;
+                m.delta = delta;
+                m.posicao = pos + 1;
+                m.anterior = A;
+                m.parada = C;
+                m.proximo = B;
+                m.paradaNova = C;
+                candidatos.push_back(m);
+            }
+        }
+    }
+
+    return candidatos;
+}
+
+
+
+
 vector<Movimento> Metaheuristica::candidatosTroca(vector<int>& rota, unordered_map<ChaveTabu, int>& tabu,
     double melhorDistanciaGlobal, double distanciaAtual, int iteracao){
 
     vector<Movimento> candidatos;
-
     if(rota.size() < 4) return candidatos;
 
     int amostras = rota.size();
@@ -213,7 +300,6 @@ vector<Movimento> Metaheuristica::candidatosTroca(vector<int>& rota, unordered_m
                      problema.grafoParadas[prevB][noA] > 0 &&
                      problema.grafoParadas[noA][nextB] > 0;
         }
-
         if(!valido) continue;
 
         double delta =
@@ -232,8 +318,109 @@ vector<Movimento> Metaheuristica::candidatosTroca(vector<int>& rota, unordered_m
             m.trocaA = a;
             m.trocaB = b;
             m.anterior = min(noA, noB);
-            m.parada   = max(noA, noB);
-            m.proximo  = 0;
+            m.parada = max(noA, noB);
+            m.proximo = 0;
+            candidatos.push_back(m);
+        }
+    }
+
+    return candidatos;
+}
+
+
+vector<Movimento> Metaheuristica::candidatosSubstituir(vector<int>& rota, vector<bool>& estaNaRota,
+    vector<bool>& paradaObrigatoria, unordered_map<ChaveTabu, int>& tabu,
+    double melhorDistanciaGlobal, double distanciaAtual, int iteracao){
+
+    vector<Movimento> candidatos;
+    const int tentativasPorPosicao = 8;
+
+    uniform_int_distribution<int> distC(1, problema.quantidadeParadas - 1);
+
+    for(int i = 1; i + 1 < (int)rota.size(); ++i){
+
+        int A = rota[i - 1], B = rota[i], C = rota[i + 1];
+        if(paradaObrigatoria[B]) continue;
+
+        for(int tent = 0; tent < tentativasPorPosicao; ++tent){
+            int D = distC(gen);
+            if(D == B || estaNaRota[D]) continue;
+
+            if(problema.grafoParadas[A][D] == 0 || problema.grafoParadas[D][C] == 0)
+                continue;
+
+            double delta =
+                  problema.grafoParadas[A][D] + problema.grafoParadas[D][C]
+                - problema.grafoParadas[A][B] - problema.grafoParadas[B][C];
+
+            bool tabuAtivo = movimentoTabu(tabu, SUBSTITUIR, min(B, D), max(B, D), 0, iteracao);
+            bool aspiracao = (distanciaAtual + delta) < melhorDistanciaGlobal;
+
+            if(!tabuAtivo || aspiracao){
+                Movimento m;
+                m.tipo = SUBSTITUIR;
+                m.delta = delta;
+                m.posicao = i;
+                m.paradaAntiga = B;
+                m.paradaNova = D;
+                m.anterior = min(B, D);
+                m.parada = max(B, D);
+                m.proximo = 0;
+                candidatos.push_back(m);
+            }
+        }
+    }
+
+    return candidatos;
+}
+
+
+
+vector<Movimento> Metaheuristica::candidatosMover(vector<int>& rota, vector<bool>& paradaObrigatoria,
+    unordered_map<ChaveTabu, int>& tabu, double melhorDistanciaGlobal, double distanciaAtual, int iteracao){
+
+    vector<Movimento> candidatos;
+    if(rota.size() < 5) return candidatos;
+
+    int n = (int)rota.size();
+    const int tentativas = n;
+
+    uniform_int_distribution<int> distOrigem(1, n - 2);
+    uniform_int_distribution<int> distDestino(0, n - 2); // gap de destino
+
+    for(int t = 0; t < tentativas; ++t){
+
+        int origem = distOrigem(gen);
+        int destino = distDestino(gen);
+
+        // destino é um gap (entre rota[destino] e rota[destino+1]);
+        // não pode coincidir com a própria posição de origem
+        if(destino == origem - 1 || destino == origem) continue;
+
+        int A = rota[origem - 1], B = rota[origem], C = rota[origem + 1];
+        if(paradaObrigatoria[B]) continue;
+        if(problema.grafoParadas[A][C] == 0) continue; // remoção precisa ser válida
+
+        int X = rota[destino], Y = rota[destino + 1];
+        if(problema.grafoParadas[X][B] == 0 || problema.grafoParadas[B][Y] == 0) continue;
+
+        double deltaRemocao = problema.grafoParadas[A][C] - problema.grafoParadas[A][B] - problema.grafoParadas[B][C];
+        double deltaInsercao = problema.grafoParadas[X][B] + problema.grafoParadas[B][Y] - problema.grafoParadas[X][Y];
+        double delta = deltaRemocao + deltaInsercao;
+
+        bool tabuAtivo = movimentoTabu(tabu, MOVER, B, X, Y, iteracao);
+        bool aspiracao = (distanciaAtual + delta) < melhorDistanciaGlobal;
+
+        if(!tabuAtivo || aspiracao){
+            Movimento m;
+            m.tipo = MOVER;
+            m.delta = delta;
+            m.posOrigem = origem;
+            m.posDestino = destino;
+            m.paradaNova = B; // a parada que está sendo movida
+            m.anterior = B;
+            m.parada = X;
+            m.proximo = Y;
             candidatos.push_back(m);
         }
     }
@@ -247,75 +434,69 @@ Movimento Metaheuristica::melhorVizinho(vector<int>& rota, vector<bool>& estaNaR
     double distanciaAtual = distancia(rota, problema.grafoParadas);
 
     vector<Movimento> candidatos = candidatosInsercao(rota, estaNaRota, tabu, melhorDistanciaGlobal, distanciaAtual, iteracao);
-    // cout << "\n" << candidatos.size() << "";
-    vector<Movimento> rem =        candidatosRemocao(rota, paradaObrigatoria, tabu, melhorDistanciaGlobal, distanciaAtual, iteracao);
-    
-    vector<Movimento> tr =         candidatosTroca(rota, tabu, melhorDistanciaGlobal, distanciaAtual, iteracao);
-    
+
+    vector<Movimento> rem = candidatosRemocao(rota, paradaObrigatoria, tabu, melhorDistanciaGlobal, distanciaAtual, iteracao);
     candidatos.insert(candidatos.end(), rem.begin(), rem.end());
-    // cout << " " << candidatos.size() << " ";
+
+    vector<Movimento> tr = candidatosTroca(rota, tabu, melhorDistanciaGlobal, distanciaAtual, iteracao);
     candidatos.insert(candidatos.end(), tr.begin(), tr.end());
-    // cout << "" << candidatos.size() << "\n";
+
+    vector<Movimento> sub = candidatosSubstituir(rota, estaNaRota, paradaObrigatoria, tabu, melhorDistanciaGlobal, distanciaAtual, iteracao);
+    candidatos.insert(candidatos.end(), sub.begin(), sub.end());
+
+    vector<Movimento> mov = candidatosMover(rota, paradaObrigatoria, tabu, melhorDistanciaGlobal, distanciaAtual, iteracao);
+    candidatos.insert(candidatos.end(), mov.begin(), mov.end());
 
     Movimento nenhum;
     nenhum.delta = numeric_limits<double>::max();
-
     if(candidatos.empty()) return nenhum;
-    
-
-
-    // +++
 
     sort(candidatos.begin(), candidatos.end(), [](const Movimento& a, const Movimento& b){
         return a.delta < b.delta;
     });
-    
-    const int tamanhoRCL = 150;
-    int limite = min((int)candidatos.size(), tamanhoRCL);
 
-    // 
-    // double deltaMin = candidatos[0].delta;
-
-    // vector<double> pesos(limite);
-    // const double temperatura = 10.0; // maior = mais uniforme; menor = mais guloso
-
-    // for(int i = 0; i < limite; ++i){
-    //     double diferenca = candidatos[i].delta - deltaMin; // sempre >= 0
-    //     pesos[i] = exp(-diferenca / temperatura);
-    // }
-
-    // discrete_distribution<int> distPeso(pesos.begin(), pesos.end());
-    // return candidatos[distPeso(gen)];
-
-
+    int limite = min((int)candidatos.size(), TamanhoRCL);
     vector<double> pesos(limite);
-    const double decaimento = 0.45; // menor = mais concentrado nos melhores; maior = mais uniforme
-
-    for(int i = 0; i < limite; ++i){
-        pesos[i] = exp(-decaimento * i); // rank 0 tem peso 1, rank 1 tem peso menor, etc.
-    }
+    for(int i = 0; i < limite; ++i) pesos[i] = exp(-TaxaDecaimentoRCL * i);
 
     discrete_distribution<int> distPeso(pesos.begin(), pesos.end());
     return candidatos[distPeso(gen)];
 }
 
+
 void Metaheuristica::aplicaMovimento(vector<int>& rota, vector<bool>& estaNaRota, Movimento mov){
     switch(mov.tipo){
+
         case INSERIR:
-            rota.insert(rota.begin() + mov.posicao, mov.parada);
-            estaNaRota[mov.parada] = true;
+            rota.insert(rota.begin() + mov.posicao, mov.paradaNova);
+            estaNaRota[mov.paradaNova] = true;
             break;
 
         case REMOVER:
-            rota.erase(rota.begin() + mov.posicao);
             estaNaRota[mov.parada] = false;
+            rota.erase(rota.begin() + mov.posicao);
             break;
 
-        case  TROCAR:
+        case TROCAR:
             swap(rota[mov.trocaA], rota[mov.trocaB]);
             break;
+
+        case SUBSTITUIR:
+            estaNaRota[mov.paradaAntiga] = false;
+            estaNaRota[mov.paradaNova] = true;
+            rota[mov.posicao] = mov.paradaNova;
+            break;
+
+        case MOVER: {
+            rota.erase(rota.begin() + mov.posOrigem);
+            int destinoAjustado = mov.posDestino;
+            if(mov.posDestino > mov.posOrigem) destinoAjustado -= 1; // shift após erase
+            rota.insert(rota.begin() + destinoAjustado + 1, mov.paradaNova);
+            break;
+        }
     }
 }
+
 
 
 ChaveTabu Metaheuristica::chaveTabu(TipoMovimento tipo, int anterior, int parada, int proximo){
@@ -345,17 +526,15 @@ bool Metaheuristica::movimentoTabu(unordered_map<ChaveTabu, int>& tabu,
 void Metaheuristica::atualizaTabu(unordered_map<ChaveTabu, int>& tabu, Movimento mov, int tenure, int iteracao){
     TipoMovimento tipoReverso;
 
-    if(mov.tipo == INSERIR)
-        tipoReverso = REMOVER;
-    else if(mov.tipo == REMOVER)
-        tipoReverso = INSERIR;
-    else 
-        tipoReverso = TROCAR;
+    switch(mov.tipo){
+        case INSERIR:     tipoReverso = REMOVER; break;
+        case REMOVER:     tipoReverso = INSERIR; break;
+        case TROCAR:      tipoReverso = TROCAR; break;
+        case SUBSTITUIR:  tipoReverso = SUBSTITUIR; break; // simétrico: trocar de volta é a msm operação
+        case MOVER:       tipoReverso = MOVER; break;       // idem
+    }
 
-    ChaveTabu chave;
-
-    chave = chaveTabu(tipoReverso, mov.anterior, mov.parada, mov.proximo);
-
+    ChaveTabu chave = chaveTabu(tipoReverso, mov.anterior, mov.parada, mov.proximo);
     tabu[chave] = iteracao + tenure;
 }
 
@@ -416,7 +595,7 @@ double Metaheuristica::buscaTabu(Individuo& configParada){
 
         unordered_map<ChaveTabu, int> tabu;
         
-        int tenure = max(5, (int)(rotaAtual.size() / 10));  // depois ver com calma um melhor
+        int tenure = max(3, (int)(rotaAtual.size() * TenureTaxaTamRota));
 
         // int tenure =  3;
         // cout << "<tt: " << tenure << ", " <<rotaAtual.size() <<  ">";
@@ -425,10 +604,11 @@ double Metaheuristica::buscaTabu(Individuo& configParada){
         double melhorDistancia = distancia(rotaAtual, problema.grafoParadas);
 
         int it = 0;
-        const int maxIter = rotaAtual.size() * 3;
-        // const int maxIter = 100;
+        // const int maxIter = rotaAtual.size() * 3;
+        const int maxIter = IteracoesTabu;
 
         while(it < maxIter){
+            // cout << "yo "; fflush(stdout);
 
             Movimento mov = melhorVizinho(rotaAtual, estaNaRota, paradaObrigatoria, tabu, melhorDistancia, it);
 

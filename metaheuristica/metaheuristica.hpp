@@ -33,25 +33,28 @@ class infoSBRP;
 enum TipoMovimento{
     INSERIR,
     REMOVER,
-    TROCAR
+    TROCAR,
+    SUBSTITUIR,
+    MOVER
 };
 
 struct Movimento{
 
     TipoMovimento tipo;
 
-    int posicao;
-    
-    int anterior;
-    int parada;
-    int proximo;
+    int posicao;     // REMOVER / INSERIR: posição do alvo
+    int posOrigem;   // MOVER: posição de onde a parada sai
+    int posDestino;  // MOVER: posição (gap) pra onde vai
 
-    int trocaA;
-    int trocaB;
+    int anterior, parada, proximo; // chave tabu / valores da operação
+
+    int paradaAntiga; // SUBSTITUIR: parada removida
+    int paradaNova;   // SUBSTITUIR / INSERIR / MOVER: parada envolvida
+
+    int trocaA, trocaB; // TROCAR: posições trocadas
 
     double delta;
 };
-
 
 
 // 64 bits:
@@ -69,14 +72,78 @@ class Metaheuristica{
 	private:
 		infoSBRP& problema;
 		
+        // geral
 		int quantidadeMaxRota;
 
+        // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
+        //                       ALGORITMO GENETICO                           //
+        // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
+            // Parametros gerais genetico
+            const int numeroMaxGeracoes = 100;
+            const int TamanhoDaPopulacao = 200;
+            const double ProbabilidadeCrossover = 0.90;
+            const int Elitismo = 1;
+            
+            // Taxas de mutação
+            double ProbabilidadeMutacao = 0.01; 
+            const double PisoTaxaMutacao = 0.01;
+            const double TetoTaxaMutacao  = 0.1;
+            const int limiarEstagnacaoMutacao = 2;
+            
+            // injeção de individuos na estagnação
+            const double PorcentagemBaseInjecao  = 0.1;
+            const double PorcentagemExtraInjecao = 0.01; 
+            const double PorcentagemMaximaNovosIndividuos = 0.08;
+            
+            // Penalidade Construção de Rotas Genetico
+                // rotas
+                const double PenalidadePorRotaAtiva = 5.0; 
+                const int LimiarParadasPorRotas = 1; //minimo de paradas pro rota
+                const double PenalidadeRotaExtraPequena = 10.0;
+                // paradas
+                const int limiteParadaPorRota = 1; // minimo de repeticao de parada por rota
+                const double PenalidadePorRepeticaoParada = 2.0;
+
+            // Torneio
+            const double TaxaDecaimentoTorneio = 0.20;
+            
+            // Reproducao
+            const double ProbabilidadeCrossoverBloco = 0.4; // crossover pro bloco de rotas, ou gene a gene
+            const double TaxaDecaimentoRotasRep = 0.8; // selecao dos blocos de rota com mais alunos
+
+            // Geracao da solucao Inicial
+            const double TaxaDecaimentoSolucaoInicial = 0.2;
+            const double TaxaDecaimentoRotaInicial    = 0.2;
+
+        // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
+        
+
+        // ================================================================== //
+        //                            BUSCA TABU                              //
+        // ================================================================== //
+        const int TamanhoRCL = 100;
+        const double TaxaDecaimentoRCL = 0.3; // quanto maior, mais pende pros melhores. menor, mais uniforme
+        const double TenureTaxaTamRota = 0.1; // tenure com base no Tamanho da rota;
+        const int IteracoesTabu = 70; 
+        // ================================================================== //
+        
 
 
+        vector<int> quantAlunosPorParada;
+        
     public:
 	    Metaheuristica(infoSBRP& p) : problema(p) {
 			quantidadeMaxRota = p.quantidadeRotas; // n precisava, mas depois arrumo
+            
+
+            quantAlunosPorParada.assign(p.quantidadeAlunos, 0);
+            for(auto aluno : p.alunosParadas){
+                for(int k = 0; k < aluno.paradasPossiveis.size(); ++k){
+                    quantAlunosPorParada[aluno.paradasPossiveis[k].first]++;
+                }
+            }
 		}
+
         int qr(){return quantidadeMaxRota;};
 		// ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 		// ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -92,13 +159,13 @@ class Metaheuristica{
 
         bool maisViavel(const Individuo &a, const Individuo &b);
 
-        int selecionaTorneio(vector<Individuo> &populacao, double temperatura);
+        int selecionaTorneio(vector<Individuo> &populacao);
 
-        vector<Individuo> novaPopTorneioElitista(vector<Individuo> &filhos, vector<Individuo> &pais, int tamanhoPopulacao, int elitismo, double temperaturaSelecao);
+        vector<Individuo> novaPopTorneioElitista(vector<Individuo> &filhos, vector<Individuo> &pais);
 
-        vector<pair<int,int>> escolhendoPais(vector<Individuo> &populacao, double temperaturaSelecao);
+        vector<pair<int,int>> escolhendoPais(vector<Individuo> &populacao);
 
-        vector<Individuo> reproducao(vector<pair<int,int>> &paisEscolhidos, vector<Individuo> &populacao, int tamanhoPopulacao, double mutacao, double crossoverProb);
+        vector<Individuo> reproducao(vector<pair<int,int>> &paisEscolhidos, vector<Individuo> &populacao);
 
 		// ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
@@ -106,13 +173,27 @@ class Metaheuristica{
 
 		vector<int> bfs(int a, int b);
 
+        vector<int> dijkstra(int a, int b);
+
 		vector<vector<int>> caminhosIniciais(Individuo &configParada, vector<bool>& sucesso, vector<vector<int>> *paradaDasRotas = {});
 
         void finalizaSolucao(Individuo& configParada, vector<vector<int>>& rotas, const vector<bool>& sucesso);
 
-        vector<Movimento> candidatosInsercao(vector<int>& rota, vector<bool>& estaNaRota, unordered_map<ChaveTabu,int>& tabu, double melhorDistanciaGlobal, double distanciaAtual, int iteracao);
-        vector<Movimento> candidatosRemocao(vector<int>& rota, vector<bool>& paradaObrigatoria, unordered_map<ChaveTabu,int>& tabu, double melhorDistanciaGlobal, double distanciaAtual, int iteracao);
-        vector<Movimento> candidatosTroca(vector<int>& rota, unordered_map<ChaveTabu,int>& tabu, double melhorDistanciaGlobal, double distanciaAtual, int iteracao);
+
+        vector<Movimento> candidatosRemocao(vector<int>& rota, vector<bool>& paradaObrigatoria, unordered_map<ChaveTabu, int>& tabu, double melhorDistanciaGlobal, double distanciaAtual, int iteracao);
+
+        vector<Movimento> candidatosInsercao(vector<int>& rota, vector<bool>& estaNaRota, unordered_map<ChaveTabu, int>& tabu, double melhorDistanciaGlobal, double distanciaAtual, int iteracao);
+
+
+        vector<Movimento> candidatosTroca(vector<int>& rota, unordered_map<ChaveTabu, int>& tabu, double melhorDistanciaGlobal, double distanciaAtual, int iteracao);
+
+        vector<Movimento> candidatosMover(vector<int>& rota, vector<bool>& paradaObrigatoria, unordered_map<ChaveTabu, int>& tabu, double melhorDistanciaGlobal, double distanciaAtual, int iteracao);
+
+        vector<Movimento> candidatosSubstituir(vector<int>& rota, vector<bool>& estaNaRota, vector<bool>& paradaObrigatoria, unordered_map<ChaveTabu, int>& tabu, double melhorDistanciaGlobal, double distanciaAtual, int iteracao);
+
+        // vector<Movimento> candidatosInsercao(vector<int>& rota, vector<bool>& estaNaRota, unordered_map<ChaveTabu,int>& tabu, double melhorDistanciaGlobal, double distanciaAtual, int iteracao);
+        // vector<Movimento> candidatosRemocao(vector<int>& rota, vector<bool>& paradaObrigatoria, unordered_map<ChaveTabu,int>& tabu, double melhorDistanciaGlobal, double distanciaAtual, int iteracao);
+        // vector<Movimento> candidatosTroca(vector<int>& rota, unordered_map<ChaveTabu,int>& tabu, double melhorDistanciaGlobal, double distanciaAtual, int iteracao);
 
         // Movimento melhorInsercao(vector<int>& rota, vector<bool>& estaNaRota, unordered_map<ChaveTabu, int>& tabu, double melhorDistanciaGlobal, double distanciaAtual, int iteracao);
         // Movimento melhorTroca(vector<int>& rota, unordered_map<ChaveTabu, int>& tabu, double melhorDistanciaGlobal, double distanciaAtual, int iteracao);

@@ -31,7 +31,6 @@ void Metaheuristica::finalizaSolucao(Individuo& configParada, vector<vector<int>
 }
 
 
-
 Individuo Metaheuristica::geraSolucaoInicial(){
 
     Individuo fulano;
@@ -40,21 +39,30 @@ Individuo Metaheuristica::geraSolucaoInicial(){
     fulano.atrAlunoRota.resize(problema.quantidadeAlunos);
 
     vector<int> cargaRota(quantidadeMaxRota, 0);
+    vector<vector<int>> paradasPorRota(quantidadeMaxRota); // paradas já usadas em cada rota
 
     for(const auto& aluno : problema.alunosParadas){
 
-        // Escolhe uma parada possível
-        uniform_int_distribution<int> distParada(0, aluno.paradasPossiveis.size()-1);
+        vector<pair<int, double>> aux = aluno.paradasPossiveis;
 
-        int parada = aluno.paradasPossiveis[distParada(gen)].first;
+        sort(aux.begin(), aux.end(), [](const pair<int, double>& a, const pair<int, double>& b){
+            return a.second < b.second;
+        });
+
+        vector<double> pesosParada(aux.size());
+        for(int i = 0; i < (int)aux.size(); ++i){
+            pesosParada[i] = exp(-TaxaDecaimentoSolucaoInicial * i);
+        }
+
+        discrete_distribution<int> distPesoParada(pesosParada.begin(), pesosParada.end());
+
+        int parada = aux[distPesoParada(gen)].first;
 
         fulano.atrAlunoParada[aluno.id] = parada;
 
         // Procura rotas que ainda têm capacidade
         vector<int> candidatas;
-
         for(int r = 0; r < quantidadeMaxRota; r++){
-
             if(cargaRota[r] < problema.Q)
                 candidatas.push_back(r);
         }
@@ -62,30 +70,64 @@ Individuo Metaheuristica::geraSolucaoInicial(){
         int rota;
 
         if(candidatas.empty()){
-            // nenhuma rota tem capacidade sobrando: cai pra menos carregada,
-            // mesmo estourando Q, em vez de acessar candidatas[-1]
             rota = 0;
             for(int r = 1; r < quantidadeMaxRota; r++)
                 if(cargaRota[r] < cargaRota[rota]) rota = r;
+            fulano.alunosInviaveisQuant++;
         } else {
-            uniform_int_distribution<int> distRota(0, candidatas.size()-1);
-            rota = candidatas[distRota(gen)];
+            // distância média da parada do aluno
+            // até as paradas já presentes em cada rota candidata
+            vector<pair<int,double>> rotaDist; // (índice da rota candidata, distância média)
+            rotaDist.reserve(candidatas.size());
+
+            for(int r : candidatas){
+                if(paradasPorRota[r].empty()){
+                    // rota ainda vazia: usa distância até o nó 0 como base =
+                    double d = problema.grafoParadas[parada][0];
+                    if(d == 0) d = 1e9; // sem aresta direta ao depósito: trata como distante
+                    rotaDist.push_back({r, d});
+                    continue;
+                }
+
+                double soma = 0.0;
+                int contados = 0;
+                for(int p : paradasPorRota[r]){
+                    double d = problema.grafoParadas[parada][p];
+                    if(d == 0) d = 1e9; // sem aresta direta: penaliza fortemente, não ignora
+                    soma += d;
+                    contados++;
+                }
+                rotaDist.push_back({r, soma / contados});
+            }
+
+            sort(rotaDist.begin(), rotaDist.end(), [](const pair<int,double>& a, const pair<int,double>& b){
+                return a.second < b.second;
+            });
+
+            vector<double> pesosRota(rotaDist.size());
+            for(int i = 0; i < (int)rotaDist.size(); ++i){
+                pesosRota[i] = exp(-TaxaDecaimentoRotaInicial * i); 
+            }
+
+            discrete_distribution<int> distPesoRota(pesosRota.begin(), pesosRota.end());
+            rota = rotaDist[distPesoRota(gen)].first;
         }
 
         fulano.atrAlunoRota[aluno.id] = rota;
         cargaRota[rota]++;
+        paradasPorRota[rota].push_back(parada);
     }
-    
+
+    fulano.alunoPorRota = cargaRota;
+
     uniform_real_distribution<double> shake(0.3, 0.7);
     fulano.intensidadePermutaRota.resize(quantidadeMaxRota);
-
     for(int i = 0; i < quantidadeMaxRota; ++i){
         fulano.intensidadePermutaRota[i] = shake(gen);
     }
 
     return fulano;
 }
-
 
 vector<Individuo> Metaheuristica::popIni(int tamanhoPopulacao){
     vector<Individuo> pop(tamanhoPopulacao);
@@ -100,24 +142,19 @@ double Metaheuristica::aplicaPenalidades(Individuo& individuo){
     double penalidade = 0.0;
 
     // --- penalidade por quantidade de rotas ativas ---
-    const double custoPorRotaAtiva = 150.0; 
-    const int limiarPequena = 3;
-    const double penalidadeExtraPequena = 20.0;
 
     int rotasAtivas = 0;
     for(int r = 0; r < quantidadeMaxRota; ++r){
         if(individuo.rotaViavel[r] && individuo.alunoPorRota[r] > 0){
             rotasAtivas++;
-            if(individuo.alunoPorRota[r] <= limiarPequena){
-                penalidade += penalidadeExtraPequena;
+            if(individuo.alunoPorRota[r] <= LimiarParadasPorRotas){
+                penalidade += PenalidadeRotaExtraPequena;
             }
         }
     }
-    penalidade += rotasAtivas * custoPorRotaAtiva;
+    penalidade += rotasAtivas * PenalidadePorRotaAtiva;
 
     // --- penalidade por parada repetida entre rotas ---
-    const int limiteParadaPorRota = 1;
-    const double custoPorRepeticao = 20.0;
 
     unordered_map<int, int> contagemParada;
     for(const auto& rota : individuo.rotasFeitas){
@@ -130,7 +167,7 @@ double Metaheuristica::aplicaPenalidades(Individuo& individuo){
 
     for(auto& [parada, quant] : contagemParada){
         if(quant > limiteParadaPorRota){
-            penalidade += (quant - limiteParadaPorRota) * custoPorRepeticao;
+            penalidade += (quant - limiteParadaPorRota) * PenalidadePorRepeticaoParada;
         }
     }
 
@@ -149,67 +186,13 @@ bool Metaheuristica::maisViavel(const Individuo &a, const Individuo &b){
         exit(1);
     }
 
-    int rotasAtivasA = count(a.rotaViavel.begin(), a.rotaViavel.end(), true);
-    int rotasAtivasB = count(b.rotaViavel.begin(), b.rotaViavel.end(), true);
-
-    const double pesoRota = 5.0;
-
-    double scoreA = a.fitness + rotasAtivasA * pesoRota;
-    double scoreB = b.fitness + rotasAtivasB * pesoRota;
-
-    return scoreA < scoreB;
+    return a.fitness < b.fitness;
 }
 
-// int Metaheuristica::selecionaTorneio(vector<Individuo> &populacao, double chanceAceitarPior){
-//     int n = populacao.size();
-//     int k = max(1, (int)(n * 0.02));
 
-//     uniform_int_distribution<int> torneio(0, n-1);
-//     uniform_real_distribution<double> sorte(0.0, 1.0);
-
-//     int melhorIdx = torneio(gen);
-//     for(int i = 0; i < k; ++i){
-//         int idx = torneio(gen);
-//         bool venceu = maisViavel(populacao[idx], populacao[melhorIdx]);
-//         bool aceitaMesmoAssim = !venceu && (sorte(gen) < chanceAceitarPior);
-        
-//         if(venceu || aceitaMesmoAssim)
-//             melhorIdx = idx;
-//         // if(aceitaMesmoAssim) break;
-//     }
-//     return melhorIdx;
-// }
-
-// int Metaheuristica::selecionaTorneio(vector<Individuo> &populacao, double temperatura){
-//     int n = populacao.size();
-//     int k = max(1, (int)(n * 0.08));
-
-//     uniform_int_distribution<int> torneio(0, n-1);
-
-//     vector<int> participantes(k);
-//     for(int i = 0; i < k; ++i){
-//         participantes[i] = torneio(gen);
-//     }
-
-//     sort(participantes.begin(), participantes.end(), [&](int a, int b){
-//         return maisViavel(populacao[a], populacao[b]);
-//     });
-
-//     double fitnessMin = populacao[participantes[0]].fitness;
-
-//     vector<double> pesos(k);
-//     for(int i = 0; i < k; ++i){
-//         double diferenca = populacao[participantes[i]].fitness - fitnessMin; // >= 0
-//         pesos[i] = exp(-diferenca / temperatura);
-//     }
-
-//     discrete_distribution<int> distPeso(pesos.begin(), pesos.end());
-//     return participantes[distPeso(gen)];
-// }
-
-int Metaheuristica::selecionaTorneio(vector<Individuo> &populacao, double decaimento){
+int Metaheuristica::selecionaTorneio(vector<Individuo> &populacao){
     int n = populacao.size();
-    int k = max(1, (int)(n * 0.08));
+    int k = max(1, (int)(n * 0.02));
 
     uniform_int_distribution<int> torneio(0, n-1);
 
@@ -224,25 +207,24 @@ int Metaheuristica::selecionaTorneio(vector<Individuo> &populacao, double decaim
 
     vector<double> pesos(k);
     for(int i = 0; i < k; ++i){
-        pesos[i] = exp(-decaimento * i); 
+        pesos[i] = exp(-TaxaDecaimentoTorneio * i); 
     }
 
     discrete_distribution<int> distPeso(pesos.begin(), pesos.end());
     return participantes[distPeso(gen)];
 }
 
-vector<pair<int,int>> Metaheuristica::escolhendoPais(vector<Individuo> &populacao, double temperaturaSelecao){
-    int tamanhoPopulacao = populacao.size();
+vector<pair<int,int>> Metaheuristica::escolhendoPais(vector<Individuo> &populacao){
     
     vector<pair<int,int>> paisEscolhidos;
-    paisEscolhidos.reserve(tamanhoPopulacao);
+    paisEscolhidos.reserve(TamanhoDaPopulacao);
 
-    for(int k = 0; k < tamanhoPopulacao; ++k){
-        int pai1 = selecionaTorneio(populacao, temperaturaSelecao);
-        int pai2 = selecionaTorneio(populacao, temperaturaSelecao);
+    for(int k = 0; k < TamanhoDaPopulacao; ++k){
+        int pai1 = selecionaTorneio(populacao);
+        int pai2 = selecionaTorneio(populacao);
         int tent = 0;
         while(pai2 == pai1 && tent < 2){
-            pai2 = selecionaTorneio(populacao, temperaturaSelecao);
+            pai2 = selecionaTorneio(populacao);
             ++tent;
         }
         paisEscolhidos.emplace_back(pai1, pai2);  
@@ -250,9 +232,9 @@ vector<pair<int,int>> Metaheuristica::escolhendoPais(vector<Individuo> &populaca
     return paisEscolhidos;
 }
 
-vector<Individuo> Metaheuristica::reproducao(vector<pair<int,int>> &paisEscolhidos, vector<Individuo> &populacao, int tamanhoPopulacao, double mutacao, double crossoverProb){
+vector<Individuo> Metaheuristica::reproducao(vector<pair<int,int>> &paisEscolhidos, vector<Individuo> &populacao){
     vector<Individuo> filhos;
-    filhos.reserve(tamanhoPopulacao);
+    filhos.reserve(TamanhoDaPopulacao);
 
     int gene = populacao[0].atrAlunoParada.size(); // quantidade de alunos
 
@@ -260,7 +242,7 @@ vector<Individuo> Metaheuristica::reproducao(vector<pair<int,int>> &paisEscolhid
 
     uniform_real_distribution<double> zeroUm(0.0, 1.0);
 
-    for (int i = 0; i < tamanhoPopulacao; ++i){
+    for (int i = 0; i < TamanhoDaPopulacao; ++i){
         int idxPai1 = paisEscolhidos[i].first;
         int idxPai2 = paisEscolhidos[i].second;
 
@@ -273,9 +255,9 @@ vector<Individuo> Metaheuristica::reproducao(vector<pair<int,int>> &paisEscolhid
         filho.intensidadePermutaRota.resize(quantidadeMaxRota);
         
         // UX - Uniform Crossover
-        if (zeroUm(gen) < crossoverProb){
+        if (zeroUm(gen) < ProbabilidadeCrossover){
 
-            bool usaCrossoverPorRota = zeroUm(gen) < 0.5; // 50% bloco de rota, 50% gene a gene
+            bool usaCrossoverPorRota = zeroUm(gen) < ProbabilidadeCrossoverBloco; // 50% bloco de rota, 50% gene a gene
 
             if(usaCrossoverPorRota){
 
@@ -302,7 +284,7 @@ vector<Individuo> Metaheuristica::reproducao(vector<pair<int,int>> &paisEscolhid
                 sort(rotasCandidatas.begin(), rotasCandidatas.end(),
                     [&](int x, int y){ return tamanhoRotaHerdar[x] > tamanhoRotaHerdar[y]; });
 
-                const double decaimento = 0.2;
+                // const double decaimento = 0.2;
                 // const double alpha = 0.5; 
                 set<int> selecionadas;
                 vector<int> disponiveis = rotasCandidatas;
@@ -312,7 +294,7 @@ vector<Individuo> Metaheuristica::reproducao(vector<pair<int,int>> &paisEscolhid
                     for(int i = 0; i < (int)disponiveis.size(); ++i){
                         // double pesoRank = exp(-decaimento * i);
                         // pesos[i] = alpha + (1.0 - alpha) * pesoRank;
-                        pesos[i] = exp(-decaimento * i);
+                        pesos[i] = exp(-TaxaDecaimentoRotasRep * i);
                     }
 
                     discrete_distribution<int> distPeso(pesos.begin(), pesos.end());
@@ -419,7 +401,7 @@ vector<Individuo> Metaheuristica::reproducao(vector<pair<int,int>> &paisEscolhid
         //  Mutação
         for(int g = 0; g < gene; ++g){
             // Mutação da parada
-            if(muta(gen) < mutacao){
+            if(muta(gen) < ProbabilidadeMutacao){
                 const estudante& aluno = problema.alunosParadas[g];
 
                 if(!aluno.paradasPossiveis.empty()){
@@ -429,7 +411,7 @@ vector<Individuo> Metaheuristica::reproducao(vector<pair<int,int>> &paisEscolhid
             }
 
             // Mutação da rota
-            if(muta(gen) < mutacao){
+            if(muta(gen) < ProbabilidadeMutacao){
                 int rotaAtual = filho.atrAlunoRota[g];
                 vector<int> candidatas;
 
@@ -459,7 +441,7 @@ vector<Individuo> Metaheuristica::reproducao(vector<pair<int,int>> &paisEscolhid
     return filhos;
 }
 
-vector<Individuo> Metaheuristica::novaPopTorneioElitista(vector<Individuo> &filhos, vector<Individuo> &pais, int tamanhoPopulacao, int elitismo, double temperaturaSelecao){
+vector<Individuo> Metaheuristica::novaPopTorneioElitista(vector<Individuo> &filhos, vector<Individuo> &pais){
 
     vector<Individuo> combinado = filhos;
     combinado.insert(combinado.end(), pais.begin(), pais.end());
@@ -468,11 +450,11 @@ vector<Individuo> Metaheuristica::novaPopTorneioElitista(vector<Individuo> &filh
         return maisViavel(a, b);
     });
 
-    vector<Individuo> novaPop(combinado.begin(), combinado.begin() + elitismo);
-    vector<Individuo> resto(combinado.begin() + elitismo, combinado.end());
+    vector<Individuo> novaPop(combinado.begin(), combinado.begin() + Elitismo);
+    vector<Individuo> resto(combinado.begin() + Elitismo, combinado.end());
 
-    while(novaPop.size() < (size_t)tamanhoPopulacao){
-        int idxRo = selecionaTorneio(resto, temperaturaSelecao);
+    while(novaPop.size() < (size_t)TamanhoDaPopulacao){
+        int idxRo = selecionaTorneio(resto);
         novaPop.push_back(resto[idxRo]);
     }
 
@@ -534,25 +516,18 @@ double desvio(const vector<double>& valores) {
 
 
 Individuo Metaheuristica::AG(int opc){
-
-    int maxGeracao = 200;
-    int tamanhoPopulacao = 100;
-    double crossoverProb = 0.85; 
-    double mutacaoProb = 0.01; // baixa mutacao é melhor
-    // int elitismo = max(1, int(tamanhoPopulacao * 0.01)); // pelo menos 1 // elitismo mais baixo émellhr
-    int elitismo = 0; // pelo menos 1 // elitismo mais baixo émellhr
     
-    vector<Individuo> populacao = popIni(tamanhoPopulacao);
+    vector<Individuo> populacao = popIni(TamanhoDaPopulacao);
     
-    vector<double> fitnessPop(tamanhoPopulacao);
+    vector<double> fitnessPop(TamanhoDaPopulacao);
     
     if(opc){
-        for(int i = 0; i < tamanhoPopulacao; i++){
+        for(int i = 0; i < TamanhoDaPopulacao; i++){
             fitnessPop[i] = buscaTabu(populacao[i]);
             aplicaPenalidades(populacao[i]);
         } 
     } else {
-        for(int i = 0; i < tamanhoPopulacao; i++){
+        for(int i = 0; i < TamanhoDaPopulacao; i++){
             vector<bool> sucesso;
             vector<vector<int>> rotasTemp = caminhosIniciais(populacao[i], sucesso);
             finalizaSolucao(populacao[i], rotasTemp, sucesso);
@@ -562,7 +537,7 @@ Individuo Metaheuristica::AG(int opc){
     }
 
     int idxInit = 0;
-    for(int i = 1; i < tamanhoPopulacao; ++i)
+    for(int i = 1; i < TamanhoDaPopulacao; ++i)
         if(maisViavel(populacao[i], populacao[idxInit])) idxInit = i;
     
     Individuo melhorIndividuo = populacao[idxInit];
@@ -573,14 +548,13 @@ Individuo Metaheuristica::AG(int opc){
     
     vector<double> valores;
     
-    for(int i = 0; i < maxGeracao; ++i){
+    for(int i = 0; i < numeroMaxGeracoes; ++i){
         
-        // double temperaturaSelecao = desvio(fitnessPop) * 0.5; 
         double temperaturaSelecao = 0.4; 
 
-        vector<pair<int,int>> paisEscolhidos = escolhendoPais(populacao, temperaturaSelecao);
+        vector<pair<int,int>> paisEscolhidos = escolhendoPais(populacao);
         
-        vector<Individuo> filhos = reproducao(paisEscolhidos, populacao, tamanhoPopulacao, mutacaoProb, crossoverProb);
+        vector<Individuo> filhos = reproducao(paisEscolhidos, populacao);
 
         // for (auto& filho : filhos) buscaTabu(filho); // fit
         
@@ -605,39 +579,26 @@ Individuo Metaheuristica::AG(int opc){
         }
         
         // ja chega ordenado
-        vector<Individuo> novaPopulacao = novaPopTorneioElitista(filhos, populacao, tamanhoPopulacao, elitismo, temperaturaSelecao);
-        
-        // parametros de estagnação da mutação
-        const double mutacaoBase = 0.01;
-        const double mutacaoMax  = 0.05;
-        const int limiarEstagnacao = 5;
-        
-        // procura por melhor individuo
-        if (maisViavel(novaPopulacao[0], melhorIndividuo)){
-            melhorIndividuo = novaPopulacao[0];
-            melhorFitness = novaPopulacao[0].fitness;
-            estagnado = i;
-            mutacaoProb = mutacaoBase; 
-        }
+        vector<Individuo> novaPopulacao = novaPopTorneioElitista(filhos, populacao);
 
         // quantidade de gerações estagnadas
         int geracoesSemMelhora = i - estagnado;
 
         // aumento da mutação por estagnação
-        if(geracoesSemMelhora > limiarEstagnacao){
-            double excesso = geracoesSemMelhora - limiarEstagnacao;
+        if(geracoesSemMelhora > limiarEstagnacaoMutacao){
+            double excesso = geracoesSemMelhora - limiarEstagnacaoMutacao;
             double incremento = 0.001 * (1.0 + excesso * 0.05); // cresce com o tempo estagnado
-            mutacaoProb = clamp(mutacaoProb + incremento, mutacaoBase, mutacaoMax);
+            ProbabilidadeMutacao = clamp(ProbabilidadeMutacao + incremento, PisoTaxaMutacao, TetoTaxaMutacao);
         }
 
         // injeção de individuos na estagnação
-        int baseInjecao  = max(1, (int)(tamanhoPopulacao * 0.01));
-        int extraInjecao = (int)(geracoesSemMelhora * 0.001);
-        int quantInjetar = min((int)(tamanhoPopulacao * 0.30), baseInjecao + extraInjecao);
+        int baseInjecao  = max(1, (int)(TamanhoDaPopulacao * PorcentagemBaseInjecao));
+        int extraInjecao = (int)(geracoesSemMelhora * PorcentagemExtraInjecao);
+        int quantInjetar = min((int)(TamanhoDaPopulacao * PorcentagemMaximaNovosIndividuos), baseInjecao + extraInjecao);
         
         for(int k = 0; k < quantInjetar; ++k){
-            int idx = tamanhoPopulacao - 1 - k;
-            if(idx < elitismo) break;
+            int idx = TamanhoDaPopulacao - 1 - k;
+            if(idx < Elitismo) break;
 
             Individuo novo = geraSolucaoInicial();
             if(opc){
@@ -655,6 +616,21 @@ Individuo Metaheuristica::AG(int opc){
             novaPopulacao[idx] = move(novo);
         }
 
+
+        // procura por melhor individuo
+        
+        sort(novaPopulacao.begin(), novaPopulacao.end(), [this](const Individuo& a, const Individuo& b){
+            return maisViavel(a,b);
+        });
+
+
+        if (maisViavel(novaPopulacao[0], melhorIndividuo)){
+            melhorIndividuo = novaPopulacao[0];
+            melhorFitness = novaPopulacao[0].fitness;
+            estagnado = i;
+            ProbabilidadeMutacao = PisoTaxaMutacao; 
+        }
+
         valores.push_back(novaPopulacao[0].fitness);
 
         populacao.swap(novaPopulacao);
@@ -668,7 +644,7 @@ Individuo Metaheuristica::AG(int opc){
         }
     }
     
-    cout << "\n";
+    cout << "\n\n";
     double dp = desvio(valores);
     double media = accumulate(valores.begin(), valores.end(), 0) / valores.size();
 

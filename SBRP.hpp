@@ -71,7 +71,7 @@ class infoSBRP{
 	    int quantidadeOnibus;
 	    int quantidadeRotas;
 
-        // precisa de um teto pro step
+        // precisa de um teto pro step do solver
 	    int quantidadePassos; 
 
 	    // capacidade do ônibus
@@ -80,5 +80,4 @@ class infoSBRP{
 	public:
 
 	    void leitura(string arquivoEntrada);
-		// void leitura_two(string arquivoEntrada);
 };
