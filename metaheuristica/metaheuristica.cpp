@@ -49,6 +49,8 @@ int main(int argv, char *argc[]){
             
             cout << "\n";
         }
+
+        // meta.imprimeSolucao(ciclano, dados);
     }
 
     
@@ -115,7 +117,7 @@ void Metaheuristica::imprimeSolucao(Individuo& sol, infoSBRP& dados){
     cout << "\n========================================\n";
     cout << "        SOLUCAO - AG-BT (SBRP)\n";
     cout << "========================================\n";
-    cout << "Peso total (distancia): " << sol.fitness << "\n";
+    cout << "Peso total (distancia): " << sol.fitness - sol.penalidadeFitness << "\n";
 
     // agrupa os alunos por rota original (antes de renumerar)
     vector<vector<int>> alunosPorRota(sol.rotasFeitas.size());

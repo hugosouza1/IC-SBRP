@@ -87,22 +87,25 @@ class Metaheuristica{
             // Taxas de mutação
             double ProbabilidadeMutacao = 0.01; 
             const double PisoTaxaMutacao = 0.01;
-            const double TetoTaxaMutacao  = 0.1;
+            const double TetoTaxaMutacao  = 0.08;
             const int limiarEstagnacaoMutacao = 2;
+            const double ProbabilidadeMacroMutacao = 0.02; // mutação violenta (reprodução)
             
             // injeção de individuos na estagnação
             const double PorcentagemBaseInjecao  = 0.1;
             const double PorcentagemExtraInjecao = 0.01; 
-            const double PorcentagemMaximaNovosIndividuos = 0.08;
+            const double PorcentagemMaximaNovosIndividuos = 0.05; 
             
             // Penalidade Construção de Rotas Genetico
                 // rotas
-                const double PenalidadePorRotaAtiva = 5.0; 
+                const double PenalidadePorRotaAtiva = 2.0; // penalidade por rota ativa. quanto mais, maior é a penal
                 const int LimiarParadasPorRotas = 1; //minimo de paradas pro rota
-                const double PenalidadeRotaExtraPequena = 10.0;
+                const double PenalidadeRotaExtraPequena = 10.0; // penalidade de rota muito curta
+                const double PenalidadeDesbalanceamento = 10.0; // penalidade de rotas com alunos desbalanceado
                 // paradas
-                const int limiteParadaPorRota = 1; // minimo de repeticao de parada por rota
-                const double PenalidadePorRepeticaoParada = 2.0;
+                const int limiteParadaPorRota = 1; // minimo de repeticao de parada entre rotas
+                const double PenalidadeParadaEntreRota = 100.0; // diferente rota
+                const double PenalidadeParadaMesmaRota = 100.0; // mesma roota
 
             // Torneio
             const double TaxaDecaimentoTorneio = 0.20;
@@ -121,10 +124,10 @@ class Metaheuristica{
         // ================================================================== //
         //                            BUSCA TABU                              //
         // ================================================================== //
-        const int TamanhoRCL = 100;
-        const double TaxaDecaimentoRCL = 0.3; // quanto maior, mais pende pros melhores. menor, mais uniforme
-        const double TenureTaxaTamRota = 0.1; // tenure com base no Tamanho da rota;
-        const int IteracoesTabu = 70; 
+        const int TamanhoRCL = 300;
+        const double TaxaDecaimentoRCL = 0.25; // quanto maior, mais pende pros melhores. menor, mais uniforme
+        const double TenureTaxaTamRota = 0.15; // tenure com base no Tamanho da rota;
+        const int IteracoesTabu = 50; 
         // ================================================================== //
         
 

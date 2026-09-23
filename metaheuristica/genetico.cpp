@@ -167,9 +167,47 @@ double Metaheuristica::aplicaPenalidades(Individuo& individuo){
 
     for(auto& [parada, quant] : contagemParada){
         if(quant > limiteParadaPorRota){
-            penalidade += (quant - limiteParadaPorRota) * PenalidadePorRepeticaoParada;
+            penalidade += (quant - limiteParadaPorRota) * PenalidadeParadaEntreRota;
         }
     }
+
+
+    // --- penalidade por parada repetida na mesma rota
+    unordered_set<int> contagemParada2;
+    for(const auto& rota : individuo.rotasFeitas){
+        for(int a : rota){
+            auto ret = contagemParada2.insert(a);
+            if( ! ret.second){
+                penalidade += PenalidadeParadaMesmaRota;
+            }
+        }
+        contagemParada2.clear();
+    }
+
+    // --- calculo de desbalanceamento com desvio padrao
+    double somaAlunos = 0.0;
+    int rotasComAluno = 0;
+    for(int r = 0; r < quantidadeMaxRota; ++r){
+        if(individuo.rotaViavel[r] && individuo.alunoPorRota[r] > 0){
+            somaAlunos += individuo.alunoPorRota[r];
+            rotasComAluno++;
+        }
+    }
+
+    if(rotasComAluno > 1){
+        double media = somaAlunos / rotasComAluno;
+        double somaQuadrados = 0.0;
+        for(int r = 0; r < quantidadeMaxRota; ++r){
+            if(individuo.rotaViavel[r] && individuo.alunoPorRota[r] > 0){
+                double diff = individuo.alunoPorRota[r] - media;
+                somaQuadrados += diff * diff;
+            }
+        }
+        double desvioCarga = sqrt(somaQuadrados / rotasComAluno);
+
+        penalidade += desvioCarga * PenalidadeDesbalanceamento;
+    }
+    
 
     individuo.penalidadeFitness = penalidade;
     individuo.fitness += penalidade;
@@ -436,6 +474,46 @@ vector<Individuo> Metaheuristica::reproducao(vector<pair<int,int>> &paisEscolhid
         }
 
 
+        if(muta(gen) < ProbabilidadeMacroMutacao){
+
+            vector<int> possi;
+            for(int r = 0; r < quantidadeMaxRota; ++r){
+                if(cargaRota[r] > 0) possi.push_back(r);
+            }
+
+            if(!possi.empty()){
+                uniform_int_distribution<int> distRota(0, possi.size() - 1);
+                int rotaAlvo = possi[distRota(gen)];
+
+                for(int g = 0; g < gene; ++g){
+                    if(filho.atrAlunoRota[g] == rotaAlvo){
+
+                        // sorteia nova parada dentre as possíveis do aluno
+                        const estudante& aluno = problema.alunosParadas[g];
+                        if(!aluno.paradasPossiveis.empty()){
+                            uniform_int_distribution<int> distParada(0, aluno.paradasPossiveis.size() - 1);
+                            filho.atrAlunoParada[g] = aluno.paradasPossiveis[distParada(gen)].first;
+                        }
+
+                        // sorteia nova rota, com capacidade
+                        vector<int> candidatas;
+                        for(int r = 0; r < quantidadeMaxRota; ++r){
+                            if(r != rotaAlvo && cargaRota[r] < problema.Q)
+                                candidatas.push_back(r);
+                        }
+                        if(!candidatas.empty()){
+                            uniform_int_distribution<int> distR(0, candidatas.size() - 1);
+                            int novaRota = candidatas[distR(gen)];
+                            cargaRota[rotaAlvo]--;
+                            cargaRota[novaRota]++;
+                            filho.atrAlunoRota[g] = novaRota;
+                        }
+                    }
+                }
+            }
+        }
+
+
         filhos.push_back(move(filho)); 
     }
     return filhos;
@@ -479,6 +557,8 @@ void compactarRotas(Individuo& individuo) {
         mapa[i] = novasRotas.size();
         novasRotas.push_back(move(individuo.rotasFeitas[i]));
     }
+    
+    vector<int> alPRota(novasRotas.size(), 0);
 
     for(int e = 0; e < individuo.atrAlunoRota.size(); ++e) {
 
@@ -486,9 +566,12 @@ void compactarRotas(Individuo& individuo) {
 
         if(rota >= 0 && rota < mapa.size()) {
             individuo.atrAlunoRota[e] = mapa[rota];
+            alPRota[mapa[rota]]++;
+
         }
     }
-
+    
+    individuo.alunoPorRota = move(alPRota);
     individuo.rotasFeitas = move(novasRotas);
 }
 
@@ -643,6 +726,9 @@ Individuo Metaheuristica::AG(int opc){
             // cout << "Geracao:" << i << " // melhor fitness atual = " << melhorFitness << "\n";
         }
     }
+
+
+    compactarRotas(melhorIndividuo); 
     
     cout << "\n\n";
     double dp = desvio(valores);
@@ -651,8 +737,13 @@ Individuo Metaheuristica::AG(int opc){
     cout << "Melhor valor: " << melhorFitness << "\n";
     cout << "Desvio padrao: " << dp << "\n";
     cout << "Media: " << media << "\n";
+
+    cout << "Quantidade por rota:";
+
+    for(int i = 0; i < melhorIndividuo.rotasFeitas.size(); ++i){
+        cout << "rota: " << i << " - " <<  melhorIndividuo.alunoPorRota[i] << "\n";
+    }
     
-    compactarRotas(melhorIndividuo); 
 
     return melhorIndividuo;
 }
