@@ -37,23 +37,15 @@ int main(int argv, char *argc[]){
 
     {
         cout << "\nAG-BT:\n";
-        Individuo ciclano = meta.AG(1);
+        auto [valoresGeracoes, ciclano]  = meta.AG(1);
 
-        cout << "::fitness real: " << ciclano.fitness - ciclano.penalidadeFitness << "[" << ciclano.penalidadeFitness << "]" << "\n";
-        
-        cout << "rotas: \n";
-        for(int i = 0; i < ciclano.rotasFeitas.size(); ++i){
-            for(int j = 0; j < ciclano.rotasFeitas[i].size(); ++j){
-                cout << ciclano.rotasFeitas[i][j] << "-";
-            }
-            
-            cout << "\n";
-        }
-
-        // meta.imprimeSolucao(ciclano, dados);
+        meta.imprimeSolucao(ciclano, dados, valoresGeracoes);
     }
 
     
+
+
+
 
 
 
@@ -61,7 +53,7 @@ int main(int argv, char *argc[]){
      
     {
         cout << "\nAG:\n";
-        Individuo fulano = meta.AG(0);
+        auto [fulano, valoresGeracoes] = meta.AG(0);
     }
     
     {
@@ -113,11 +105,12 @@ int main(int argv, char *argc[]){
 
 
 
-void Metaheuristica::imprimeSolucao(Individuo& sol, infoSBRP& dados){
+void Metaheuristica::imprimeSolucao(Individuo& sol, infoSBRP& dados, vector<double> valores){
     cout << "\n========================================\n";
     cout << "        SOLUCAO - AG-BT (SBRP)\n";
-    cout << "========================================\n";
-    cout << "Peso total (distancia): " << sol.fitness - sol.penalidadeFitness << "\n";
+    cout << "========================================\n\n";
+    cout << "Distancia total: " << sol.fitness - sol.penalidadeFitness << " [penalidade:" << sol.penalidadeFitness << "]" << "\n";
+    cout << "Desvio Padrão: " << desvioPadrao(valores) << "\n";
 
     // agrupa os alunos por rota original (antes de renumerar)
     vector<vector<int>> alunosPorRota(sol.rotasFeitas.size());
@@ -129,14 +122,14 @@ void Metaheuristica::imprimeSolucao(Individuo& sol, infoSBRP& dados){
     int rotaImpressa = 0;
     for(int r = 0; r < (int)sol.rotasFeitas.size(); r++){
 
-        if(sol.rotasFeitas[r].empty()) continue; // pula rota vazia sem deixar buraco na numeracao
+        if(sol.rotasFeitas[r].empty()) continue;
 
         int pesoRota = 0;
         for(int i = 0; i + 1 < (int)sol.rotasFeitas[r].size(); i++){
             pesoRota += dados.grafoParadas[sol.rotasFeitas[r][i]][sol.rotasFeitas[r][i+1]];
         }
 
-        cout << "\n---- Rota " << rotaImpressa << " ----\n";
+        cout << "\n\n---- Rota " << rotaImpressa << " ----\n";
         cout << "Peso da rota: " << pesoRota << "\n";
 
         cout << "Trajeto (paradas): ";
@@ -146,9 +139,30 @@ void Metaheuristica::imprimeSolucao(Individuo& sol, infoSBRP& dados){
         }
         cout << "\n";
 
-        cout << "Estudantes (" << alunosPorRota[r].size() << "):\n";
+        cout << "Estudantes (" << alunosPorRota[r].size() << "): ";
+        int it = 0;
+        cout << "[parada->alunos]\n";
+        set<int> para;
+
         for(int aluno : alunosPorRota[r]){
-            cout << "  aluno " << aluno << " -> embarca na parada " << sol.atrAlunoParada[aluno] << "\n";
+            para.insert(sol.atrAlunoParada[aluno]);
+        }
+        
+        for(int parad : para){
+            cout << "[" << parad << " -> ";
+            bool pri = true;
+            for(int aluno : alunosPorRota[r]){
+                if(parad == sol.atrAlunoParada[aluno]){
+                    if(pri){   
+                        cout << aluno << "";
+                        pri = false;
+                    }
+                    else cout << ", " << aluno;
+
+                }
+                // cout << "[" << aluno << "->" << sol.atrAlunoParada[aluno] << "], ";
+            }
+            cout << "]\n";
         }
 
         rotaImpressa++;

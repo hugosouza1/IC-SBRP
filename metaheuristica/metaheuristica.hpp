@@ -79,7 +79,7 @@ class Metaheuristica{
         //                       ALGORITMO GENETICO                           //
         // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
             // Parametros gerais genetico
-            const int numeroMaxGeracoes = 100;
+            const int numeroMaxGeracoes = 150;
             const int TamanhoDaPopulacao = 200;
             const double ProbabilidadeCrossover = 0.90;
             const int Elitismo = 1;
@@ -98,7 +98,7 @@ class Metaheuristica{
             
             // Penalidade Construção de Rotas Genetico
                 // rotas
-                const double PenalidadePorRotaAtiva = 2.0; // penalidade por rota ativa. quanto mais, maior é a penal
+                const double PenalidadePorRotaAtiva = 5.0; // penalidade por rota ativa. quanto mais, maior é a penal
                 const int LimiarParadasPorRotas = 1; //minimo de paradas pro rota
                 const double PenalidadeRotaExtraPequena = 10.0; // penalidade de rota muito curta
                 const double PenalidadeDesbalanceamento = 10.0; // penalidade de rotas com alunos desbalanceado
@@ -115,8 +115,8 @@ class Metaheuristica{
             const double TaxaDecaimentoRotasRep = 0.8; // selecao dos blocos de rota com mais alunos
 
             // Geracao da solucao Inicial
-            const double TaxaDecaimentoSolucaoInicial = 0.2;
-            const double TaxaDecaimentoRotaInicial    = 0.2;
+            const double TaxaDecaimentoSolucaoInicial = 0.4;
+            const double TaxaDecaimentoRotaInicial    = 0.4;
 
         // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
         
@@ -124,10 +124,10 @@ class Metaheuristica{
         // ================================================================== //
         //                            BUSCA TABU                              //
         // ================================================================== //
-        const int TamanhoRCL = 300;
+        const int TamanhoRCL = 200;
         const double TaxaDecaimentoRCL = 0.25; // quanto maior, mais pende pros melhores. menor, mais uniforme
         const double TenureTaxaTamRota = 0.15; // tenure com base no Tamanho da rota;
-        const int IteracoesTabu = 50; 
+        const int IteracoesTabu = 70; 
         // ================================================================== //
         
 
@@ -150,7 +150,7 @@ class Metaheuristica{
         int qr(){return quantidadeMaxRota;};
 		// ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 		// ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-        Individuo AG(int opc);
+        pair<vector<double>, Individuo> AG(int opc);
 		
         Individuo geraSolucaoInicial();
 
@@ -174,7 +174,7 @@ class Metaheuristica{
 
 		vector<int> contrucaoRota(vector<int> paradasMinimas, bool& sucesso);
 
-		vector<int> bfs(int a, int b);
+		// vector<int> bfs(int a, int b);
 
         vector<int> dijkstra(int a, int b);
 
@@ -218,6 +218,6 @@ class Metaheuristica{
 
         // -+-+--+-+-+-+-++-+
         
-        void imprimeSolucao(Individuo& sol, infoSBRP& dados);
+        void imprimeSolucao(Individuo& sol, infoSBRP& dados, vector<double> valores);
 
 };

@@ -598,7 +598,7 @@ double desvio(const vector<double>& valores) {
 }
 
 
-Individuo Metaheuristica::AG(int opc){
+pair<vector<double>, Individuo> Metaheuristica::AG(int opc){
     
     vector<Individuo> populacao = popIni(TamanhoDaPopulacao);
     
@@ -727,23 +727,10 @@ Individuo Metaheuristica::AG(int opc){
         }
     }
 
+    cout << "\n\n";
+
 
     compactarRotas(melhorIndividuo); 
-    
-    cout << "\n\n";
-    double dp = desvio(valores);
-    double media = accumulate(valores.begin(), valores.end(), 0) / valores.size();
 
-    cout << "Melhor valor: " << melhorFitness << "\n";
-    cout << "Desvio padrao: " << dp << "\n";
-    cout << "Media: " << media << "\n";
-
-    cout << "Quantidade por rota:";
-
-    for(int i = 0; i < melhorIndividuo.rotasFeitas.size(); ++i){
-        cout << "rota: " << i << " - " <<  melhorIndividuo.alunoPorRota[i] << "\n";
-    }
-    
-
-    return melhorIndividuo;
+    return {valores, melhorIndividuo};
 }
