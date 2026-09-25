@@ -219,8 +219,9 @@ ATRIBUICOES aluno_id parada_id distancia
 51 4 7.161
 51 7 11.971
 
-ONIBUS quantidade capacidade
-4 40
+ONIBUS id capacidade
+0 50
+1 10
 
 ARESTAS id id distancia
 0 3 29.976

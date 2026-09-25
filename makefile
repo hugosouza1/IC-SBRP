@@ -125,7 +125,7 @@ runHeuristica: clean $(EXEC_HEURISTICA) heuristica
 # EXECUTAR MODELO
 # =======================================
 
-runModelo: $(EXEC_MODELO)
+runModelo: clean $(EXEC_MODELO) modelo
 	./$(EXEC_MODELO) $(ENTRADA)
 
 

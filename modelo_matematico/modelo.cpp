@@ -17,7 +17,7 @@ void ModeloMatematico::cplexSolver(){
         // IloNumVar W(env, 0, IloInfinity, ILOFLOAT);
         // numberVar++;
 
-        IloNumVar M(env, 0, IloInfinity, ILOINT);
+        // IloNumVar M(env, 0, IloInfinity, ILOINT);
         numberVar++;
         
         // ======= VARIAVEIS DE DECISAO (x_i) binaria ==========
@@ -51,7 +51,6 @@ void ModeloMatematico::cplexSolver(){
                 numberVar++;
             }
         }
-
         
         
         //  tr^k  (rota r do onibus k esta ativa)
@@ -273,7 +272,8 @@ void ModeloMatematico::cplexSolver(){
                     numberRes++;
                 }
 
-                // A rota deve retornar a escola (0) pelo menos uma vez, vindo de um no diferente de 0 (chegada de verdade, não self-loop), em algum passo
+                // A rota deve retornar a escola (0) pelo menos uma vez, vindo de um no diferente de 0 (chegada de verdade, 
+                // não self-loop), em algum passo
                 soma.clear();
                 for(int st = 0; st < dados.quantidadePassos; st++) {
                     for(int i = 1; i < dados.quantidadeParadas; i++) {
@@ -287,7 +287,7 @@ void ModeloMatematico::cplexSolver(){
 
         // ============= ATIVAÇÃO E ASSOCIAÇÃO DE PARADAS =============
 
-        // Vincula s[k][r][i] a "a parada i foi visitada em algum passo".
+        // Vincula p[k][r][i] a "a parada i foi visitada em algum passo".
         for(int k = 0; k < dados.quantidadeOnibus; k++) {
             for(int r = 0; r < dados.quantidadeRotas; r++) {
                 for(int i = 0; i < dados.quantidadeParadas; i++) {
@@ -320,7 +320,7 @@ void ModeloMatematico::cplexSolver(){
 
         // ============= CAPACIDADE DOS VEÍCULOS =============
 
-        // Limita a quantidade de estudantes atendidos na rota à capacidade máxima Q 
+        // Limita a quantidade de estudantes atendidos na rota à capacidade máxima Q_k
         for(int k = 0; k < dados.quantidadeOnibus; k++) {
             for(int r = 0; r < dados.quantidadeRotas; r++) {
                 soma.clear();
@@ -330,14 +330,14 @@ void ModeloMatematico::cplexSolver(){
                     }
                 }
                 
-                model.add(soma <= dados.Q * t[k][r]); 
+                model.add(soma <= dados.capacidadeOnibus[k] * t[k][r]); 
                 numberRes++;
             }
         }
         
         // ============= LINEARIZAÇÃO DA VARIÁVEL AUXILIAR Y (y = a * p) =============
-        for(int k = 0; k < dados.quantidadeOnibus; k++) {
-            for(int r = 0; r < dados.quantidadeRotas; r++) {
+        // for(int k = 0; k < dados.quantidadeOnibus; k++) {
+            // for(int r = 0; r < dados.quantidadeRotas; r++) {
                 for(int e = 0; e < dados.quantidadeAlunos; e++) {
                     for(int pp = 0; pp < dados.alunosParadas[e].paradasPossiveis.size(); pp++) {
 
@@ -347,8 +347,8 @@ void ModeloMatematico::cplexSolver(){
                         // se estiver alocado àquela parada.
                         for(int k = 0; k < dados.quantidadeOnibus; k++) {
                             for(int r = 0; r < dados.quantidadeRotas; r++) {
-
                                 model.add(y[k][r][e][pp] <= a[e][pp]);
+
                                 model.add(y[k][r][e][pp] <= p[k][r][i]);
 
                                 numberRes += 2;
@@ -368,8 +368,8 @@ void ModeloMatematico::cplexSolver(){
                         numberRes++;
                     }
                 }
-            }
-        }
+            // }
+        // }
 
         // ============= RELAÇÃO ÔNIBUS-ROTA =============
         // Ativa z_k se o ônibus k operar ao menos uma rota
@@ -412,6 +412,8 @@ void ModeloMatematico::cplexSolver(){
         //     }
         // }
 
+
+        // ver como colocar na heterogeena
         // 2.0 rota global
         for(int r = 1; r < dados.quantidadeRotas; r++){
             IloExpr usoAtual(env);
@@ -429,27 +431,27 @@ void ModeloMatematico::cplexSolver(){
             usoAnterior.end();
         }
 
-        // Força o uso dos onibus em ordem: oni k -> oni k+1
-        for(int k = 1; k < dados.quantidadeOnibus; k++){
-            model.add(z[k] <= z[k - 1]);
-            numberRes++;
-        }
+        // // Força o uso dos onibus em ordem: oni k -> oni k+1
+        // for(int k = 1; k < dados.quantidadeOnibus; k++){
+        //     model.add(z[k] <= z[k - 1]);
+        //     numberRes++;
+        // }
 
 
 
         // ============= BALANCEAMENTO =============
 
-        // M
-        for(int k = 0; k < dados.quantidadeOnibus; k++) {
-            soma.clear();
-            for(int r = 0; r < dados.quantidadeRotas; r++) {
-                soma += t[k][r];
-            }
-            model.add(M >= soma);
-            numberRes++;
-        }
+        // // M
+        // for(int k = 0; k < dados.quantidadeOnibus; k++) {
+        //     soma.clear();
+        //     for(int r = 0; r < dados.quantidadeRotas; r++) {
+        //         soma += t[k][r];
+        //     }
+        //     model.add(M >= soma);
+        //     numberRes++;
+        // }
 
-        soma.end();
+        // soma.end();
         
         
         IloCplex cplex(env);
@@ -504,8 +506,8 @@ void ModeloMatematico::cplexSolver(){
             return;
         }
         double melhorQtdParadas = cplex.getObjValue();
-        model.remove(FO2);
-        model.add(obj2 <= melhorQtdParadas + 1e-4);
+        // model.remove(FO2);
+        // model.add(obj2 <= melhorQtdParadas + 1e-4);
 
         // ==============
         time(&tFimFase2);
@@ -528,23 +530,23 @@ void ModeloMatematico::cplexSolver(){
         // // ==============
         
         
-        // ================= FASE 3: Minimizar Max Rotas (M) =================
-        IloObjective FO4 = IloMinimize(env, M);
-        model.add(FO4);
-        cplex.extract(model);
-        cplex.solve();
+        // // ================= FASE 3: Minimizar Max Rotas (M) =================
+        // IloObjective FO4 = IloMinimize(env, M);
+        // model.add(FO4);
+        // cplex.extract(model);
+        // cplex.solve();
         
-        // ==============
-        time(&tFimFase3);
+        // // ==============
+        // time(&tFimFase3);
         // time(&tFimFase4);
         // ==============
 
         // ==============
         double tFase1 = difftime(tFimFase1, tInicio);
         double tFase2 = difftime(tFimFase2, tFimFase1);
-        double tFase3 = difftime(tFimFase3, tFimFase2);
+        // double tFase3 = difftime(tFimFase3, tFimFase2);
         // double tFase4 = difftime(tFimFase4, tFimFase3);
-        double tTotal = difftime(tFimFase3, tInicio);
+        double tTotal = difftime(tFimFase2, tInicio);
         // ==============
         
         switch(cplex.getStatus()){
@@ -581,7 +583,7 @@ void ModeloMatematico::cplexSolver(){
             cout << "Tempo Fase 1 (custo): " << tFase1 << " s\n";
             cout << "Tempo Fase 2 (paradas): " << tFase2 << " s\n";
             // cout << "Tempo Fase 3 (caminhada W): " << tFase3 << " s\n";
-            cout << "Tempo Fase 3 (balanceamento M): " << tFase3 << " s\n";
+            // cout << "Tempo Fase 3 (balanceamento M): " << tFase3 << " s\n";
             cout << "Tempo total: " << tTotal << " s\n\n";
 
             cout << "\n";
@@ -774,7 +776,7 @@ void ModeloMatematico::cplexSolver(){
         
             cout << "Custo total das rotas: " << melhorCusto << "\n";
             // cout << "Maior caminhada (W):   " << melhorDistW << "\n";
-            cout << "Maior rotas/onibus(M): " << cplex.getValue(M) << "\n";
+            // cout << "Maior rotas/onibus(M): " << cplex.getValue(M) << "\n";
             cout << "========================================================\n";
             
 

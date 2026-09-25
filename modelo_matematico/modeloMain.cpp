@@ -12,6 +12,7 @@ int main(int argv, char *argc[]){
     std::signal(SIGHUP, handler);
 
     infoSBRP dados;
+    
     dados.leitura(argc[1]);
 
     cout << "\nLeitura de dados concluida\n\n"; fflush(stdin);

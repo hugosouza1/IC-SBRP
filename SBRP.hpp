@@ -17,32 +17,6 @@
 
 using namespace std;
 
-struct Individuo {
-
-    // índice = aluno
-    // valor = parada escolhida para esse aluno
-    vector<int> atrAlunoParada;
-
-    // índice = aluno
-    // valor = rota que transporta esse aluno
-    vector<int> atrAlunoRota;
-
-    vector<double> intensidadePermutaRota; // pro tabu
-
-    double fitness = numeric_limits<double>::max();
-
-    vector<bool> rotaViavel;
-
-    int alunosInviaveisQuant;
-	vector<int> alunoPorRota;
-
-    // Apenas armazenado após a avaliação pelo Tabu
-    vector<vector<int>> rotasFeitas;
-	
-	// custo final de penalidade aplicada
-	double penalidadeFitness;
-};
-
 struct estudante{
     int id; // estudante A
 
@@ -68,8 +42,10 @@ class infoSBRP{
 
 	    int quantidadeParadas;
 	    int quantidadeAlunos;
-	    int quantidadeOnibus;
 	    int quantidadeRotas;
+
+	    int quantidadeOnibus;
+		vector<int> capacidadeOnibus;
 
         // precisa de um teto pro step do solver
 	    int quantidadePassos; 

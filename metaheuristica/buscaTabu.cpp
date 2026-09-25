@@ -14,108 +14,29 @@ double Metaheuristica::distancia(vector<int>& caminho, vector<vector<double>>& g
 
 // ---------- geração inicial da rota ----------
 
-// vector<int> Metaheuristica::bfs(int a, int b){
-//     vector<int> pai(problema.quantidadeParadas, -1);
-//     vector<bool> visitado(problema.quantidadeParadas, false);
-//     queue<int> fila;
-
-//     visitado[a] = true;
-//     if(b) visitado[0] = true;
-//     fila.push(a);
-
-//     while(!fila.empty()){
-//         int u = fila.front(); fila.pop();
-//         if(u == b) break;
-
-//         for(int v = 0; v < (int)problema.grafoParadas[u].size(); v++){
-//             if(!visitado[v] && problema.grafoParadas[u][v] > 0){
-//                 visitado[v] = true;
-//                 pai[v] = u;
-//                 fila.push(v);
-//             }
-//         }
-//     }
-
-//     if(!visitado[b]) return {};
-
-//     vector<int> caminho;
-//     for(int v = b; v != -1; v = pai[v]) caminho.push_back(v);
-//     reverse(caminho.begin(), caminho.end());
-//     return caminho;
-// }
-
-
-// vector<int> Metaheuristica::contrucaoRota(vector<int> obrigatorias, bool& sucesso){
-//     sucesso = true;
-//     if(obrigatorias.empty()) return {};
-
-//     vector<int> rota;
-//     int atual = 0;
-
-//     for(int parada : obrigatorias){
-//         if(find(rota.begin(), rota.end(), parada) != rota.end()) continue;
-
-//         vector<int> trecho = bfs(atual, parada);
-//         if(trecho.empty()){ sucesso = false; return {}; }  
-
-//         if(atual != 0)
-//             trecho.erase(trecho.begin()); 
-
-//         rota.insert(rota.end(), trecho.begin(), trecho.end());
-
-//         atual = parada;
-//     }
-
-//     vector<int> volta = bfs(atual, 0);
-//     if(volta.empty()){ sucesso = false; return {}; }
-
-//     volta.erase(volta.begin());
-//     rota.insert(rota.end(), volta.begin(), volta.end());
-
-//     return rota;
-// }
-
-// ++++++++++----------+++++++++
-
-
-vector<int> Metaheuristica::dijkstra(int a, int b){
-    int n = problema.quantidadeParadas;
-    vector<double> dist(n, numeric_limits<double>::max());
-    vector<int> pai(n, -1);
-    vector<bool> visitado(n, false);
-
-    priority_queue<pair<double,int>, vector<pair<double,int>>, greater<pair<double,int>>> fila;
+vector<int> Metaheuristica::bfs(int a, int b){
+    vector<int> pai(problema.quantidadeParadas, -1);
+    vector<bool> visitado(problema.quantidadeParadas, false);
+    queue<int> fila;
 
     visitado[a] = true;
-    if(b) visitado[0] = true; 
-
-    dist[a] = 0.0;
-    fila.push({0.0, a});
+    if(b) visitado[0] = true;
+    fila.push(a);
 
     while(!fila.empty()){
-        auto [d, u] = fila.top(); fila.pop();
-
-        if(d > dist[u]) continue; 
+        int u = fila.front(); fila.pop();
         if(u == b) break;
 
         for(int v = 0; v < (int)problema.grafoParadas[u].size(); v++){
-            if(visitado[v]) continue;
-
-            double peso = problema.grafoParadas[u][v];
-            if(peso <= 0) continue;
-
-            double novaDist = dist[u] + peso;
-            if(novaDist < dist[v]){
-                dist[v] = novaDist;
+            if(!visitado[v] && problema.grafoParadas[u][v] > 0){
+                visitado[v] = true;
                 pai[v] = u;
-                fila.push({novaDist, v});
+                fila.push(v);
             }
         }
-
-        visitado[u] = true;
     }
 
-    if(dist[b] == numeric_limits<double>::max()) return {};
+    if(!visitado[b]) return {};
 
     vector<int> caminho;
     for(int v = b; v != -1; v = pai[v]) caminho.push_back(v);
@@ -134,8 +55,7 @@ vector<int> Metaheuristica::contrucaoRota(vector<int> obrigatorias, bool& sucess
     for(int parada : obrigatorias){
         if(find(rota.begin(), rota.end(), parada) != rota.end()) continue;
 
-        vector<int> trecho = dijkstra(atual, parada); 
-
+        vector<int> trecho = bfs(atual, parada);
         if(trecho.empty()){ sucesso = false; return {}; }  
 
         if(atual != 0)
@@ -146,8 +66,7 @@ vector<int> Metaheuristica::contrucaoRota(vector<int> obrigatorias, bool& sucess
         atual = parada;
     }
 
-    vector<int> volta = dijkstra(atual, 0); 
-
+    vector<int> volta = bfs(atual, 0);
     if(volta.empty()){ sucesso = false; return {}; }
 
     volta.erase(volta.begin());
@@ -155,6 +74,90 @@ vector<int> Metaheuristica::contrucaoRota(vector<int> obrigatorias, bool& sucess
 
     return rota;
 }
+
+// ++++++++++----------+++++++++
+
+
+// vector<int> Metaheuristica::dijkstra(int a, int b){
+//     int n = problema.quantidadeParadas;
+//     vector<double> dist(n, numeric_limits<double>::max());
+//     vector<int> pai(n, -1);
+//     vector<bool> visitado(n, false);
+
+//     priority_queue<pair<double,int>, vector<pair<double,int>>, greater<pair<double,int>>> fila;
+
+//     visitado[a] = true;
+//     if(b) visitado[0] = true; 
+
+//     dist[a] = 0.0;
+//     fila.push({0.0, a});
+
+//     while(!fila.empty()){
+//         auto [d, u] = fila.top(); fila.pop();
+
+//         if(d > dist[u]) continue; 
+//         if(u == b) break;
+
+//         for(int v = 0; v < (int)problema.grafoParadas[u].size(); v++){
+//             if(visitado[v]) continue;
+
+//             double peso = problema.grafoParadas[u][v];
+//             if(peso <= 0) continue;
+
+//             double novaDist = dist[u] + peso;
+//             if(novaDist < dist[v]){
+//                 dist[v] = novaDist;
+//                 pai[v] = u;
+//                 fila.push({novaDist, v});
+//             }
+//         }
+
+//         visitado[u] = true;
+//     }
+
+//     if(dist[b] == numeric_limits<double>::max()) return {};
+
+//     vector<int> caminho;
+//     for(int v = b; v != -1; v = pai[v]) caminho.push_back(v);
+//     reverse(caminho.begin(), caminho.end());
+//     return caminho;
+// }
+
+
+// vector<int> Metaheuristica::contrucaoRota(vector<int> obrigatorias, bool& sucesso){
+//     sucesso = true;
+//     if(obrigatorias.empty()) return {};
+
+//     vector<int> rota;
+//     int atual = 0;
+
+//     for(int parada : obrigatorias){
+//         if(find(rota.begin(), rota.end(), parada) != rota.end()) continue;
+
+//         vector<int> trecho = dijkstra(atual, parada); 
+
+//         if(trecho.empty()){ sucesso = false; return {}; }  
+
+//         if(atual != 0)
+//             trecho.erase(trecho.begin()); 
+
+//         rota.insert(rota.end(), trecho.begin(), trecho.end());
+
+//         atual = parada;
+//     }
+
+//     vector<int> volta = dijkstra(atual, 0); 
+
+//     if(volta.empty()){ sucesso = false; return {}; }
+
+//     volta.erase(volta.begin());
+//     rota.insert(rota.end(), volta.begin(), volta.end());
+
+//     return rota;
+// }
+
+
+// +++++++++++++++++++++++++++++++++++++++++
 
 
 vector<vector<int>> Metaheuristica::caminhosIniciais(Individuo &configParada, vector<bool>& sucesso, vector<vector<int>> *paradaDasRotas){

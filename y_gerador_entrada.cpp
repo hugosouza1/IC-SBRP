@@ -41,7 +41,8 @@ struct Parametros {
     int nParadas = 40;
     int nAlunos = 80;
     int nOnibus = 4;
-    int capacidade = 40;
+    vector<int> capacidadesDisponiveis = {10, 20, 40, 50}; 
+    // int capacidade = 40;
     double largura = 100.0;
     double altura = 100.0;
     
@@ -213,7 +214,8 @@ static void salvarInstancia(const Parametros& args,
                              const vector<Ponto>& alunos,
                              const vector<Atribuicao>& atribuicoes,
                              const vector<int>& forcados,
-                             const vector<Aresta>& arestas) {
+                             const vector<Aresta>& arestas,
+                             const vector<int>& capacidadeOnibus) {
     ofstream f(args.out);
     f.precision(3);
     f << fixed;
@@ -223,7 +225,7 @@ static void salvarInstancia(const Parametros& args,
     f << "n_paradas " << args.nParadas << "\n";
     f << "n_alunos " << args.nAlunos << "\n";
     f << "n_onibus " << args.nOnibus << "\n";
-    f << "capacidade_onibus " << args.capacidade << "\n";
+    // f << "capacidade_onibus " << args.capacidade << "\n";
     f << "dispersao " << args.dispersao << "\n";
     f << "modo_alunos " << args.modoAlunos << "\n";
     f << "raio_max_caminhada " << args.raioMaxCaminhada << "\n";
@@ -252,8 +254,9 @@ static void salvarInstancia(const Parametros& args,
     }
     f << "\n";
 
-    f << "ONIBUS quantidade capacidade\n";
-    f << args.nOnibus << " " << args.capacidade << "\n";
+    f << "ONIBUS id capacidade\n";
+    for (int k = 0; k < args.nOnibus; ++k)
+        f << k << " " << capacidadeOnibus[k] << "\n";
     f << "\n";
 
     f << "ARESTAS id id distancia" << "\n";
@@ -280,11 +283,11 @@ static Parametros parseArgs(int argc, char** argv) {
         if      (arg == "--n_paradas") p.nParadas = stoi(next("--n_paradas"));
         else if (arg == "--n_alunos") p.nAlunos = stoi(next("--n_alunos"));
         else if (arg == "--n_onibus") p.nOnibus = stoi(next("--n_onibus"));
-        else if (arg == "--capacidade") p.capacidade = stoi(next("--capacidade"));
+        // else if (arg == "--capacidade") p.capacidade = stoi(next("--capacidade"));
         else if (arg == "--largura") p.largura = stod(next("--largura"));
         else if (arg == "--altura") p.altura = stod(next("--altura"));
         else if (arg == "--dispersao") p.dispersao = next("--dispersao"); // parada
-        else if (arg == "--modo_alunos") p.modoAlunos = next("--modo_alunos");
+        // else if (arg == "--modo_alunos") p.modoAlunos = next("--modo_alunos");
         else if (arg == "--raio_max_caminhada") p.raioMaxCaminhada = stod(next("--raio_max_caminhada"));
         else if (arg == "--k_vizinhos") p.kVizinhos = stoi(next("--k_vizinhos"));
         else if (arg == "--seed") p.seed = static_cast<unsigned>(stoul(next("--seed")));
@@ -316,15 +319,7 @@ int main(int argc, char** argv) {
     }
 
     vector<Ponto> alunos;
-    // if (args.modoAlunos == "independente") {
-    //     // tende a gerar mais atribuicoes forcadas
-    //     alunos = (args.dispersao == "uniforme")
-    //         ? gerarPontosUniformes(args.nAlunos, args.largura, args.altura, rng)
-    //         : gerarPontosCluster(args.nAlunos, args.largura, args.altura, rng);
-    // } else {
-        alunos = gerarAlunosAoRedorDeParadas(args.nAlunos, paradas, args.raioMaxCaminhada,
-                                              args.largura, args.altura, rng);
-    // }
+    alunos = gerarAlunosAoRedorDeParadas(args.nAlunos, paradas, args.raioMaxCaminhada, args.largura, args.altura, rng);
 
     vector<Atribuicao> atribuicoes;
     vector<int> forcados;
@@ -335,7 +330,14 @@ int main(int argc, char** argv) {
     nos.insert(nos.end(), paradas.begin(), paradas.end());
     auto arestas = construirGrafoMalha(nos, args.kVizinhos);
 
-    salvarInstancia(args, escola, paradas, alunos, atribuicoes, forcados, arestas);
+    // onibus
+    uniform_int_distribution<int> escolhaCap(0, args.capacidadesDisponiveis.size() - 1);
+    vector<int> capacidadeOnibus(args.nOnibus);
+    for (int k = 0; k < args.nOnibus; ++k)
+        capacidadeOnibus[k] = args.capacidadesDisponiveis[escolhaCap(rng)];
+
+
+    salvarInstancia(args, escola, paradas, alunos, atribuicoes, forcados, arestas, capacidadeOnibus);
 
     cout << "Instancia gerada: " << args.out << "\n";
     cout << "  paradas=" << args.nParadas << " alunos=" << args.nAlunos

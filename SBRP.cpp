@@ -12,6 +12,7 @@ void infoSBRP::leitura(string arquivoEntrada){
     int quantidadeAlunosArquivo = 0; 
     unordered_map<int,int> idParaIndice; // aluno.id -> indice em alunosParadas
     alunosParadas.clear();
+    capacidadeOnibus.clear();
 
     string linha;
     while(getline(arq, linha)){
@@ -71,9 +72,12 @@ void infoSBRP::leitura(string arquivoEntrada){
             }
 
             case ONIBUS: {
-                iss >> quantidadeOnibus >> Q;
+                int idBus, capacid;
+                iss >> idBus >> capacid;
+                capacidadeOnibus.push_back(capacid);
                 break;
             }
+
             case ARESTAS: {
                 int pontoA, pontoB;
                 double peso;
@@ -86,9 +90,13 @@ void infoSBRP::leitura(string arquivoEntrada){
         }
     }
 
+    quantidadeOnibus = capacidadeOnibus.size();
+    int media = accumulate(capacidadeOnibus.begin(), capacidadeOnibus.end(), 0) / quantidadeOnibus;
+
     quantidadeAlunos  = (int)alunosParadas.size();
-    quantidadeRotas   = (((quantidadeAlunos + Q) / Q) + 1) * 2;
+    quantidadeRotas   = (((quantidadeAlunos + media) / media) + 1) * 2;
     quantidadePassos  = quantidadeParadas * 1.5;
+
     arq.close();
 }
 

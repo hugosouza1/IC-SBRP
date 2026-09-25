@@ -130,6 +130,7 @@ void Metaheuristica::imprimeSolucao(Individuo& sol, infoSBRP& dados, vector<doub
         }
 
         cout << "\n\n---- Rota " << rotaImpressa << " ----\n";
+        cout << "Ônibus atribuído: " << sol.atrOnibusRota[rotaImpressa] << "(capacidade: " << problema.capacidadeOnibus[sol.atrOnibusRota[rotaImpressa]] << ")\n";
         cout << "Peso da rota: " << pesoRota << "\n";
 
         cout << "Trajeto (paradas): ";
@@ -149,7 +150,7 @@ void Metaheuristica::imprimeSolucao(Individuo& sol, infoSBRP& dados, vector<doub
         }
         
         for(int parad : para){
-            cout << "[" << parad << " -> ";
+            cout << "\t\t[" << parad << " -> ";
             bool pri = true;
             for(int aluno : alunosPorRota[r]){
                 if(parad == sol.atrAlunoParada[aluno]){
