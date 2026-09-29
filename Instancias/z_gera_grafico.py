@@ -1,3 +1,5 @@
+import sys
+
 import re
 from pathlib import Path
 
@@ -8,7 +10,7 @@ import matplotlib.pyplot as plt
 # CONFIGURAÇÃO
 # ============================================================
 
-arquivo = Path("instancia.txt")
+arquivo = Path(sys.argv[1])
 saida = "grafo_sbrp.png"
 
 texto = arquivo.read_text(encoding="utf-8")

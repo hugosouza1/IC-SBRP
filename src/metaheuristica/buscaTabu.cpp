@@ -75,90 +75,6 @@ vector<int> Metaheuristica::contrucaoRota(vector<int> obrigatorias, bool& sucess
     return rota;
 }
 
-// ++++++++++----------+++++++++
-
-
-// vector<int> Metaheuristica::dijkstra(int a, int b){
-//     int n = problema.quantidadeParadas;
-//     vector<double> dist(n, numeric_limits<double>::max());
-//     vector<int> pai(n, -1);
-//     vector<bool> visitado(n, false);
-
-//     priority_queue<pair<double,int>, vector<pair<double,int>>, greater<pair<double,int>>> fila;
-
-//     visitado[a] = true;
-//     if(b) visitado[0] = true; 
-
-//     dist[a] = 0.0;
-//     fila.push({0.0, a});
-
-//     while(!fila.empty()){
-//         auto [d, u] = fila.top(); fila.pop();
-
-//         if(d > dist[u]) continue; 
-//         if(u == b) break;
-
-//         for(int v = 0; v < (int)problema.grafoParadas[u].size(); v++){
-//             if(visitado[v]) continue;
-
-//             double peso = problema.grafoParadas[u][v];
-//             if(peso <= 0) continue;
-
-//             double novaDist = dist[u] + peso;
-//             if(novaDist < dist[v]){
-//                 dist[v] = novaDist;
-//                 pai[v] = u;
-//                 fila.push({novaDist, v});
-//             }
-//         }
-
-//         visitado[u] = true;
-//     }
-
-//     if(dist[b] == numeric_limits<double>::max()) return {};
-
-//     vector<int> caminho;
-//     for(int v = b; v != -1; v = pai[v]) caminho.push_back(v);
-//     reverse(caminho.begin(), caminho.end());
-//     return caminho;
-// }
-
-
-// vector<int> Metaheuristica::contrucaoRota(vector<int> obrigatorias, bool& sucesso){
-//     sucesso = true;
-//     if(obrigatorias.empty()) return {};
-
-//     vector<int> rota;
-//     int atual = 0;
-
-//     for(int parada : obrigatorias){
-//         if(find(rota.begin(), rota.end(), parada) != rota.end()) continue;
-
-//         vector<int> trecho = dijkstra(atual, parada); 
-
-//         if(trecho.empty()){ sucesso = false; return {}; }  
-
-//         if(atual != 0)
-//             trecho.erase(trecho.begin()); 
-
-//         rota.insert(rota.end(), trecho.begin(), trecho.end());
-
-//         atual = parada;
-//     }
-
-//     vector<int> volta = dijkstra(atual, 0); 
-
-//     if(volta.empty()){ sucesso = false; return {}; }
-
-//     volta.erase(volta.begin());
-//     rota.insert(rota.end(), volta.begin(), volta.end());
-
-//     return rota;
-// }
-
-
-// +++++++++++++++++++++++++++++++++++++++++
-
 
 vector<vector<int>> Metaheuristica::caminhosIniciais(Individuo &configParada, vector<bool>& sucesso, vector<vector<int>> *paradaDasRotas){
 
@@ -401,6 +317,7 @@ vector<Movimento> Metaheuristica::candidatosMover(vector<int>& rota, vector<bool
         if(destino == origem - 1 || destino == origem) continue;
 
         int A = rota[origem - 1], B = rota[origem], C = rota[origem + 1];
+        
         if(paradaObrigatoria[B]) continue;
         if(problema.grafoParadas[A][C] == 0) continue; // remoção precisa ser válida
 
@@ -432,7 +349,7 @@ vector<Movimento> Metaheuristica::candidatosMover(vector<int>& rota, vector<bool
 }
 
 Movimento Metaheuristica::melhorVizinho(vector<int>& rota, vector<bool>& estaNaRota,
-    vector<bool>& paradaObrigatoria, unordered_map<ChaveTabu, int>& tabu, double melhorDistanciaGlobal, int iteracao){
+    vector<bool>& paradaObrigatoria, unordered_map<ChaveTabu, int>& tabu, double melhorDistanciaGlobal, int iteracao, ALNS &Adapt){
 
     double distanciaAtual = distancia(rota, problema.grafoParadas);
 
@@ -459,8 +376,18 @@ Movimento Metaheuristica::melhorVizinho(vector<int>& rota, vector<bool>& estaNaR
     });
 
     int limite = min((int)candidatos.size(), TamanhoRCL);
+
+
+    // vector<double> pesos(limite);
+    // for(int i = 0; i < limite; ++i) pesos[i] = exp(-TaxaDecaimentoRCL * i);
+    
     vector<double> pesos(limite);
-    for(int i = 0; i < limite; ++i) pesos[i] = exp(-TaxaDecaimentoRCL * i);
+    for(int i = 0; i < limite; ++i){
+        double pesoRank = exp(-TaxaDecaimentoRCL * i);
+        pesos[i] = pesoRank * Adapt.pesoOperador[candidatos[i].tipo]; // combina rank + aprendizado do operador
+    }
+
+
 
     discrete_distribution<int> distPeso(pesos.begin(), pesos.end());
     return candidatos[distPeso(gen)];
@@ -567,6 +494,8 @@ void Metaheuristica::pertubacaoRota(vector<vector<int>> &paradasRotas, vector<do
 }
 
 double Metaheuristica::buscaTabu(Individuo& configParada){
+    
+    ALNS Adapt; // ALNS
 
     int alunosAfetados = 0;
 
@@ -613,51 +542,56 @@ double Metaheuristica::buscaTabu(Individuo& configParada){
         while(it < maxIter){
             // cout << "yo "; fflush(stdout);
 
-            Movimento mov = melhorVizinho(rotaAtual, estaNaRota, paradaObrigatoria, tabu, melhorDistancia, it);
+            Movimento mov = melhorVizinho(rotaAtual, estaNaRota, paradaObrigatoria, tabu, melhorDistancia, it, Adapt);
 
             if(mov.delta == numeric_limits<double>::max()){
-                // travou: sem vizinho admissível.
-                bool kickAplicado = false;
 
-                if(rotaAtual.size() >= 4){ // precisa de folga
-                    const int maxTentativas = 5;
+                break;
 
-                    for(int tent = 0; tent < maxTentativas && !kickAplicado; ++tent){
-                        uniform_int_distribution<int> distIdx(1, rotaAtual.size() - 2); // evita escola nas pontas
+                // // travou: sem vizinho admissível.
+                // bool kickAplicado = false;
 
-                        int a = distIdx(gen);
-                        int b = distIdx(gen);
-                        if(a == b) continue;
-                        if(a > b) swap(a, b);
+                // if(rotaAtual.size() >= 4){ // precisa de folga
+                //     const int maxTentativas = 5;
 
-                        int prevA = rotaAtual[a - 1], noA = rotaAtual[a], nextA = rotaAtual[a + 1];
-                        int prevB = rotaAtual[b - 1], noB = rotaAtual[b], nextB = rotaAtual[b + 1];
+                //     for(int tent = 0; tent < maxTentativas && !kickAplicado; ++tent){
+                //         uniform_int_distribution<int> distIdx(1, rotaAtual.size() - 2); // evita escola nas pontas
 
-                        // checa se as arestas resultantes da troca existem no grafo
-                        bool valido;
-                        if(b == a + 1){
-                            // posições adjacentes: só as arestas das pontas mudam
-                            valido = problema.grafoParadas[prevA][noB] > 0 &&
-                                     problema.grafoParadas[noA][nextB] > 0;
-                        } else {
-                            valido = problema.grafoParadas[prevA][noB] > 0 &&
-                                     problema.grafoParadas[noB][nextA] > 0 &&
-                                     problema.grafoParadas[prevB][noA] > 0 &&
-                                     problema.grafoParadas[noA][nextB] > 0;
-                        }
+                //         int a = distIdx(gen);
+                //         int b = distIdx(gen);
+                //         if(a == b) continue;
+                //         if(a > b) swap(a, b);
 
-                        if(valido){
-                            swap(rotaAtual[a], rotaAtual[b]);
-                            estaNaRota[rotaAtual[a]] = true;
-                            estaNaRota[rotaAtual[b]] = true;
-                            kickAplicado = true;
-                        }
-                    }
-                }
+                //         int prevA = rotaAtual[a - 1], noA = rotaAtual[a], nextA = rotaAtual[a + 1];
+                //         int prevB = rotaAtual[b - 1], noB = rotaAtual[b], nextB = rotaAtual[b + 1];
 
-                it++;
-                continue;
+                //         // checa se as arestas resultantes da troca existem no grafo
+                //         bool valido;
+                //         if(b == a + 1){
+                //             // posições adjacentes: só as arestas das pontas mudam
+                //             valido = problema.grafoParadas[prevA][noB] > 0 &&
+                //                      problema.grafoParadas[noA][nextB] > 0;
+                //         } else {
+                //             valido = problema.grafoParadas[prevA][noB] > 0 &&
+                //                      problema.grafoParadas[noB][nextA] > 0 &&
+                //                      problema.grafoParadas[prevB][noA] > 0 &&
+                //                      problema.grafoParadas[noA][nextB] > 0;
+                //         }
+
+                //         if(valido){
+                //             swap(rotaAtual[a], rotaAtual[b]);
+                //             estaNaRota[rotaAtual[a]] = true;
+                //             estaNaRota[rotaAtual[b]] = true;
+                //             kickAplicado = true;
+                //         }
+                //     }
+                // }
+
+                // it++;
+                // continue;
             }
+
+            double distanciaAntesDoMovimento = distancia(rotaAtual, problema.grafoParadas);
 
             aplicaMovimento(rotaAtual, estaNaRota, mov);
             atualizaTabu(tabu, mov, tenure, it);
@@ -667,6 +601,29 @@ double Metaheuristica::buscaTabu(Individuo& configParada){
                 melhorDistancia = distAtual;
                 melhorRota = rotaAtual;
             }
+
+
+            // Atualização dos pesos da ALNS             
+            double recompensa = 0.0;
+            if(distAtual < melhorDistancia) recompensa = RecompensaNovoMelhor;
+            else if(distAtual < distanciaAntesDoMovimento) recompensa = RecompensaMelhora;
+            else recompensa = RecompensaAceito;
+
+            Adapt.scoreAcumulado[mov.tipo] += recompensa;
+            Adapt.usosNoSegmento[mov.tipo]++;
+            
+            // Decaimento da Vizinhança adaptativa
+            if(it % TamanhoSegmento == 0 && it > 0){
+                for(auto& [tipo, peso] : Adapt.pesoOperador){
+                    if(Adapt.usosNoSegmento[tipo] > 0){
+                        double mediaScore = Adapt.scoreAcumulado[tipo] / Adapt.usosNoSegmento[tipo];
+                        peso = FatorDecaimentoPeso * peso + (1.0 - FatorDecaimentoPeso) * mediaScore;
+                    }
+                    Adapt.scoreAcumulado[tipo] = 0.0;
+                    Adapt.usosNoSegmento[tipo] = 0;
+                }
+            }
+
 
             it++;
         }

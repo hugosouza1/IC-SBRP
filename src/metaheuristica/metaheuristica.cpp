@@ -105,6 +105,11 @@ int main(int argv, char *argc[]){
 
 
 
+
+
+
+
+
 void Metaheuristica::imprimeSolucao(Individuo& sol, infoSBRP& dados, vector<double> valores){
     cout << "\n========================================\n";
     cout << "        SOLUCAO - AG-BT (SBRP)\n";
@@ -171,5 +176,6 @@ void Metaheuristica::imprimeSolucao(Individuo& sol, infoSBRP& dados, vector<doub
 
     cout << "\n----------------------------------------\n";
     cout << "Total de onibus usados: " << rotaImpressa << "\n";
+    cout << "Distancia total: " << sol.fitness - sol.penalidadeFitness << " [penalidade:" << sol.penalidadeFitness << "]" << "\n";
     cout << "========================================\n";
 }

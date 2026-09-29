@@ -298,6 +298,8 @@ static Parametros parseArgs(int argc, char** argv) {
     return p;
 }
 
+
+
 int main(int argc, char** argv) {
     Parametros args = parseArgs(argc, argv);
     mt19937 rng(args.seed);
