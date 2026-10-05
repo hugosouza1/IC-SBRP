@@ -1,0 +1,53 @@
+--seed 4
+--max_geracoes 100
+--populacao 100
+--crossover 0.90
+
+--elitismo 1
+--mutacao 0.10
+--piso_mutacao 0.05
+--teto_mutacao 0.20
+--limiar_estagnacao_mutacao 5
+--macro_mutacao 0.25
+--injecao_base 0.05
+--injecao_extra 0.3
+--injecao_max 0.40
+
+--tamanho_gaveta 50
+--periodo_arquivamento 5
+--limiar_gaveta 5
+--engavetados_k 2
+--semelhanca_gaveta 0.05
+
+--penalidade_rota 1.0
+--limiar_paradas_rota 1
+--penalidade_rota_curta 10.0
+--penalidade_desbalanceamento 0.0
+--limite_parada_rota 1
+--penalidade_parada_entre 5.0
+--penalidade_parada_mesma 1.0
+--PenalidadeParadasPercorridasGlobal 1.0
+
+--torneio_k 0.10
+--decaimento_torneio 0.40
+
+--peso_dist_parada 0.5
+--vizinhos_div 3
+--peso_diversidade 0.8
+--eps_clone 1e-5
+
+--crossover_bloco 0.70
+--decaimento_rotas_rep 0.40
+--mutacao_onibus 0.40
+--decaimento_solucao_inicial 0.2
+--decaimento_rota_inicial 0.2
+
+--rcl 200
+--decaimento_rcl 0.25
+--tenure_rota 0.30
+--iteracoes_tabu 600
+--recompensa_novo_melhor 3.0
+--recompensa_melhora 1.5
+--recompensa_aceito 0.5
+--decaimento_peso 0.80
+--tamanho_segmento 10

@@ -7,7 +7,7 @@ CXXFLAGS = -O3
 SRC_DIR = src
 BUILD_DIR = build
 ENTRADA ?= Instancias/instancia.txt
-
+PARAMETROS ?= src/parametros_algoritmo.txt
 
 # =======================================
 # CPLEX
@@ -96,8 +96,8 @@ $(BUILD_DIR)/%.o: $(SRC_DIR)/%.cpp
 # EXECUTAR
 # =======================================
 
-runHeuristica: clean $(EXEC_HEURISTICA)
-	./$(EXEC_HEURISTICA) $(ENTRADA)
+runHeuristica: $(EXEC_HEURISTICA)
+	./$(EXEC_HEURISTICA) $(ENTRADA) $(shell cat $(PARAMETROS))
 
 runModelo: clean $(EXEC_MODELO)
 	./$(EXEC_MODELO) $(ENTRADA)

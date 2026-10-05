@@ -54,6 +54,9 @@ class infoSBRP{
 	    int Q;
 
 	public:
+		infoSBRP(string dados){
+			leitura(dados);
+		}
 
 	    void leitura(string arquivoEntrada);
 };

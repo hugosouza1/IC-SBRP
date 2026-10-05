@@ -18,14 +18,97 @@
 #include <unordered_set>
 #include <unordered_map>
 
-#include "../SBRP.hpp"
+#include <cstdlib>
 
-inline std::random_device rd;
-inline std::mt19937 gen(rd());
+#include "../SBRP.hpp"
 
 
 using namespace chrono;
 using namespace std;
+
+struct ParametrosAlgoritmo {
+
+    int seed = 123;
+
+    // ================================================================
+    // ALGORITMO GENÉTICO
+    // ================================================================
+
+    // Parâmetros gerais
+    int numeroMaxGeracoes = 2;
+    int tamanhoDaPopulacao = 200;
+    double probabilidadeCrossover = 0.90;
+    int elitismo = 3;
+
+    // Taxas de mutação
+    double probabilidadeMutacao = 0.10;
+    double pisoTaxaMutacao = 0.08;
+    double tetoTaxaMutacao = 0.64;
+    int limiarEstagnacaoMutacao = 5;
+    double probabilidadeMacroMutacao = 0.25;
+
+    // Injeção de indivíduos novos
+    double porcentagemBaseInjecao = 0.05;
+    double porcentagemExtraInjecao = 0.05;
+    double porcentagemMaximaNovosIndividuos = 0.40;
+
+    // Gaveta de indivíduos antigos
+    int tamanhoGaveta = 50;
+    int periodoArquivamento = 5;
+    int limiarGaveta = 5;
+    int engavetadosK = 2;
+    double semelhancaGaveta = 0.05;
+
+    // Penalidade - construção de rotas
+    double penalidadePorRotaAtiva = 1.0;
+    int limiarParadasPorRotas = 1;
+    double penalidadeRotaExtraPequena = -10.0;
+    double penalidadeDesbalanceamento = 0.0;
+
+    // Penalidade - paradas
+    int limiteParadaPorRota = 1;
+    double penalidadeParadaEntreRota = 500.0;
+    double penalidadeParadaMesmaRota = 50.0;
+    double PenalidadeParadasPercorridasGlobal = 1.0;
+
+    // Torneio
+    double porcentagemTorneioK = 0.10;
+    double taxaDecaimentoTorneio = 0.40;
+
+    // Seleção
+    double pesoDistParada = 0.5;
+    int nVizinhosDiv = 3;
+    double pesoDiversidade = 0.8;
+    double epsClone = 1e-9;
+
+    // Reprodução
+    double probabilidadeCrossoverBloco = 0.65;
+    double taxaDecaimentoRotasRep = 0.40;
+    double probabilidadeMutacaoOnibus = 0.40;
+
+    // Solução inicial
+    double taxaDecaimentoSolucaoInicial = 0.2;
+    double taxaDecaimentoRotaInicial = 0.2;
+
+
+    // ================================================================
+    // BUSCA TABU
+    // ================================================================
+
+    int tamanhoRCL = 150;
+    double taxaDecaimentoRCL = 0.25;
+    double tenureTaxaTamRota = 0.05;
+    int iteracoesTabu = 300;
+
+    // Recompensas
+    double recompensaNovoMelhor = 3.0;
+    double recompensaMelhora = 1.5;
+    double recompensaAceito = 0.5;
+
+    // Memória
+    double fatorDecaimentoPeso = 0.70;
+    int tamanhoSegmento = 10;
+};
 
 class infoSBRP;
 
@@ -45,8 +128,7 @@ struct Individuo {
 
     vector<double> intensidadePermutaRota; // pro tabu
 
-    double fitness = numeric_limits<double>::max();
-
+    
     vector<bool> rotaViavel;
 
     int alunosInviaveisQuant;
@@ -56,7 +138,9 @@ struct Individuo {
     vector<vector<int>> rotasFeitas;
 	
 	// custo final de penalidade aplicada
-	double penalidadeFitness;
+    double fitness = numeric_limits<double>::max(); // fitness + penalidades
+    double fitnessPuro = numeric_limits<double>::max(); // fitness puro vindo do tabu
+	double penalidadeFitness; // soma das penalidades
 };
 
 
@@ -104,19 +188,33 @@ struct ALNS{
     unordered_map<TipoMovimento, int> usosNoSegmento = {{INSERIR, 0}, {REMOVER, 0}, {TROCAR, 0}, {SUBSTITUIR, 0}, {MOVER, 0}};
 };
 
+struct Trajetoria {
+    vector<int> rotaAtual;
+    vector<bool> estaNaRota;
+    unordered_map<ChaveTabu, int> tabu;
+    vector<int> melhorRota;
+    double melhorDistancia;
+    int semMelhora = 0;
+    ALNS adapt;
+};
+
 
 // +-+--+-++--+-++--+-+-+-+-+-+-+-+-+-+-+-+-+-+-+---+-+-+
 
 
+inline std::random_device rd;
+inline std::mt19937 gen(rd());
 
 class Metaheuristica{
 	private:
 		infoSBRP& problema;
+        
+        // std::mt19937 gen;
 		
         // geral
 		int quantidadeMaxRota;
 
-        vector<int> quantAlunosPorParada;
+        // vector<int> quantAlunosPorParada;
 
         // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
         //                       ALGORITMO GENETICO                           //
@@ -140,12 +238,12 @@ class Metaheuristica{
             const double PorcentagemMaximaNovosIndividuos = 0.40; 
             
             // injeção de individuos na estagnação (Antigos)
-            deque<Individuo> gaveta;
-            const int tamanhoGaveta = 50; 
+            deque<Individuo> Gaveta;
+            const int TamanhoGaveta = 50; 
             const int PeriodoArquivamento = 5; // guarda a cada N gerações
-            const int limiarGaveta = 5; // insere X a cada N gerações estagnadas,
+            const int LimiarGaveta = 5; // insere X a cada N gerações estagnadas,
             const int EngavetadosK = 2; // quantos na gaveta vão ser renseridos 
-            const double SemelhancaGaveta = 0.05;
+            const double SemelhancaGaveta = 0.05; //menor, mair parecido
             // quantidade a ser inserida corrigida na gambiarra pela outra mutação (feature)
 
             
@@ -156,9 +254,11 @@ class Metaheuristica{
                 const double PenalidadeRotaExtraPequena = -10.0; // penalidade de rota muito curta
                 const double PenalidadeDesbalanceamento = 0.0; // penalidade de rotas com alunos desbalanceado
                 // paradas
-                const int limiteParadaPorRota = 1; // minimo de repeticao de parada entre rotas
+                const int LimiteParadaPorRota = 1; // minimo de repeticao de parada entre rotas
                 const double PenalidadeParadaEntreRota = 500.0; // diferente rota
                 const double PenalidadeParadaMesmaRota = 50.0; // mesma roota
+            
+                const double PenalidadeParadasPercorridasGlobal = 1.0; // quantidade de paradas percorridas
 
             // Torneio
             const double PorcentagemTorneioK = 0.10; // tamanho k com base na quantidade de individuos
@@ -168,7 +268,7 @@ class Metaheuristica{
             const double PesoDistParada  = 0.5;   // peso de paradas vs estrutura de rotas na distância
             const int    NVizinhosDiv    = 3;     // quantos vizinhos mais próximos entram na diversidade
             const double PesoDiversidade = 0.8;   // 0 = só fitness; maior = mais diversidade
-            const double EpsClone        = 1e-9;
+            const double EpsClone        = 1e-9; // quanto menor, mais parecido
             
             // Reproducao
             const double ProbabilidadeCrossoverBloco = 0.65; // crossover pro bloco de rotas, ou gene a gene
@@ -196,20 +296,69 @@ class Metaheuristica{
 
         const double FatorDecaimentoPeso = 0.70; // memória: quanto do peso antigo mantém
         const int TamanhoSegmento        = 10; // quantas iterações tem decaimento
+        
+        // novo(n tem na struct parametros)
+        const int NumTrajetorias = 3; // quantidade de instancias paralelas por cada tabu
+        // novo(n tem na struct parametros)
+        const int PeriodoTroca = 25; // a cada iterações, um compartilhamento do tabu
+        // novo(n tem na struct parametros)
+        const int ForcaPerturbacaoTabu = 20; // iteracoes de busca
+        // novo(n tem na struct parametros)
+        const int LimiarEstagnacaoTabu = 10; // iterações estagnadas
         // ================================================================== //
         
         
     public:
-	    Metaheuristica(infoSBRP& p) : problema(p) {
-			quantidadeMaxRota = p.quantidadeRotas; // n precisava, mas depois arrumo
-            
+	    Metaheuristica(infoSBRP& pobrema, const ParametrosAlgoritmo &p) : problema(pobrema),
+            // gen(p.seed),
+            numeroMaxGeracoes(p.numeroMaxGeracoes),
+            TamanhoDaPopulacao(p.tamanhoDaPopulacao),
+            ProbabilidadeCrossover(p.probabilidadeCrossover),
+            Elitismo(p.elitismo),
+            ProbabilidadeMutacao(p.probabilidadeMutacao),
+            PisoTaxaMutacao(p.pisoTaxaMutacao),
+            TetoTaxaMutacao(p.tetoTaxaMutacao),
+            limiarEstagnacaoMutacao(p.limiarEstagnacaoMutacao),
+            ProbabilidadeMacroMutacao(p.probabilidadeMacroMutacao),
+            PorcentagemBaseInjecao(p.porcentagemBaseInjecao),
+            PorcentagemExtraInjecao(p.porcentagemExtraInjecao),
+            PorcentagemMaximaNovosIndividuos(p.porcentagemMaximaNovosIndividuos),
+            TamanhoGaveta(p.tamanhoGaveta),
+            PeriodoArquivamento(p.periodoArquivamento),
+            LimiarGaveta(p.limiarGaveta),
+            EngavetadosK(p.engavetadosK),
+            SemelhancaGaveta(p.semelhancaGaveta),
+            PenalidadePorRotaAtiva(p.penalidadePorRotaAtiva),
+            LimiarParadasPorRotas(p.limiarParadasPorRotas),
+            PenalidadeRotaExtraPequena(p.penalidadeRotaExtraPequena),
+            PenalidadeDesbalanceamento(p.penalidadeDesbalanceamento),
+            LimiteParadaPorRota(p.limiteParadaPorRota),
+            PenalidadeParadaEntreRota(p.penalidadeParadaEntreRota),
+            PenalidadeParadaMesmaRota(p.penalidadeParadaMesmaRota),
+            PorcentagemTorneioK(p.porcentagemTorneioK),
+            TaxaDecaimentoTorneio(p.taxaDecaimentoTorneio),
+            PesoDistParada(p.pesoDistParada),
+            NVizinhosDiv(p.nVizinhosDiv),
+            PesoDiversidade(p.pesoDiversidade),
+            EpsClone(p.epsClone),
+            ProbabilidadeCrossoverBloco(p.probabilidadeCrossoverBloco),
+            TaxaDecaimentoRotasRep(p.taxaDecaimentoRotasRep),
+            ProbabilidadeMutacaoOnibus(p.probabilidadeMutacaoOnibus),
+            TaxaDecaimentoSolucaoInicial(p.taxaDecaimentoSolucaoInicial),
+            TaxaDecaimentoRotaInicial(p.taxaDecaimentoRotaInicial),
+            TamanhoRCL(p.tamanhoRCL),
+            TaxaDecaimentoRCL(p.taxaDecaimentoRCL),
+            TenureTaxaTamRota(p.tenureTaxaTamRota),
+            IteracoesTabu(p.iteracoesTabu),
+            RecompensaNovoMelhor(p.recompensaNovoMelhor),
+            RecompensaMelhora(p.recompensaMelhora),
+            RecompensaAceito(p.recompensaAceito),
+            FatorDecaimentoPeso(p.fatorDecaimentoPeso),
+            TamanhoSegmento(p.tamanhoSegmento),
+            PenalidadeParadasPercorridasGlobal(p.PenalidadeParadasPercorridasGlobal)
 
-            quantAlunosPorParada.assign(p.quantidadeAlunos, 0);
-            for(auto aluno : p.alunosParadas){
-                for(int k = 0; k < aluno.paradasPossiveis.size(); ++k){
-                    quantAlunosPorParada[aluno.paradasPossiveis[k].first]++;
-                }
-            }
+        {
+			quantidadeMaxRota = pobrema.quantidadeRotas; // n precisava, mas depois arrumo
 		}
 
         int qr(){return quantidadeMaxRota;};
@@ -219,7 +368,7 @@ class Metaheuristica{
 		
         Individuo geraSolucaoInicial();
 
-        double distancia(vector<int>& caminho, vector<vector<double>>& grafo);
+        double distancia(vector<int>& caminho);
 
         vector<Individuo> popIni(int tamanhoPopulacao);
             
@@ -237,7 +386,7 @@ class Metaheuristica{
 
         void mutacaoIndividuo(Individuo &filho, vector<double> intensidadePermutacao1, vector<double> intensidadePermutacao2,  bool forcarMacro = false);
 
-        void injecaoNovosIndividuos(int opc, int geracoesSemMelhora, int i, vector<double> &fitnessPop, vector<Individuo> &novaPopulacao);
+        void injecaoNovosIndividuos(int opc, int geracoesSemMelhora, int i, vector<Individuo> &novaPopulacao);
 
         double distanciaIndividuos(const Individuo& a, const Individuo& b);
 
@@ -260,7 +409,6 @@ class Metaheuristica{
 
         vector<Movimento> candidatosInsercao(vector<int>& rota, vector<bool>& estaNaRota, unordered_map<ChaveTabu, int>& tabu, double melhorDistanciaGlobal, double distanciaAtual, int iteracao);
 
-
         vector<Movimento> candidatosTroca(vector<int>& rota, unordered_map<ChaveTabu, int>& tabu, double melhorDistanciaGlobal, double distanciaAtual, int iteracao);
 
         vector<Movimento> candidatosMover(vector<int>& rota, vector<bool>& paradaObrigatoria, unordered_map<ChaveTabu, int>& tabu, double melhorDistanciaGlobal, double distanciaAtual, int iteracao);
@@ -280,6 +428,10 @@ class Metaheuristica{
         void atualizaTabu( unordered_map<ChaveTabu, int>& tabu, Movimento mov, int tenure, int iteracao);
 
         void pertubacaoRota(vector<vector<int>> &rota, vector<double> intensidade);
+
+        void avancaTrajetoria(Trajetoria& traj, vector<bool>& paradaObrigatoria, int tenure, int it);
+
+        void perturbaTrajetoria(Trajetoria& t, vector<bool>& obrig, int forca);
 
         // -+-+--+-+-+-+-++-+
         

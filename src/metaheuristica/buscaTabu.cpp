@@ -1,10 +1,10 @@
 #include "metaheuristica.hpp"
 
 
-double Metaheuristica::distancia(vector<int>& caminho, vector<vector<double>>& grafo){
+double Metaheuristica::distancia(vector<int>& caminho){
     double soma = 0;
     for (int i = 0; i + 1 < (int)caminho.size(); i++) {
-        soma += grafo[caminho[i]][caminho[i+1]];
+        soma += problema.grafoParadas[caminho[i]][caminho[i+1]];
     }
     // soma += grafo[caminho.back()][caminho.front()];
     
@@ -119,11 +119,16 @@ vector<Movimento> Metaheuristica::candidatosRemocao(vector<int>& rota, vector<bo
     unordered_map<ChaveTabu, int>& tabu, double melhorDistanciaGlobal, double distanciaAtual, int iteracao){
 
     vector<Movimento> candidatos;
+    
+    vector<int> cont(problema.quantidadeParadas, 0);
+    for(int p : rota) cont[p]++;
 
     for(int i = 1; i + 1 < (int)rota.size(); i++){
         int A = rota[i-1], B = rota[i], C = rota[i+1];
 
-        if(paradaObrigatoria[B]) continue;
+
+
+        if(paradaObrigatoria[B] && cont[B] <= 1) continue;
         if(problema.grafoParadas[A][C] == 0) continue;
 
         double delta = problema.grafoParadas[A][C] - problema.grafoParadas[A][B] - problema.grafoParadas[B][C];
@@ -158,7 +163,7 @@ vector<Movimento> Metaheuristica::candidatosInsercao(vector<int>& rota, vector<b
 
         for(int C = 1; C < problema.quantidadeParadas; ++C){
 
-            if(estaNaRota[C]) continue;
+            // if(estaNaRota[C]) continue;
             if(problema.grafoParadas[A][C] == 0 || problema.grafoParadas[C][B] == 0)
                 continue;
 
@@ -254,12 +259,16 @@ vector<Movimento> Metaheuristica::candidatosSubstituir(vector<int>& rota, vector
     vector<Movimento> candidatos;
     const int tentativasPorPosicao = 8;
 
+    vector<int> cont(problema.quantidadeParadas, 0);
+    for(int p : rota) cont[p]++;
+
     uniform_int_distribution<int> distC(1, problema.quantidadeParadas - 1);
 
     for(int i = 1; i + 1 < (int)rota.size(); ++i){
 
         int A = rota[i - 1], B = rota[i], C = rota[i + 1];
-        if(paradaObrigatoria[B]) continue;
+
+        if(paradaObrigatoria[B] && cont[B] <= 1) continue;
 
         for(int tent = 0; tent < tentativasPorPosicao; ++tent){
             int D = distC(gen);
@@ -318,7 +327,7 @@ vector<Movimento> Metaheuristica::candidatosMover(vector<int>& rota, vector<bool
 
         int A = rota[origem - 1], B = rota[origem], C = rota[origem + 1];
         
-        if(paradaObrigatoria[B]) continue;
+        // if(paradaObrigatoria[B]) continue;
         if(problema.grafoParadas[A][C] == 0) continue; // remoção precisa ser válida
 
         int X = rota[destino], Y = rota[destino + 1];
@@ -351,7 +360,7 @@ vector<Movimento> Metaheuristica::candidatosMover(vector<int>& rota, vector<bool
 Movimento Metaheuristica::melhorVizinho(vector<int>& rota, vector<bool>& estaNaRota,
     vector<bool>& paradaObrigatoria, unordered_map<ChaveTabu, int>& tabu, double melhorDistanciaGlobal, int iteracao, ALNS &Adapt){
 
-    double distanciaAtual = distancia(rota, problema.grafoParadas);
+    double distanciaAtual = distancia(rota);
 
     vector<Movimento> candidatos = candidatosInsercao(rota, estaNaRota, tabu, melhorDistanciaGlobal, distanciaAtual, iteracao);
 
@@ -403,8 +412,8 @@ void Metaheuristica::aplicaMovimento(vector<int>& rota, vector<bool>& estaNaRota
             break;
 
         case REMOVER:
-            estaNaRota[mov.parada] = false;
             rota.erase(rota.begin() + mov.posicao);
+            estaNaRota[mov.parada] = find(rota.begin(), rota.end(), mov.parada) != rota.end();
             break;
 
         case TROCAR:
@@ -412,7 +421,7 @@ void Metaheuristica::aplicaMovimento(vector<int>& rota, vector<bool>& estaNaRota
             break;
 
         case SUBSTITUIR:
-            estaNaRota[mov.paradaAntiga] = false;
+            estaNaRota[mov.parada] = find(rota.begin(), rota.end(), mov.parada) != rota.end();
             estaNaRota[mov.paradaNova] = true;
             rota[mov.posicao] = mov.paradaNova;
             break;
@@ -483,7 +492,6 @@ void Metaheuristica::pertubacaoRota(vector<vector<int>> &paradasRotas, vector<do
 
         uniform_int_distribution<int> dist(0, tamanhoRota - 1);
         
-        // cout << intensidade[r] << "\n";
 
         for(int s = 0; s < quantSwaps; ++s){
             int a = dist(gen);
@@ -493,9 +501,74 @@ void Metaheuristica::pertubacaoRota(vector<vector<int>> &paradasRotas, vector<do
     }
 }
 
+
+void Metaheuristica::avancaTrajetoria(Trajetoria& traj, vector<bool>& paradaObrigatoria, int tenure, int it){
+
+    double distanciaAntesDoMovimento = distancia(traj.rotaAtual);
+
+    Movimento mov = melhorVizinho(traj.rotaAtual, traj.estaNaRota, paradaObrigatoria, traj.tabu, traj.melhorDistancia, it, traj.adapt);
+
+    if(mov.delta == numeric_limits<double>::max()) return; // sem vizinho admissível nesta iteração
+
+    aplicaMovimento(traj.rotaAtual, traj.estaNaRota, mov);
+    atualizaTabu(traj.tabu, mov, tenure, it);
+
+    double distAtual = distancia(traj.rotaAtual);
+
+    bool achouNovoMelhor = distAtual < traj.melhorDistancia;
+
+
+    if(achouNovoMelhor){
+        traj.semMelhora = 0;
+        traj.melhorDistancia = distAtual;
+        traj.melhorRota = traj.rotaAtual;
+    } else traj.semMelhora++;
+
+    double recompensa; // peso da ALNS
+    if(achouNovoMelhor) recompensa = RecompensaNovoMelhor;
+    else if(distAtual < distanciaAntesDoMovimento) recompensa = RecompensaMelhora;
+    else recompensa = RecompensaAceito;
+
+    traj.adapt.scoreAcumulado[mov.tipo] += recompensa;
+    traj.adapt.usosNoSegmento[mov.tipo]++;
+
+    if(it % TamanhoSegmento == 0 && it > 0){ // Esquecimento
+        for(auto& [tipo, peso] : traj.adapt.pesoOperador){
+            if(traj.adapt.usosNoSegmento[tipo] > 0){
+                double mediaScore = traj.adapt.scoreAcumulado[tipo] / traj.adapt.usosNoSegmento[tipo];
+                peso = FatorDecaimentoPeso * peso + (1.0 - FatorDecaimentoPeso) * mediaScore;
+            }
+            traj.adapt.scoreAcumulado[tipo] = 0.0;
+            traj.adapt.usosNoSegmento[tipo] = 0;
+        }
+    }
+}
+
+
+void Metaheuristica::perturbaTrajetoria(Trajetoria& t, vector<bool>& obrig, int forca){
+    unordered_map<ChaveTabu, int> semTabu;
+
+    for(int k = 0; k < forca; ++k){
+        double d = distancia(t.rotaAtual);
+
+        vector<Movimento> ins = candidatosInsercao(t.rotaAtual, t.estaNaRota, semTabu, 0, d, 0);
+        vector<Movimento> rem = candidatosRemocao(t.rotaAtual, obrig, semTabu, 0, d, 0);
+
+        // sorteia o tipo primeiro, senão a inserção domina (muito mais candidatos)
+        uniform_real_distribution<double> zeroUm(0.0, 1.0);
+        vector<Movimento>& pool = (zeroUm(gen) < 0.5 && !rem.empty()) || ins.empty() ? rem : ins;
+        if(pool.empty()) break;
+
+        uniform_int_distribution<int> dist(0, (int)pool.size() - 1);
+        aplicaMovimento(t.rotaAtual, t.estaNaRota, pool[dist(gen)]);
+    }
+
+    t.tabu.clear();
+}
+
 double Metaheuristica::buscaTabu(Individuo& configParada){
     
-    ALNS Adapt; // ALNS
+    ALNS Adapt;
 
     int alunosAfetados = 0;
 
@@ -516,7 +589,6 @@ double Metaheuristica::buscaTabu(Individuo& configParada){
         }
         
         vector<int> rotaAtual = rotasIniciais[r];
-
         if(rotaAtual.empty()){ rotasFinais[r] = rotaAtual; continue; }
 
         vector<bool> estaNaRota(problema.quantidadeParadas, false);
@@ -525,116 +597,84 @@ double Metaheuristica::buscaTabu(Individuo& configParada){
         for(int p : rotaAtual)        estaNaRota[p] = true;
         for(int p : paradasDaRota[r]) paradaObrigatoria[p] = true;
 
-        unordered_map<ChaveTabu, int> tabu;
-        
         int tenure = max(3, (int)(rotaAtual.size() * TenureTaxaTamRota));
 
-        // int tenure =  3;
-        // cout << "<tt: " << tenure << ", " <<rotaAtual.size() <<  ">";
+        vector<Trajetoria> trajs(NumTrajetorias);
+        for(auto& t : trajs){
+            t.rotaAtual = rotaAtual;
+            t.estaNaRota = estaNaRota;
+            t.melhorRota = rotaAtual;
+            t.melhorDistancia = distancia(rotaAtual);
+        }
 
-        vector<int> melhorRota = rotaAtual;
-        double melhorDistancia = distancia(rotaAtual, problema.grafoParadas);
+        int maxIterPorTraj = IteracoesTabu / NumTrajetorias;
 
-        int it = 0;
-        // const int maxIter = rotaAtual.size() * 3;
-        const int maxIter = IteracoesTabu;
-
-        while(it < maxIter){
-            // cout << "yo "; fflush(stdout);
-
-            Movimento mov = melhorVizinho(rotaAtual, estaNaRota, paradaObrigatoria, tabu, melhorDistancia, it, Adapt);
-
-            if(mov.delta == numeric_limits<double>::max()){
-
-                break;
-
-                // // travou: sem vizinho admissível.
-                // bool kickAplicado = false;
-
-                // if(rotaAtual.size() >= 4){ // precisa de folga
-                //     const int maxTentativas = 5;
-
-                //     for(int tent = 0; tent < maxTentativas && !kickAplicado; ++tent){
-                //         uniform_int_distribution<int> distIdx(1, rotaAtual.size() - 2); // evita escola nas pontas
-
-                //         int a = distIdx(gen);
-                //         int b = distIdx(gen);
-                //         if(a == b) continue;
-                //         if(a > b) swap(a, b);
-
-                //         int prevA = rotaAtual[a - 1], noA = rotaAtual[a], nextA = rotaAtual[a + 1];
-                //         int prevB = rotaAtual[b - 1], noB = rotaAtual[b], nextB = rotaAtual[b + 1];
-
-                //         // checa se as arestas resultantes da troca existem no grafo
-                //         bool valido;
-                //         if(b == a + 1){
-                //             // posições adjacentes: só as arestas das pontas mudam
-                //             valido = problema.grafoParadas[prevA][noB] > 0 &&
-                //                      problema.grafoParadas[noA][nextB] > 0;
-                //         } else {
-                //             valido = problema.grafoParadas[prevA][noB] > 0 &&
-                //                      problema.grafoParadas[noB][nextA] > 0 &&
-                //                      problema.grafoParadas[prevB][noA] > 0 &&
-                //                      problema.grafoParadas[noA][nextB] > 0;
-                //         }
-
-                //         if(valido){
-                //             swap(rotaAtual[a], rotaAtual[b]);
-                //             estaNaRota[rotaAtual[a]] = true;
-                //             estaNaRota[rotaAtual[b]] = true;
-                //             kickAplicado = true;
-                //         }
-                //     }
-                // }
-
-                // it++;
-                // continue;
-            }
-
-            double distanciaAntesDoMovimento = distancia(rotaAtual, problema.grafoParadas);
-
-            aplicaMovimento(rotaAtual, estaNaRota, mov);
-            atualizaTabu(tabu, mov, tenure, it);
-
-            double distAtual = distancia(rotaAtual, problema.grafoParadas);
-            if(distAtual < melhorDistancia){
-                melhorDistancia = distAtual;
-                melhorRota = rotaAtual;
-            }
-
-
-            // Atualização dos pesos da ALNS             
-            double recompensa = 0.0;
-            if(distAtual < melhorDistancia) recompensa = RecompensaNovoMelhor;
-            else if(distAtual < distanciaAntesDoMovimento) recompensa = RecompensaMelhora;
-            else recompensa = RecompensaAceito;
-
-            Adapt.scoreAcumulado[mov.tipo] += recompensa;
-            Adapt.usosNoSegmento[mov.tipo]++;
-            
-            // Decaimento da Vizinhança adaptativa
-            if(it % TamanhoSegmento == 0 && it > 0){
-                for(auto& [tipo, peso] : Adapt.pesoOperador){
-                    if(Adapt.usosNoSegmento[tipo] > 0){
-                        double mediaScore = Adapt.scoreAcumulado[tipo] / Adapt.usosNoSegmento[tipo];
-                        peso = FatorDecaimentoPeso * peso + (1.0 - FatorDecaimentoPeso) * mediaScore;
-                    }
-                    Adapt.scoreAcumulado[tipo] = 0.0;
-                    Adapt.usosNoSegmento[tipo] = 0;
+        for(int it = 0; it < maxIterPorTraj; ++it){
+            for(auto& t : trajs){
+                avancaTrajetoria(t, paradaObrigatoria, tenure, it);
+                if(t.semMelhora > LimiarEstagnacaoTabu){
+                    perturbaTrajetoria(t, paradaObrigatoria, ForcaPerturbacaoTabu);
+                    t.semMelhora = 0;
                 }
             }
 
+            if(it > 0 && it % PeriodoTroca == 0){
+                int melhorIdx = 0, piorIdx = 0;
+                for(int k = 1; k < NumTrajetorias; ++k){
+                    if(trajs[k].melhorDistancia < trajs[melhorIdx].melhorDistancia) melhorIdx = k;
+                    if(trajs[k].melhorDistancia > trajs[piorIdx].melhorDistancia) piorIdx = k;
+                }
 
-            it++;
+                if(melhorIdx != piorIdx){
+                    trajs[piorIdx].rotaAtual = trajs[melhorIdx].rotaAtual;
+                    trajs[piorIdx].estaNaRota = trajs[melhorIdx].estaNaRota;
+
+                    for(auto& [tipo, peso] : trajs[piorIdx].adapt.pesoOperador){
+                        peso = 0.5 * peso + 0.5 * trajs[melhorIdx].adapt.pesoOperador[tipo];
+                    }
+
+                    if(trajs[piorIdx].rotaAtual.size() >= 4){
+                        auto& rota = trajs[piorIdx].rotaAtual;
+                        uniform_int_distribution<int> distIdx(1, rota.size() - 2);
+
+                        const int maxTentativas = 10;
+                        for(int tent = 0; tent < maxTentativas; ++tent){
+                            int a = distIdx(gen), b = distIdx(gen);
+                            if(a == b) continue;
+                            if(a > b) swap(a, b);
+
+                            int prevA = rota[a-1], noA = rota[a], nextA = rota[a+1];
+                            int prevB = rota[b-1], noB = rota[b], nextB = rota[b+1];
+
+                            bool valido;
+                            if(b == a+1){
+                                valido = problema.grafoParadas[prevA][noB] > 0 && problema.grafoParadas[noA][nextB] > 0;
+                            } else {
+                                valido = problema.grafoParadas[prevA][noB] > 0 && problema.grafoParadas[noB][nextA] > 0 &&
+                                         problema.grafoParadas[prevB][noA] > 0 && problema.grafoParadas[noA][nextB] > 0;
+                            }
+
+                            if(valido){
+                                swap(rota[a], rota[b]);
+                                // break;
+                            }
+                        }
+                    }
+                }
+            }
         }
 
-        rotasFinais[r] = melhorRota;
-        distanciaTotal += melhorDistancia;
+        int idxVencedora = 0;
+        for(int k = 1; k < NumTrajetorias; ++k)
+            if(trajs[k].melhorDistancia < trajs[idxVencedora].melhorDistancia) idxVencedora = k;
+
+        rotasFinais[r] = trajs[idxVencedora].melhorRota;
+        distanciaTotal += trajs[idxVencedora].melhorDistancia;
     }
 
     configParada.alunosInviaveisQuant = alunosAfetados;
     configParada.rotasFeitas = rotasFinais;
-    configParada.fitness = distanciaTotal;
+    configParada.fitnessPuro = distanciaTotal;
 
     return distanciaTotal;
 }

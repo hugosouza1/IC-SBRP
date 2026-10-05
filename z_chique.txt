@@ -1,0 +1,2 @@
+nohup $(Rscript -e 'cat(system.file("bin/irace", package="irace"))') --scenario Irace/scenario.txt > Irace/irace.log 2>&1 &
+watch -n 30 "tail -n 15 Irace/irace.log"

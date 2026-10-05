@@ -1,0 +1,37 @@
+# Genético
+populacao                 "--populacao "                i (50, 200)
+crossover                 "--crossover "                r (0.6, 1.0)
+elitismo                  "--elitismo "                 i (1, 10)
+mutacao                   "--mutacao "                  r (0.01, 0.3)
+piso_mutacao              "--piso_mutacao "             r (0.001, 0.05)
+teto_mutacao              "--teto_mutacao "             r (0.1, 0.5)
+limiar_estagnacao_mutacao "--limiar_estagnacao_mutacao " i (2, 20)
+macro_mutacao             "--macro_mutacao "            r (0.05, 0.4)
+
+# Injeção
+injecao_base              "--injecao_base "             r (0.0, 0.1)
+injecao_extra             "--injecao_extra "            r (0.0, 0.2)
+injecao_max               "--injecao_max "              r (0.2, 0.5)
+
+# Gaveta
+tamanho_gaveta            "--tamanho_gaveta "           i (5, 100)
+periodo_arquivamento      "--periodo_arquivamento "     i (5, 100)
+limiar_gaveta             "--limiar_gaveta "            i (10, 200)
+engavetados_k             "--engavetados_k "            i (1, 20)
+semelhanca_gaveta         "--semelhanca_gaveta "        r (0.5, 1.0)
+
+# Torneio / seleção
+torneio_k                 "--torneio_k "                r (0.02, 0.3)
+decaimento_torneio        "--decaimento_torneio "       r (0.5, 1.0)
+vizinhos_div              "--vizinhos_div "             i (2, 20)
+peso_diversidade          "--peso_diversidade "         r (0.0, 1.0)
+
+# Tabu
+rcl                       "--rcl "                      i (2, 50)
+decaimento_rcl            "--decaimento_rcl "           r (0.8, 1.0)
+tenure_rota               "--tenure_rota "              r (0.05, 0.5)
+recompensa_novo_melhor    "--recompensa_novo_melhor "   r (1, 20)
+recompensa_melhora        "--recompensa_melhora "       r (0.5, 10)
+recompensa_aceito         "--recompensa_aceito "        r (0.0, 5)
+decaimento_peso           "--decaimento_peso "          r (0.5, 1.0)
+tamanho_segmento          "--tamanho_segmento "         i (5, 50)

@@ -1,0 +1,19 @@
+#!/bin/bash
+CAND_ID=$1; INST_ID=$2; SEED=$3; INSTANCE=$4
+shift 4
+EXE="/mnt/c/Users/hugoa/OneDrive/Projetos/IC/IC-SBRP/heuristica.exe"
+
+if [ ! -x "$EXE" ]; then
+    echo "Executavel nao encontrado: $EXE" >&2
+    exit 1
+fi
+
+OUT=$("$EXE" "$INSTANCE" --seed "$SEED" "$@" 2>/dev/null)
+STATUS=$?
+COST=$(echo "$OUT" | tail -n 1 | grep -Eo '^[-+]?[0-9]+\.?[0-9]*([eE][-+]?[0-9]+)?$')
+
+if [ $STATUS -ne 0 ] || [ -z "$COST" ]; then
+    echo "Falha cand=$CAND_ID inst=$INSTANCE status=$STATUS out=$OUT" >&2
+    exit 1
+fi
+echo "$COST"

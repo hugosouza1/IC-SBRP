@@ -1,0 +1,403 @@
+nohup: ignoring input
+#------------------------------------------------------------------------------
+# irace: An implementation in R of (Elitist) Iterated Racing
+# Version: 4.5.a705077
+# Copyright (C) 2010-2025
+# Manuel Lopez-Ibanez     <manuel.lopez-ibanez@manchester.ac.uk>
+# Jeremie Dubois-Lacoste
+# Leslie Perez Caceres    <leslie.perez.caceres@ulb.ac.be>
+#
+# This is free software, and you are welcome to redistribute it under certain
+# conditions.  See the GNU General Public License for details. There is NO
+# WARRANTY; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+#
+# irace builds upon previous code from the race package:
+#     race: Racing methods for the selection of the best
+#     Copyright (C) 2003 Mauro Birattari
+#------------------------------------------------------------------------------
+# installed at: /home/hugo/R/x86_64-pc-linux-gnu-library/4.1/irace
+# called with: --scenario Irace/scenario.txt
+# 2026-10-01 11:08:09 -03: Reading parameter file '/mnt/c/Users/hugoa/OneDrive/Projetos/IC/IC-SBRP/Irace/parameters.txt'.
+# 2026-10-01 11:08:09 -03: Initialization
+# Elitist race
+# Elitist new instances: 1
+# Elitist limit: 2
+# nbIterations: 6
+# minNbSurvival: 6
+# nbParameters: 28
+# seed: 123
+# confidence level: 0.95
+# budget: 600
+# mu: 5
+# deterministic: FALSE
+
+# 2026-10-01 11:08:09 -03: Iteration 1 of 6
+# experimentsUsed: 0
+# remainingBudget: 600
+# currentBudget: 100
+# nbConfigurations: 16
+# Markers:
+     x No test is performed.
+     c Configurations are discarded only due to capping.
+     - The test is performed and some configurations are discarded.
+     = The test is performed but no configuration is discarded.
+     ! The test is performed and configurations could be discarded but elite configurations are preserved.
+     . Alive configurations were already evaluated on this instance and nothing is discarded.
+     : All alive configurations are elite, but some need to be evaluated on this instance.
+
++-+-----------+-----------+-----------+----------------+-----------+--------+-----+----+------+
+| |   Instance|      Alive|       Best|       Mean best| Exp so far|  W time|  rho|KenW|  Qvar|
++-+-----------+-----------+-----------+----------------+-----------+--------+-----+----+------+
+|x|          1|         16|         10|     20611.30000|         16|00:00:48|   NA|  NA|    NA|
+|x|          2|         16|         10|     34712.85000|         32|00:01:14|-0.31|0.35|1.4042|
+|x|          3|         16|         10|     24059.63000|         48|00:01:13|-0.21|0.19|1.0905|
+|x|          4|         16|         10|     19600.20000|         64|00:00:13|-0.01|0.25|1.0043|
+|=|          5|         16|         10|     18623.00000|         80|00:00:12|+0.08|0.27|0.9824|
+|-|          6|          6|         10|     16021.18000|         96|00:00:08|+0.18|0.32|0.6937|
++-+-----------+-----------+-----------+----------------+-----------+--------+-----+----+------+
+Best-so-far configuration:          10    mean value:      16021.18000
+Description of the best-so-far configuration:
+   .ID. populacao crossover elitismo mutacao piso_mutacao teto_mutacao limiar_estagnacao_mutacao macro_mutacao injecao_base injecao_extra injecao_max tamanho_gaveta periodo_arquivamento limiar_gaveta engavetados_k semelhanca_gaveta torneio_k decaimento_torneio vizinhos_div peso_diversidade rcl decaimento_rcl tenure_rota recompensa_novo_melhor recompensa_melhora recompensa_aceito decaimento_peso tamanho_segmento .PARENT.
+10   10       167    0.7358        8  0.1605       0.0039       0.1604                        18        0.3303       0.0945        0.0406      0.2367             51                   20            45            16            0.7062    0.2724             0.5777            6           0.9677  27         0.8367      0.2391                14.7199             7.6186            3.5845          0.5305               13       NA
+
+# 2026-10-01 11:11:59 -03: Elite configurations (first number is the configuration ID; listed from best to worst according to the sum of ranks):
+   populacao crossover elitismo mutacao piso_mutacao teto_mutacao limiar_estagnacao_mutacao macro_mutacao injecao_base injecao_extra injecao_max tamanho_gaveta periodo_arquivamento limiar_gaveta engavetados_k semelhanca_gaveta torneio_k decaimento_torneio vizinhos_div peso_diversidade rcl decaimento_rcl tenure_rota recompensa_novo_melhor recompensa_melhora recompensa_aceito decaimento_peso tamanho_segmento
+10       167    0.7358        8  0.1605       0.0039       0.1604                        18        0.3303       0.0945        0.0406      0.2367             51                   20            45            16            0.7062    0.2724             0.5777            6           0.9677  27         0.8367      0.2391                14.7199             7.6186            3.5845          0.5305               13
+7        120    0.8108        8  0.1424       0.0069       0.4854                         3        0.3084       0.0507        0.1781      0.2554             93                   38            80            12            0.5500    0.2199             0.7340            5           0.1552  11         0.8242      0.4360                15.9074             3.4623            0.7720          0.5618               28
+14       186    0.9858        7  0.1967       0.0100       0.2104                         6        0.1991       0.0320        0.1656      0.4242             39                   56            68            19            0.6437    0.2374             0.5152           18           0.0927  21         0.8617      0.4079                12.3449             6.4311            0.4595          0.8430               42
+11       129    0.8358        1  0.0880       0.0161       0.2604                         4        0.2428       0.0695        0.0906      0.3117             27                   92           188            11            0.8312    0.2024             0.9527            2           0.2177  15         0.8867      0.3516                 9.9699             5.2436            4.8345          0.9055               25
+15       148    0.6858        5  0.1242       0.0222       0.1104                        11        0.1116       0.0070        0.1156      0.4992             15                   32           116            14            0.7687    0.1674             0.8902           13           0.8427  33         0.8117      0.0704                 7.5949             4.0561            1.7095          0.7180               30
+5         82    0.7108        5  0.2149       0.0192       0.3854                        17        0.3959       0.0757        0.1281      0.3304             69                   62           128            17            0.9250    0.2899             0.8590           10           0.9052  48         0.8742      0.0985                 1.6574             5.8373            2.0220          0.9368               39
+# 2026-10-01 11:12:00 -03: Iteration 2 of 6
+# experimentsUsed: 96
+# remainingBudget: 504
+# currentBudget: 100
+# nbConfigurations: 19
+# Markers:
+     x No test is performed.
+     c Configurations are discarded only due to capping.
+     - The test is performed and some configurations are discarded.
+     = The test is performed but no configuration is discarded.
+     ! The test is performed and configurations could be discarded but elite configurations are preserved.
+     . Alive configurations were already evaluated on this instance and nothing is discarded.
+     : All alive configurations are elite, but some need to be evaluated on this instance.
+
++-+-----------+-----------+-----------+----------------+-----------+--------+-----+----+------+
+| |   Instance|      Alive|       Best|       Mean best| Exp so far|  W time|  rho|KenW|  Qvar|
++-+-----------+-----------+-----------+----------------+-----------+--------+-----+----+------+
+|x|          7|         19|         10|     18922.80000|         19|00:00:30|   NA|  NA|    NA|
+|x|          5|         19|         10|     16818.50000|         32|00:00:10|+0.51|0.75|0.5351|
+|x|          2|         19|         23|     25995.73333|         45|00:01:03|+0.15|0.44|0.9155|
+|x|          3|         19|         10|     21301.14750|         58|00:01:07|+0.24|0.43|0.7854|
+|-|          1|         10|         10|     21163.17800|         71|00:00:27|+0.22|0.38|0.6999|
+|!|          4|         10|         10|     18672.96667|         75|00:00:05|+0.26|0.39|0.6743|
+|-|          6|          3|         10|     16435.69714|         79|00:00:03|+0.21|0.33|0.5662|
++-+-----------+-----------+-----------+----------------+-----------+--------+-----+----+------+
+Best-so-far configuration:          10    mean value:      16435.69714
+Description of the best-so-far configuration:
+   .ID. populacao crossover elitismo mutacao piso_mutacao teto_mutacao limiar_estagnacao_mutacao macro_mutacao injecao_base injecao_extra injecao_max tamanho_gaveta periodo_arquivamento limiar_gaveta engavetados_k semelhanca_gaveta torneio_k decaimento_torneio vizinhos_div peso_diversidade rcl decaimento_rcl tenure_rota recompensa_novo_melhor recompensa_melhora recompensa_aceito decaimento_peso tamanho_segmento .PARENT.
+10   10       167    0.7358        8  0.1605       0.0039       0.1604                        18        0.3303       0.0945        0.0406      0.2367             51                   20            45            16            0.7062    0.2724             0.5777            6           0.9677  27         0.8367      0.2391                14.7199             7.6186            3.5845          0.5305               13       NA
+
+# 2026-10-01 11:15:29 -03: Elite configurations (first number is the configuration ID; listed from best to worst according to the sum of ranks):
+   populacao crossover elitismo mutacao piso_mutacao teto_mutacao limiar_estagnacao_mutacao macro_mutacao injecao_base injecao_extra injecao_max tamanho_gaveta periodo_arquivamento limiar_gaveta engavetados_k semelhanca_gaveta torneio_k decaimento_torneio vizinhos_div peso_diversidade rcl decaimento_rcl tenure_rota recompensa_novo_melhor recompensa_melhora recompensa_aceito decaimento_peso tamanho_segmento
+10       167    0.7358        8  0.1605       0.0039       0.1604                        18        0.3303       0.0945        0.0406      0.2367             51                   20            45            16            0.7062    0.2724             0.5777            6           0.9677  27         0.8367      0.2391                14.7199             7.6186            3.5845          0.5305               13
+23       185    0.7799        8  0.1919       0.0028       0.3119                        11        0.3296       0.0521        0.1262      0.4386             36                    9           115            18            0.7956    0.2895             0.9599            2           0.5553  17         0.8844      0.4616                14.6437             3.5566            3.1156          0.7713               35
+21       188    0.8577        2  0.1163       0.0055       0.2472                        18        0.3710       0.0635        0.1978      0.3447             31                   75            99            16            0.9366    0.1539             0.9267           12           0.8005  37         0.8576      0.2288                 1.7672             5.9870            2.5748          0.7454               18
+# 2026-10-01 11:15:29 -03: Iteration 3 of 6
+# experimentsUsed: 175
+# remainingBudget: 425
+# currentBudget: 106
+# nbConfigurations: 15
+# Markers:
+     x No test is performed.
+     c Configurations are discarded only due to capping.
+     - The test is performed and some configurations are discarded.
+     = The test is performed but no configuration is discarded.
+     ! The test is performed and configurations could be discarded but elite configurations are preserved.
+     . Alive configurations were already evaluated on this instance and nothing is discarded.
+     : All alive configurations are elite, but some need to be evaluated on this instance.
+
++-+-----------+-----------+-----------+----------------+-----------+--------+-----+----+------+
+| |   Instance|      Alive|       Best|       Mean best| Exp so far|  W time|  rho|KenW|  Qvar|
++-+-----------+-----------+-----------+----------------+-----------+--------+-----+----+------+
+|x|          8|         15|         32|     15231.70000|         15|00:00:32|   NA|  NA|    NA|
+|x|          5|         15|         23|     14559.30000|         27|00:00:12|+0.67|0.83|0.3520|
+|x|          1|         15|         23|     16022.26667|         39|00:00:31|+0.53|0.68|0.4659|
+|x|          6|         15|         23|     13285.86250|         51|00:00:08|+0.39|0.54|0.5865|
+|=|          3|         15|         23|     11203.05800|         63|00:01:13|+0.12|0.30|0.8195|
+|-|          2|         10|         23|     17036.83167|         75|00:01:08|-0.03|0.14|0.9420|
+|=|          4|         10|         23|     15597.64429|         82|00:00:09|+0.07|0.20|0.8600|
+|=|          7|         10|         10|     16697.97250|         89|00:00:16|+0.10|0.21|0.8344|
+|-|          9|          6|         10|     17639.82000|         99|00:00:38|-0.01|0.10|0.8855|
++-+-----------+-----------+-----------+----------------+-----------+--------+-----+----+------+
+Best-so-far configuration:          10    mean value:      17639.82000
+Description of the best-so-far configuration:
+   .ID. populacao crossover elitismo mutacao piso_mutacao teto_mutacao limiar_estagnacao_mutacao macro_mutacao injecao_base injecao_extra injecao_max tamanho_gaveta periodo_arquivamento limiar_gaveta engavetados_k semelhanca_gaveta torneio_k decaimento_torneio vizinhos_div peso_diversidade rcl decaimento_rcl tenure_rota recompensa_novo_melhor recompensa_melhora recompensa_aceito decaimento_peso tamanho_segmento .PARENT.
+10   10       167    0.7358        8  0.1605       0.0039       0.1604                        18        0.3303       0.0945        0.0406      0.2367             51                   20            45            16            0.7062    0.2724             0.5777            6           0.9677  27         0.8367      0.2391                14.7199             7.6186            3.5845          0.5305               13       NA
+
+# 2026-10-01 11:20:20 -03: Elite configurations (first number is the configuration ID; listed from best to worst according to the sum of ranks):
+   populacao crossover elitismo mutacao piso_mutacao teto_mutacao limiar_estagnacao_mutacao macro_mutacao injecao_base injecao_extra injecao_max tamanho_gaveta periodo_arquivamento limiar_gaveta engavetados_k semelhanca_gaveta torneio_k decaimento_torneio vizinhos_div peso_diversidade rcl decaimento_rcl tenure_rota recompensa_novo_melhor recompensa_melhora recompensa_aceito decaimento_peso tamanho_segmento
+10       167    0.7358        8  0.1605       0.0039       0.1604                        18        0.3303       0.0945        0.0406      0.2367             51                   20            45            16            0.7062    0.2724             0.5777            6           0.9677  27         0.8367      0.2391                14.7199             7.6186            3.5845          0.5305               13
+23       185    0.7799        8  0.1919       0.0028       0.3119                        11        0.3296       0.0521        0.1262      0.4386             36                    9           115            18            0.7956    0.2895             0.9599            2           0.5553  17         0.8844      0.4616                14.6437             3.5566            3.1156          0.7713               35
+41       180    0.9047        7  0.0904       0.0051       0.1917                         8        0.2214       0.0314        0.1984      0.3853             79                   38           130             6            0.7844    0.2583             0.9756            4           0.0675   8         0.8249      0.3037                18.4522             4.6578            3.3577          0.5846               31
+31       189    0.8854       10  0.1967       0.0201       0.4174                        20        0.3774       0.0819        0.0255      0.2667             62                   44            20            17            0.7659    0.2863             0.6637           18           0.7278  44         0.8305      0.1964                11.7168             6.3697            2.6930          0.6008               17
+38       166    0.6927        9  0.2707       0.0022       0.2311                        11        0.2641       0.0513        0.0272      0.2483             24                   44           123            15            0.7791    0.1580             0.6115            3           0.3971  12         0.9268      0.3514                16.7844             7.0364            4.4712          0.6848                6
+21       188    0.8577        2  0.1163       0.0055       0.2472                        18        0.3710       0.0635        0.1978      0.3447             31                   75            99            16            0.9366    0.1539             0.9267           12           0.8005  37         0.8576      0.2288                 1.7672             5.9870            2.5748          0.7454               18
+# 2026-10-01 11:20:20 -03: Iteration 4 of 6
+# experimentsUsed: 274
+# remainingBudget: 326
+# currentBudget: 108
+# nbConfigurations: 16
+# Markers:
+     x No test is performed.
+     c Configurations are discarded only due to capping.
+     - The test is performed and some configurations are discarded.
+     = The test is performed but no configuration is discarded.
+     ! The test is performed and configurations could be discarded but elite configurations are preserved.
+     . Alive configurations were already evaluated on this instance and nothing is discarded.
+     : All alive configurations are elite, but some need to be evaluated on this instance.
+
++-+-----------+-----------+-----------+----------------+-----------+--------+-----+----+------+
+| |   Instance|      Alive|       Best|       Mean best| Exp so far|  W time|  rho|KenW|  Qvar|
++-+-----------+-----------+-----------+----------------+-----------+--------+-----+----+------+
+|x|         10|         16|         41|     2558.810000|         16|00:00:11|   NA|  NA|    NA|
+|x|          5|         16|         41|     8288.855000|         26|00:00:09|+0.63|0.82|0.3251|
+|x|          2|         16|         23|     20531.98333|         36|00:01:00|+0.16|0.44|0.9269|
+|x|          6|         16|         10|     17443.27000|         46|00:00:05|+0.14|0.35|0.8746|
+|-|          7|          8|         10|     17739.17600|         56|00:00:19|+0.13|0.30|0.8329|
+|=|          4|          8|         10|     15819.63167|         58|00:00:02|+0.20|0.33|0.7885|
+|-|          3|          6|         10|     13952.99714|         60|00:00:16|+0.03|0.17|0.8642|
+|.|          1|          6|         10|     14785.28500|         60|00:00:00|+0.11|0.22|0.8238|
+|.|          8|          6|         10|     15201.79778|         60|00:00:00|+0.06|0.16|0.8484|
+|.|          9|          6|         10|     16199.07800|         60|00:00:00|+0.04|0.14|0.8548|
++-+-----------+-----------+-----------+----------------+-----------+--------+-----+----+------+
+Best-so-far configuration:          10    mean value:      16199.07800
+Description of the best-so-far configuration:
+   .ID. populacao crossover elitismo mutacao piso_mutacao teto_mutacao limiar_estagnacao_mutacao macro_mutacao injecao_base injecao_extra injecao_max tamanho_gaveta periodo_arquivamento limiar_gaveta engavetados_k semelhanca_gaveta torneio_k decaimento_torneio vizinhos_div peso_diversidade rcl decaimento_rcl tenure_rota recompensa_novo_melhor recompensa_melhora recompensa_aceito decaimento_peso tamanho_segmento .PARENT.
+10   10       167    0.7358        8  0.1605       0.0039       0.1604                        18        0.3303       0.0945        0.0406      0.2367             51                   20            45            16            0.7062    0.2724             0.5777            6           0.9677  27         0.8367      0.2391                14.7199             7.6186            3.5845          0.5305               13       NA
+
+# 2026-10-01 11:22:27 -03: Elite configurations (first number is the configuration ID; listed from best to worst according to the sum of ranks):
+   populacao crossover elitismo mutacao piso_mutacao teto_mutacao limiar_estagnacao_mutacao macro_mutacao injecao_base injecao_extra injecao_max tamanho_gaveta periodo_arquivamento limiar_gaveta engavetados_k semelhanca_gaveta torneio_k decaimento_torneio vizinhos_div peso_diversidade rcl decaimento_rcl tenure_rota recompensa_novo_melhor recompensa_melhora recompensa_aceito decaimento_peso tamanho_segmento
+10       167    0.7358        8  0.1605       0.0039       0.1604                        18        0.3303       0.0945        0.0406      0.2367             51                   20            45            16            0.7062    0.2724             0.5777            6           0.9677  27         0.8367      0.2391                14.7199             7.6186            3.5845          0.5305               13
+23       185    0.7799        8  0.1919       0.0028       0.3119                        11        0.3296       0.0521        0.1262      0.4386             36                    9           115            18            0.7956    0.2895             0.9599            2           0.5553  17         0.8844      0.4616                14.6437             3.5566            3.1156          0.7713               35
+41       180    0.9047        7  0.0904       0.0051       0.1917                         8        0.2214       0.0314        0.1984      0.3853             79                   38           130             6            0.7844    0.2583             0.9756            4           0.0675   8         0.8249      0.3037                18.4522             4.6578            3.3577          0.5846               31
+31       189    0.8854       10  0.1967       0.0201       0.4174                        20        0.3774       0.0819        0.0255      0.2667             62                   44            20            17            0.7659    0.2863             0.6637           18           0.7278  44         0.8305      0.1964                11.7168             6.3697            2.6930          0.6008               17
+38       166    0.6927        9  0.2707       0.0022       0.2311                        11        0.2641       0.0513        0.0272      0.2483             24                   44           123            15            0.7791    0.1580             0.6115            3           0.3971  12         0.9268      0.3514                16.7844             7.0364            4.4712          0.6848                6
+21       188    0.8577        2  0.1163       0.0055       0.2472                        18        0.3710       0.0635        0.1978      0.3447             31                   75            99            16            0.9366    0.1539             0.9267           12           0.8005  37         0.8576      0.2288                 1.7672             5.9870            2.5748          0.7454               18
+# 2026-10-01 11:22:27 -03: Iteration 5 of 6
+# experimentsUsed: 334
+# remainingBudget: 266
+# currentBudget: 133
+# nbConfigurations: 17
+# Markers:
+     x No test is performed.
+     c Configurations are discarded only due to capping.
+     - The test is performed and some configurations are discarded.
+     = The test is performed but no configuration is discarded.
+     ! The test is performed and configurations could be discarded but elite configurations are preserved.
+     . Alive configurations were already evaluated on this instance and nothing is discarded.
+     : All alive configurations are elite, but some need to be evaluated on this instance.
+
++-+-----------+-----------+-----------+----------------+-----------+--------+-----+----+------+
+| |   Instance|      Alive|       Best|       Mean best| Exp so far|  W time|  rho|KenW|  Qvar|
++-+-----------+-----------+-----------+----------------+-----------+--------+-----+----+------+
+|x|         11|         17|         58|     2344.880000|         17|00:00:51|   NA|  NA|    NA|
+|x|          6|         17|         58|     3250.365000|         28|00:00:05|+0.59|0.79|0.5685|
+|x|          7|         17|         41|     19812.99667|         39|00:00:20|+0.68|0.79|0.5181|
+|x|          9|         17|         31|     21904.65750|         50|00:00:34|+0.60|0.70|0.5231|
+|-|          2|         11|         58|     11375.03000|         61|00:01:00|+0.01|0.20|0.8569|
+|=|          8|         11|         41|     25455.49833|         66|00:00:12|-0.04|0.13|0.8950|
+|=|          5|         11|         41|     23821.69857|         71|00:00:06|+0.02|0.16|0.8579|
+|=|         10|         11|         41|     21163.83750|         76|00:00:05|+0.05|0.17|0.8135|
+|=|          1|         11|         41|     21105.92222|         81|00:00:14|+0.08|0.18|0.8275|
+|-|          4|          7|         41|     19662.88500|         86|00:00:07|+0.04|0.14|0.8472|
+|=|          3|          7|         10|     18458.16182|         87|00:00:17|+0.02|0.11|0.8776|
+|=|         12|          7|         41|     22483.69583|         94|00:00:15|+0.02|0.10|0.8670|
++-+-----------+-----------+-----------+----------------+-----------+--------+-----+----+------+
+Best-so-far configuration:          41    mean value:      22483.69583
+Description of the best-so-far configuration:
+   .ID. populacao crossover elitismo mutacao piso_mutacao teto_mutacao limiar_estagnacao_mutacao macro_mutacao injecao_base injecao_extra injecao_max tamanho_gaveta periodo_arquivamento limiar_gaveta engavetados_k semelhanca_gaveta torneio_k decaimento_torneio vizinhos_div peso_diversidade rcl decaimento_rcl tenure_rota recompensa_novo_melhor recompensa_melhora recompensa_aceito decaimento_peso tamanho_segmento .PARENT.
+41   41       180    0.9047        7  0.0904       0.0051       0.1917                         8        0.2214       0.0314        0.1984      0.3853             79                   38           130             6            0.7844    0.2583             0.9756            4           0.0675   8         0.8249      0.3037                18.4522             4.6578            3.3577          0.5846               31       23
+
+# 2026-10-01 11:26:39 -03: Elite configurations (first number is the configuration ID; listed from best to worst according to the sum of ranks):
+   populacao crossover elitismo mutacao piso_mutacao teto_mutacao limiar_estagnacao_mutacao macro_mutacao injecao_base injecao_extra injecao_max tamanho_gaveta periodo_arquivamento limiar_gaveta engavetados_k semelhanca_gaveta torneio_k decaimento_torneio vizinhos_div peso_diversidade rcl decaimento_rcl tenure_rota recompensa_novo_melhor recompensa_melhora recompensa_aceito decaimento_peso tamanho_segmento
+41       180    0.9047        7  0.0904       0.0051       0.1917                         8        0.2214       0.0314        0.1984      0.3853             79                   38           130             6            0.7844    0.2583             0.9756            4           0.0675   8         0.8249      0.3037                18.4522             4.6578            3.3577          0.5846               31
+10       167    0.7358        8  0.1605       0.0039       0.1604                        18        0.3303       0.0945        0.0406      0.2367             51                   20            45            16            0.7062    0.2724             0.5777            6           0.9677  27         0.8367      0.2391                14.7199             7.6186            3.5845          0.5305               13
+23       185    0.7799        8  0.1919       0.0028       0.3119                        11        0.3296       0.0521        0.1262      0.4386             36                    9           115            18            0.7956    0.2895             0.9599            2           0.5553  17         0.8844      0.4616                14.6437             3.5566            3.1156          0.7713               35
+31       189    0.8854       10  0.1967       0.0201       0.4174                        20        0.3774       0.0819        0.0255      0.2667             62                   44            20            17            0.7659    0.2863             0.6637           18           0.7278  44         0.8305      0.1964                11.7168             6.3697            2.6930          0.6008               17
+59       158    0.9268        7  0.1211       0.0096       0.3461                         5        0.2593       0.0142        0.1878      0.3229             55                   31           177             3            0.6248    0.2028             0.8428           13           0.2580  16         0.8096      0.3823                11.2397             7.2075            3.7165          0.8042               35
+38       166    0.6927        9  0.2707       0.0022       0.2311                        11        0.2641       0.0513        0.0272      0.2483             24                   44           123            15            0.7791    0.1580             0.6115            3           0.3971  12         0.9268      0.3514                16.7844             7.0364            4.4712          0.6848                6
+# 2026-10-01 11:26:39 -03: Iteration 6 of 6
+# experimentsUsed: 428
+# remainingBudget: 172
+# currentBudget: 172
+# nbConfigurations: 18
+# Markers:
+     x No test is performed.
+     c Configurations are discarded only due to capping.
+     - The test is performed and some configurations are discarded.
+     = The test is performed but no configuration is discarded.
+     ! The test is performed and configurations could be discarded but elite configurations are preserved.
+     . Alive configurations were already evaluated on this instance and nothing is discarded.
+     : All alive configurations are elite, but some need to be evaluated on this instance.
+
++-+-----------+-----------+-----------+----------------+-----------+--------+-----+----+------+
+| |   Instance|      Alive|       Best|       Mean best| Exp so far|  W time|  rho|KenW|  Qvar|
++-+-----------+-----------+-----------+----------------+-----------+--------+-----+----+------+
+|x|         13|         18|         59|     3443.170000|         18|00:02:18|   NA|  NA|    NA|
+|x|          1|         18|         10|     12064.13500|         30|00:00:25|-0.54|0.23|1.3778|
+|x|          4|         18|         10|     10116.72667|         42|00:00:13|-0.02|0.32|0.9859|
+|x|         10|         18|         10|     8395.645000|         54|00:00:07|+0.02|0.26|0.9623|
+|=|         11|         18|         10|     14926.31600|         66|00:00:32|+0.13|0.30|0.8223|
+|=|          2|         18|         10|     20574.33000|         78|00:01:05|+0.07|0.23|0.9041|
+|-|          5|         12|         10|     19737.16857|         90|00:00:11|-0.01|0.13|0.9656|
+|=|          6|         12|         10|     17646.53250|         96|00:00:03|+0.04|0.16|0.9288|
+|=|          7|         12|         10|     17788.34000|        102|00:00:12|+0.07|0.17|0.8965|
+|=|          9|         12|         10|     18526.96600|        108|00:00:20|+0.06|0.15|0.9039|
+|=|          3|         12|         10|     17092.98636|        114|00:00:38|+0.05|0.13|0.9253|
+|=|         12|         12|         10|     17350.52083|        120|00:00:12|+0.04|0.12|0.9257|
+|=|          8|         12|         10|     17441.55000|        126|00:00:12|+0.02|0.10|0.9230|
+|=|         14|         12|         10|     18165.93214|        138|00:00:28|+0.04|0.11|0.9064|
++-+-----------+-----------+-----------+----------------+-----------+--------+-----+----+------+
+Best-so-far configuration:          10    mean value:      18165.93214
+Description of the best-so-far configuration:
+   .ID. populacao crossover elitismo mutacao piso_mutacao teto_mutacao limiar_estagnacao_mutacao macro_mutacao injecao_base injecao_extra injecao_max tamanho_gaveta periodo_arquivamento limiar_gaveta engavetados_k semelhanca_gaveta torneio_k decaimento_torneio vizinhos_div peso_diversidade rcl decaimento_rcl tenure_rota recompensa_novo_melhor recompensa_melhora recompensa_aceito decaimento_peso tamanho_segmento .PARENT.
+10   10       167    0.7358        8  0.1605       0.0039       0.1604                        18        0.3303       0.0945        0.0406      0.2367             51                   20            45            16            0.7062    0.2724             0.5777            6           0.9677  27         0.8367      0.2391                14.7199             7.6186            3.5845          0.5305               13       NA
+
+# 2026-10-01 11:33:43 -03: Elite configurations (first number is the configuration ID; listed from best to worst according to the sum of ranks):
+   populacao crossover elitismo mutacao piso_mutacao teto_mutacao limiar_estagnacao_mutacao macro_mutacao injecao_base injecao_extra injecao_max tamanho_gaveta periodo_arquivamento limiar_gaveta engavetados_k semelhanca_gaveta torneio_k decaimento_torneio vizinhos_div peso_diversidade rcl decaimento_rcl tenure_rota recompensa_novo_melhor recompensa_melhora recompensa_aceito decaimento_peso tamanho_segmento
+10       167    0.7358        8  0.1605       0.0039       0.1604                        18        0.3303       0.0945        0.0406      0.2367             51                   20            45            16            0.7062    0.2724             0.5777            6           0.9677  27         0.8367      0.2391                14.7199             7.6186            3.5845          0.5305               13
+74       179    0.7540        5  0.1445       0.0107       0.3265                         8        0.3070       0.0722        0.0879      0.4585             28                   25           143            14            0.6158    0.2390             0.7904            3           0.9370  10         0.8437      0.4251                18.4962             2.5609            1.9403          0.8640               39
+41       180    0.9047        7  0.0904       0.0051       0.1917                         8        0.2214       0.0314        0.1984      0.3853             79                   38           130             6            0.7844    0.2583             0.9756            4           0.0675   8         0.8249      0.3037                18.4522             4.6578            3.3577          0.5846               31
+23       185    0.7799        8  0.1919       0.0028       0.3119                        11        0.3296       0.0521        0.1262      0.4386             36                    9           115            18            0.7956    0.2895             0.9599            2           0.5553  17         0.8844      0.4616                14.6437             3.5566            3.1156          0.7713               35
+70       174    0.8168        8  0.1683       0.0024       0.2837                        14        0.2230       0.0728        0.1199      0.4056             36                   56            75             3            0.7932    0.2882             0.8559            2           0.2249   4         0.8234      0.1510                15.7217             5.7992            2.7107          0.8190               24
+59       158    0.9268        7  0.1211       0.0096       0.3461                         5        0.2593       0.0142        0.1878      0.3229             55                   31           177             3            0.6248    0.2028             0.8428           13           0.2580  16         0.8096      0.3823                11.2397             7.2075            3.7165          0.8042               35
+# 2026-10-01 11:33:43 -03: Iteration 7 of 7
+# experimentsUsed: 566
+# remainingBudget: 34
+# currentBudget: 34
+# nbConfigurations: 7
+# Markers:
+     x No test is performed.
+     c Configurations are discarded only due to capping.
+     - The test is performed and some configurations are discarded.
+     = The test is performed but no configuration is discarded.
+     ! The test is performed and configurations could be discarded but elite configurations are preserved.
+     . Alive configurations were already evaluated on this instance and nothing is discarded.
+     : All alive configurations are elite, but some need to be evaluated on this instance.
+
++-+-----------+-----------+-----------+----------------+-----------+--------+-----+----+------+
+| |   Instance|      Alive|       Best|       Mean best| Exp so far|  W time|  rho|KenW|  Qvar|
++-+-----------+-----------+-----------+----------------+-----------+--------+-----+----+------+
+|x|         15|          7|         23|     13883.80000|          7|00:00:18|   NA|  NA|    NA|
+|x|         14|          7|         23|     19439.15000|          8|00:00:07|+0.07|0.54|0.5704|
+|x|          6|          7|         10|     15889.02667|          9|00:00:01|-0.22|0.18|1.0089|
+|x|         13|          7|         10|     12796.01250|         10|00:00:25|-0.16|0.13|1.0979|
+|=|          2|          7|         59|     18978.32400|         11|00:00:17|-0.15|0.08|1.0392|
+|=|         10|          7|         10|     17205.14167|         12|00:00:02|-0.14|0.05|1.0137|
+|=|          4|          7|         10|     15636.10857|         13|00:00:03|-0.10|0.06|0.9563|
+|=|          8|          7|         10|     15998.33250|         14|00:00:07|-0.12|0.02|0.9479|
+|=|         11|          7|         41|     18324.72333|         15|00:00:08|-0.10|0.02|0.9287|
+|=|         12|          7|         41|     18304.44100|         16|00:00:05|-0.08|0.03|0.9204|
+|=|          7|          7|         41|     18358.99182|         17|00:00:05|-0.05|0.05|0.9045|
+|=|          1|          7|         41|     18549.29250|         18|00:00:06|-0.02|0.06|0.8835|
+|=|          9|          7|         41|     19194.64692|         19|00:00:10|-0.03|0.05|0.8903|
+|=|          5|          7|         41|     18824.95071|         20|00:00:03|-0.02|0.05|0.8818|
+|=|          3|          7|         10|     18093.01000|         21|00:00:18|-0.04|0.03|0.8900|
+|=|         16|          7|         41|     20490.67437|         28|00:00:08|-0.04|0.02|0.8968|
++-+-----------+-----------+-----------+----------------+-----------+--------+-----+----+------+
+Best-so-far configuration:          41    mean value:      20490.67437
+Description of the best-so-far configuration:
+   .ID. populacao crossover elitismo mutacao piso_mutacao teto_mutacao limiar_estagnacao_mutacao macro_mutacao injecao_base injecao_extra injecao_max tamanho_gaveta periodo_arquivamento limiar_gaveta engavetados_k semelhanca_gaveta torneio_k decaimento_torneio vizinhos_div peso_diversidade rcl decaimento_rcl tenure_rota recompensa_novo_melhor recompensa_melhora recompensa_aceito decaimento_peso tamanho_segmento .PARENT.
+41   41       180    0.9047        7  0.0904       0.0051       0.1917                         8        0.2214       0.0314        0.1984      0.3853             79                   38           130             6            0.7844    0.2583             0.9756            4           0.0675   8         0.8249      0.3037                18.4522             4.6578            3.3577          0.5846               31       23
+
+# 2026-10-01 11:36:14 -03: Elite configurations (first number is the configuration ID; listed from best to worst according to the sum of ranks):
+   populacao crossover elitismo mutacao piso_mutacao teto_mutacao limiar_estagnacao_mutacao macro_mutacao injecao_base injecao_extra injecao_max tamanho_gaveta periodo_arquivamento limiar_gaveta engavetados_k semelhanca_gaveta torneio_k decaimento_torneio vizinhos_div peso_diversidade rcl decaimento_rcl tenure_rota recompensa_novo_melhor recompensa_melhora recompensa_aceito decaimento_peso tamanho_segmento
+41       180    0.9047        7  0.0904       0.0051       0.1917                         8        0.2214       0.0314        0.1984      0.3853             79                   38           130             6            0.7844    0.2583             0.9756            4           0.0675   8         0.8249      0.3037                18.4522             4.6578            3.3577          0.5846               31
+10       167    0.7358        8  0.1605       0.0039       0.1604                        18        0.3303       0.0945        0.0406      0.2367             51                   20            45            16            0.7062    0.2724             0.5777            6           0.9677  27         0.8367      0.2391                14.7199             7.6186            3.5845          0.5305               13
+74       179    0.7540        5  0.1445       0.0107       0.3265                         8        0.3070       0.0722        0.0879      0.4585             28                   25           143            14            0.6158    0.2390             0.7904            3           0.9370  10         0.8437      0.4251                18.4962             2.5609            1.9403          0.8640               39
+23       185    0.7799        8  0.1919       0.0028       0.3119                        11        0.3296       0.0521        0.1262      0.4386             36                    9           115            18            0.7956    0.2895             0.9599            2           0.5553  17         0.8844      0.4616                14.6437             3.5566            3.1156          0.7713               35
+59       158    0.9268        7  0.1211       0.0096       0.3461                         5        0.2593       0.0142        0.1878      0.3229             55                   31           177             3            0.6248    0.2028             0.8428           13           0.2580  16         0.8096      0.3823                11.2397             7.2075            3.7165          0.8042               35
+70       174    0.8168        8  0.1683       0.0024       0.2837                        14        0.2230       0.0728        0.1199      0.4056             36                   56            75             3            0.7932    0.2882             0.8559            2           0.2249   4         0.8234      0.1510                15.7217             5.7992            2.7107          0.8190               24
+# 2026-10-01 11:36:14 -03: Stopped because there is not enough budget left to race more than the minimum (6).
+# You may either increase the budget or set 'minNbSurvival' to a lower value.
+# Iteration: 8
+# nbIterations: 8
+# experimentsUsed: 594
+# timeUsed: 0
+# remainingBudget: 6
+# currentBudget: 6
+# number of elites: 6
+# nbConfigurations: 6
+# Total CPU user time: 5577.764, CPU sys time: 9.004, Wall-clock time: 1684.472
+# 2026-10-01 11:36:14 -03: Starting post-selection:
+# Configurations selected: 41, 10, 74, 23, 59, 70.
+# Pending instances: 0, 0, 0, 0, 0, 0.
+# 2026-10-01 11:36:14 -03: seed: 123
+# Configurations: 6
+# Available experiments: 6
+# minSurvival: 1
+# Markers:
+     x No test is performed.
+     c Configurations are discarded only due to capping.
+     - The test is performed and some configurations are discarded.
+     = The test is performed but no configuration is discarded.
+     ! The test is performed and configurations could be discarded but elite configurations are preserved.
+     . Alive configurations were already evaluated on this instance and nothing is discarded.
+     : All alive configurations are elite, but some need to be evaluated on this instance.
+
++-+-----------+-----------+-----------+----------------+-----------+--------+-----+----+------+
+| |   Instance|      Alive|       Best|       Mean best| Exp so far|  W time|  rho|KenW|  Qvar|
++-+-----------+-----------+-----------+----------------+-----------+--------+-----+----+------+
+|.|         15|          6|         23|     13883.80000|          0|00:00:00|   NA|  NA|    NA|
+|.|         13|          6|         23|     46151.70000|          0|00:00:00|-0.14|0.43|1.1816|
+|.|          2|          6|         23|     46169.70000|          0|00:00:00|-0.03|0.31|0.9722|
+|.|          1|          6|         23|     39364.32500|          0|00:00:00|-0.22|0.09|1.0548|
+|.|          9|          6|         23|     36807.36000|          0|00:00:00|-0.06|0.15|0.9558|
+|.|         11|          6|         23|     37679.78333|          0|00:00:00|-0.14|0.05|0.9360|
+|.|         12|          6|         23|     34908.65714|          0|00:00:00|-0.10|0.05|0.9240|
+|.|          6|          6|         23|     31179.65625|          0|00:00:00|-0.11|0.02|0.9325|
+|.|          5|          6|         23|     29064.81667|          0|00:00:00|-0.12|0.00|0.9267|
+|.|          7|          6|         23|     28121.87500|          0|00:00:00|-0.10|0.01|0.9208|
+|.|         16|          6|         23|     26725.77727|          0|00:00:00|-0.07|0.03|0.9038|
+|.|         14|          6|         23|     26581.50417|          0|00:00:00|-0.05|0.04|0.8902|
+|.|          4|          6|         23|     25072.35154|          0|00:00:00|-0.05|0.03|0.8889|
+|.|          3|          6|         23|     23486.60071|          0|00:00:00|-0.05|0.02|0.8892|
+|.|          8|          6|         23|     23052.32733|          0|00:00:00|-0.06|0.01|0.8814|
+|.|         10|          6|         23|     21814.31625|          0|00:00:00|-0.04|0.02|0.8768|
+|=|         17|          6|         10|     16831.71235|          6|00:00:47|-0.03|0.03|0.8714|
++-+-----------+-----------+-----------+----------------+-----------+--------+-----+----+------+
+Best-so-far configuration:          10    mean value:      16831.71235
+Description of the best-so-far configuration:
+   .ID. populacao crossover elitismo mutacao piso_mutacao teto_mutacao limiar_estagnacao_mutacao macro_mutacao injecao_base injecao_extra injecao_max tamanho_gaveta periodo_arquivamento limiar_gaveta engavetados_k semelhanca_gaveta torneio_k decaimento_torneio vizinhos_div peso_diversidade rcl decaimento_rcl tenure_rota recompensa_novo_melhor recompensa_melhora recompensa_aceito decaimento_peso tamanho_segmento .PARENT.
+10   10       167    0.7358        8  0.1605       0.0039       0.1604                        18        0.3303       0.0945        0.0406      0.2367             51                   20            45            16            0.7062    0.2724             0.5777            6           0.9677  27         0.8367      0.2391                14.7199             7.6186            3.5845          0.5305               13       NA
+
+# 2026-10-01 11:37:01 -03: Elite configurations (first number is the configuration ID; listed from best to worst according to the sum of ranks):
+   populacao crossover elitismo mutacao piso_mutacao teto_mutacao limiar_estagnacao_mutacao macro_mutacao injecao_base injecao_extra injecao_max tamanho_gaveta periodo_arquivamento limiar_gaveta engavetados_k semelhanca_gaveta torneio_k decaimento_torneio vizinhos_div peso_diversidade rcl decaimento_rcl tenure_rota recompensa_novo_melhor recompensa_melhora recompensa_aceito decaimento_peso tamanho_segmento
+10       167    0.7358        8  0.1605       0.0039       0.1604                        18        0.3303       0.0945        0.0406      0.2367             51                   20            45            16            0.7062    0.2724             0.5777            6           0.9677  27         0.8367      0.2391                14.7199             7.6186            3.5845          0.5305               13
+41       180    0.9047        7  0.0904       0.0051       0.1917                         8        0.2214       0.0314        0.1984      0.3853             79                   38           130             6            0.7844    0.2583             0.9756            4           0.0675   8         0.8249      0.3037                18.4522             4.6578            3.3577          0.5846               31
+74       179    0.7540        5  0.1445       0.0107       0.3265                         8        0.3070       0.0722        0.0879      0.4585             28                   25           143            14            0.6158    0.2390             0.7904            3           0.9370  10         0.8437      0.4251                18.4962             2.5609            1.9403          0.8640               39
+23       185    0.7799        8  0.1919       0.0028       0.3119                        11        0.3296       0.0521        0.1262      0.4386             36                    9           115            18            0.7956    0.2895             0.9599            2           0.5553  17         0.8844      0.4616                14.6437             3.5566            3.1156          0.7713               35
+59       158    0.9268        7  0.1211       0.0096       0.3461                         5        0.2593       0.0142        0.1878      0.3229             55                   31           177             3            0.6248    0.2028             0.8428           13           0.2580  16         0.8096      0.3823                11.2397             7.2075            3.7165          0.8042               35
+70       174    0.8168        8  0.1683       0.0024       0.2837                        14        0.2230       0.0728        0.1199      0.4056             36                   56            75             3            0.7932    0.2882             0.8559            2           0.2249   4         0.8234      0.1510                15.7217             5.7992            2.7107          0.8190               24
+# Total CPU user time: 5726.79, CPU sys time: 9.126, Wall-clock time: 1732.081
+# Best configurations (first number is the configuration ID; listed from best to worst according to the sum of ranks):
+   populacao crossover elitismo mutacao piso_mutacao teto_mutacao limiar_estagnacao_mutacao macro_mutacao injecao_base injecao_extra injecao_max tamanho_gaveta periodo_arquivamento limiar_gaveta engavetados_k semelhanca_gaveta torneio_k decaimento_torneio vizinhos_div peso_diversidade rcl decaimento_rcl tenure_rota recompensa_novo_melhor recompensa_melhora recompensa_aceito decaimento_peso tamanho_segmento
+10       167    0.7358        8  0.1605       0.0039       0.1604                        18        0.3303       0.0945        0.0406      0.2367             51                   20            45            16            0.7062    0.2724             0.5777            6           0.9677  27         0.8367      0.2391                14.7199             7.6186            3.5845          0.5305               13
+41       180    0.9047        7  0.0904       0.0051       0.1917                         8        0.2214       0.0314        0.1984      0.3853             79                   38           130             6            0.7844    0.2583             0.9756            4           0.0675   8         0.8249      0.3037                18.4522             4.6578            3.3577          0.5846               31
+74       179    0.7540        5  0.1445       0.0107       0.3265                         8        0.3070       0.0722        0.0879      0.4585             28                   25           143            14            0.6158    0.2390             0.7904            3           0.9370  10         0.8437      0.4251                18.4962             2.5609            1.9403          0.8640               39
+23       185    0.7799        8  0.1919       0.0028       0.3119                        11        0.3296       0.0521        0.1262      0.4386             36                    9           115            18            0.7956    0.2895             0.9599            2           0.5553  17         0.8844      0.4616                14.6437             3.5566            3.1156          0.7713               35
+59       158    0.9268        7  0.1211       0.0096       0.3461                         5        0.2593       0.0142        0.1878      0.3229             55                   31           177             3            0.6248    0.2028             0.8428           13           0.2580  16         0.8096      0.3823                11.2397             7.2075            3.7165          0.8042               35
+70       174    0.8168        8  0.1683       0.0024       0.2837                        14        0.2230       0.0728        0.1199      0.4056             36                   56            75             3            0.7932    0.2882             0.8559            2           0.2249   4         0.8234      0.1510                15.7217             5.7992            2.7107          0.8190               24
+# Best configurations as commandlines (first number is the configuration ID; listed from best to worst according to the sum of ranks):
+10 --populacao 167 --crossover 0.7358 --elitismo 8 --mutacao 0.1605 --piso_mutacao 0.0039 --teto_mutacao 0.1604 --limiar_estagnacao_mutacao 18 --macro_mutacao 0.3303 --injecao_base 0.0945 --injecao_extra 0.0406 --injecao_max 0.2367 --tamanho_gaveta 51 --periodo_arquivamento 20 --limiar_gaveta 45 --engavetados_k 16 --semelhanca_gaveta 0.7062 --torneio_k 0.2724 --decaimento_torneio 0.5777 --vizinhos_div 6 --peso_diversidade 0.9677 --rcl 27 --decaimento_rcl 0.8367 --tenure_rota 0.2391 --recompensa_novo_melhor 14.7199 --recompensa_melhora 7.6186 --recompensa_aceito 3.5845 --decaimento_peso 0.5305 --tamanho_segmento 13
+41 --populacao 180 --crossover 0.9047 --elitismo 7 --mutacao 0.0904 --piso_mutacao 0.0051 --teto_mutacao 0.1917 --limiar_estagnacao_mutacao 8 --macro_mutacao 0.2214 --injecao_base 0.0314 --injecao_extra 0.1984 --injecao_max 0.3853 --tamanho_gaveta 79 --periodo_arquivamento 38 --limiar_gaveta 130 --engavetados_k 6 --semelhanca_gaveta 0.7844 --torneio_k 0.2583 --decaimento_torneio 0.9756 --vizinhos_div 4 --peso_diversidade 0.0675 --rcl 8 --decaimento_rcl 0.8249 --tenure_rota 0.3037 --recompensa_novo_melhor 18.4522 --recompensa_melhora 4.6578 --recompensa_aceito 3.3577 --decaimento_peso 0.5846 --tamanho_segmento 31
+74 --populacao 179 --crossover 0.754 --elitismo 5 --mutacao 0.1445 --piso_mutacao 0.0107 --teto_mutacao 0.3265 --limiar_estagnacao_mutacao 8 --macro_mutacao 0.307 --injecao_base 0.0722 --injecao_extra 0.0879 --injecao_max 0.4585 --tamanho_gaveta 28 --periodo_arquivamento 25 --limiar_gaveta 143 --engavetados_k 14 --semelhanca_gaveta 0.6158 --torneio_k 0.239 --decaimento_torneio 0.7904 --vizinhos_div 3 --peso_diversidade 0.937 --rcl 10 --decaimento_rcl 0.8437 --tenure_rota 0.4251 --recompensa_novo_melhor 18.4962 --recompensa_melhora 2.5609 --recompensa_aceito 1.9403 --decaimento_peso 0.864 --tamanho_segmento 39
+23 --populacao 185 --crossover 0.7799 --elitismo 8 --mutacao 0.1919 --piso_mutacao 0.0028 --teto_mutacao 0.3119 --limiar_estagnacao_mutacao 11 --macro_mutacao 0.3296 --injecao_base 0.0521 --injecao_extra 0.1262 --injecao_max 0.4386 --tamanho_gaveta 36 --periodo_arquivamento 9 --limiar_gaveta 115 --engavetados_k 18 --semelhanca_gaveta 0.7956 --torneio_k 0.2895 --decaimento_torneio 0.9599 --vizinhos_div 2 --peso_diversidade 0.5553 --rcl 17 --decaimento_rcl 0.8844 --tenure_rota 0.4616 --recompensa_novo_melhor 14.6437 --recompensa_melhora 3.5566 --recompensa_aceito 3.1156 --decaimento_peso 0.7713 --tamanho_segmento 35
+59 --populacao 158 --crossover 0.9268 --elitismo 7 --mutacao 0.1211 --piso_mutacao 0.0096 --teto_mutacao 0.3461 --limiar_estagnacao_mutacao 5 --macro_mutacao 0.2593 --injecao_base 0.0142 --injecao_extra 0.1878 --injecao_max 0.3229 --tamanho_gaveta 55 --periodo_arquivamento 31 --limiar_gaveta 177 --engavetados_k 3 --semelhanca_gaveta 0.6248 --torneio_k 0.2028 --decaimento_torneio 0.8428 --vizinhos_div 13 --peso_diversidade 0.258 --rcl 16 --decaimento_rcl 0.8096 --tenure_rota 0.3823 --recompensa_novo_melhor 11.2397 --recompensa_melhora 7.2075 --recompensa_aceito 3.7165 --decaimento_peso 0.8042 --tamanho_segmento 35
+70 --populacao 174 --crossover 0.8168 --elitismo 8 --mutacao 0.1683 --piso_mutacao 0.0024 --teto_mutacao 0.2837 --limiar_estagnacao_mutacao 14 --macro_mutacao 0.223 --injecao_base 0.0728 --injecao_extra 0.1199 --injecao_max 0.4056 --tamanho_gaveta 36 --periodo_arquivamento 56 --limiar_gaveta 75 --engavetados_k 3 --semelhanca_gaveta 0.7932 --torneio_k 0.2882 --decaimento_torneio 0.8559 --vizinhos_div 2 --peso_diversidade 0.2249 --rcl 4 --decaimento_rcl 0.8234 --tenure_rota 0.151 --recompensa_novo_melhor 15.7217 --recompensa_melhora 5.7992 --recompensa_aceito 2.7107 --decaimento_peso 0.819 --tamanho_segmento 24
+
+
+# Testing of elite configurations: 1 
+# Testing iteration configurations: FALSE 
+# 2026-10-01 11:37:01 -03: No test instances, skip testing
