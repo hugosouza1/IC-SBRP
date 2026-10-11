@@ -26,6 +26,15 @@
 using namespace chrono;
 using namespace std;
 
+// Description of the best-so-far configuration:
+//    .ID. populacao crossover crossover_bloco piso_mutacao teto_mutacao macro_mutacao injecao_base injecao_max torneio_k decaimento_torneio peso_diversidade peso_dist_parada decaimento_rcl tenure_rota iteracoes_tabu num_trajetorias periodo_troca .PARENT.
+// 92   92       126    0.9244          0.8697       0.0286       0.1645        0.4646       0.0319      0.4017    0.2182             0.4341           0.1587           0.2602         0.3623       0.486             63               2            33       54
+
+// Description of the best-so-far configuration:
+//    .ID. limiar_estagnacao_mutacao injecao_extra vizinhos_div decaimento_rotas_rep mutacao_onibus decaimento_solucao_inicial decaimento_rota_inicial tamanho_gaveta periodo_arquivamento limiar_gaveta engavetados_k semelhanca_gaveta recompensa_novo_melhor recompensa_melhora recompensa_aceito decaimento_peso tamanho_segmento .PARENT.
+// 16   16                         3         0.216           11                0.924         0.0364                     0.6487                  0.6623             25                   16            17             3            0.1293                10.0104             3.0069            1.5714          0.7766                6       NA
+
+
 struct ParametrosAlgoritmo {
 
     int seed = 123;
@@ -35,29 +44,29 @@ struct ParametrosAlgoritmo {
     // ================================================================
 
     // Parâmetros gerais
-    int numeroMaxGeracoes = 2;
-    int tamanhoDaPopulacao = 200;
-    double probabilidadeCrossover = 0.90;
-    int elitismo = 3;
+    int numeroMaxGeracoes = 87;
+    int tamanhoDaPopulacao = 120;
+    double probabilidadeCrossover = 0.95;
+    int elitismo = 1;
 
     // Taxas de mutação
-    double probabilidadeMutacao = 0.10;
-    double pisoTaxaMutacao = 0.08;
-    double tetoTaxaMutacao = 0.64;
-    int limiarEstagnacaoMutacao = 5;
-    double probabilidadeMacroMutacao = 0.25;
+    double probabilidadeMutacao = 0.01;
+    double pisoTaxaMutacao = 0.0286;
+    double tetoTaxaMutacao = 0.1645;
+    int limiarEstagnacaoMutacao = 3;
+    double probabilidadeMacroMutacao = 0.4646;
 
     // Injeção de indivíduos novos
-    double porcentagemBaseInjecao = 0.05;
-    double porcentagemExtraInjecao = 0.05;
-    double porcentagemMaximaNovosIndividuos = 0.40;
+    double porcentagemBaseInjecao = 0.0319;
+    double porcentagemExtraInjecao = 0.216;
+    double porcentagemMaximaNovosIndividuos = 0.4017;
 
     // Gaveta de indivíduos antigos
-    int tamanhoGaveta = 50;
-    int periodoArquivamento = 5;
-    int limiarGaveta = 5;
-    int engavetadosK = 2;
-    double semelhancaGaveta = 0.05;
+    int tamanhoGaveta = 25;
+    int periodoArquivamento = 16;
+    int limiarGaveta = 17;
+    int engavetadosK = 3;
+    double semelhancaGaveta = 0.1293;
 
     // Penalidade - construção de rotas
     double penalidadePorRotaAtiva = 1.0;
@@ -72,23 +81,23 @@ struct ParametrosAlgoritmo {
     double PenalidadeParadasPercorridasGlobal = 1.0;
 
     // Torneio
-    double porcentagemTorneioK = 0.10;
-    double taxaDecaimentoTorneio = 0.40;
+    double porcentagemTorneioK = 0.2182;
+    double taxaDecaimentoTorneio = 0.4341;
 
     // Seleção
-    double pesoDistParada = 0.5;
-    int nVizinhosDiv = 3;
-    double pesoDiversidade = 0.8;
+    double pesoDistParada = 0.2602;
+    int nVizinhosDiv = 11;
+    double pesoDiversidade = 0.1587;
     double epsClone = 1e-9;
 
     // Reprodução
-    double probabilidadeCrossoverBloco = 0.65;
-    double taxaDecaimentoRotasRep = 0.40;
-    double probabilidadeMutacaoOnibus = 0.40;
+    double probabilidadeCrossoverBloco = 0.86;
+    double taxaDecaimentoRotasRep = 0.924;
+    double probabilidadeMutacaoOnibus = 0.0364;
 
     // Solução inicial
-    double taxaDecaimentoSolucaoInicial = 0.2;
-    double taxaDecaimentoRotaInicial = 0.2;
+    double taxaDecaimentoSolucaoInicial = 0.64;
+    double taxaDecaimentoRotaInicial = 0.66;
 
 
     // ================================================================
@@ -96,18 +105,22 @@ struct ParametrosAlgoritmo {
     // ================================================================
 
     int tamanhoRCL = 150;
-    double taxaDecaimentoRCL = 0.25;
-    double tenureTaxaTamRota = 0.05;
-    int iteracoesTabu = 300;
+    double taxaDecaimentoRCL = 0.3623;
+    double tenureTaxaTamRota = 0.486;
+    int iteracoesTabu = 180;
+    int NumTrajetorias = 3;
+    int PeriodoTroca = 15; 
+    int ForcaPerturbacaoTabu = 20;
+    int LimiarEstagnacaoTabu = 10; 
 
     // Recompensas
-    double recompensaNovoMelhor = 3.0;
-    double recompensaMelhora = 1.5;
-    double recompensaAceito = 0.5;
+    double recompensaNovoMelhor = 10.0;
+    double recompensaMelhora = 3.0;
+    double recompensaAceito = 1.5;
 
     // Memória
-    double fatorDecaimentoPeso = 0.70;
-    int tamanhoSegmento = 10;
+    double fatorDecaimentoPeso = 0.7766;
+    int tamanhoSegmento = 6;
 };
 
 class infoSBRP;
@@ -202,12 +215,13 @@ struct Trajetoria {
 // +-+--+-++--+-++--+-+-+-+-+-+-+-+-+-+-+-+-+-+-+---+-+-+
 
 
-inline std::random_device rd;
-inline std::mt19937 gen(rd());
+// inline std::random_device rd;
 
 class Metaheuristica{
-	private:
-		infoSBRP& problema;
+    private:
+
+        infoSBRP& problema;
+        mt19937 gen;
         
         // std::mt19937 gen;
 		
@@ -220,64 +234,64 @@ class Metaheuristica{
         //                       ALGORITMO GENETICO                           //
         // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
             // Parametros gerais genetico
-            const int numeroMaxGeracoes = 100;
-            const int TamanhoDaPopulacao = 200;
-            const double ProbabilidadeCrossover = 0.90;
-            const int Elitismo = 3;
+            const int numeroMaxGeracoes;
+            const int TamanhoDaPopulacao;
+            const double ProbabilidadeCrossover;
+            const int Elitismo;
             
             // Taxas de mutação
-            double ProbabilidadeMutacao = 0.1; 
-            const double PisoTaxaMutacao = 0.08;
-            const double TetoTaxaMutacao  = 0.64;
-            const int limiarEstagnacaoMutacao = 5;
-            const double ProbabilidadeMacroMutacao = 0.25; // mutação violenta (reprodução)
+            double ProbabilidadeMutacao; 
+            const double PisoTaxaMutacao;
+            const double TetoTaxaMutacao;
+            const int limiarEstagnacaoMutacao;
+            const double ProbabilidadeMacroMutacao; // mutação violenta (reprodução)
             
             // injeção de individuos na estagnação (imigração)
-            const double PorcentagemBaseInjecao  = 0.05;
-            const double PorcentagemExtraInjecao = 0.05; 
-            const double PorcentagemMaximaNovosIndividuos = 0.40; 
+            const double PorcentagemBaseInjecao;
+            const double PorcentagemExtraInjecao; 
+            const double PorcentagemMaximaNovosIndividuos; 
             
             // injeção de individuos na estagnação (Antigos)
             deque<Individuo> Gaveta;
-            const int TamanhoGaveta = 50; 
-            const int PeriodoArquivamento = 5; // guarda a cada N gerações
-            const int LimiarGaveta = 5; // insere X a cada N gerações estagnadas,
-            const int EngavetadosK = 2; // quantos na gaveta vão ser renseridos 
-            const double SemelhancaGaveta = 0.05; //menor, mair parecido
+            const int TamanhoGaveta; 
+            const int PeriodoArquivamento; // guarda a cada N gerações
+            const int LimiarGaveta; // insere X a cada N gerações estagnadas,
+            const int EngavetadosK; // quantos na gaveta vão ser renseridos 
+            const double SemelhancaGaveta; //menor, mair parecido
             // quantidade a ser inserida corrigida na gambiarra pela outra mutação (feature)
 
             
             // Penalidade Construção de Rotas Genetico
                 // rotas
-                const double PenalidadePorRotaAtiva = 1.0; // penalidade por rota ativa. quanto mais, maior é a penal
-                const int LimiarParadasPorRotas = 1; //minimo de paradas pro rota
-                const double PenalidadeRotaExtraPequena = -10.0; // penalidade de rota muito curta
-                const double PenalidadeDesbalanceamento = 0.0; // penalidade de rotas com alunos desbalanceado
+                const double PenalidadePorRotaAtiva; // penalidade por rota ativa. quanto mais, maior é a penal
+                const int LimiarParadasPorRotas; //minimo de paradas pro rota
+                const double PenalidadeRotaExtraPequena; // penalidade de rota muito curta
+                const double PenalidadeDesbalanceamento; // penalidade de rotas com alunos desbalanceado
                 // paradas
-                const int LimiteParadaPorRota = 1; // minimo de repeticao de parada entre rotas
-                const double PenalidadeParadaEntreRota = 500.0; // diferente rota
-                const double PenalidadeParadaMesmaRota = 50.0; // mesma roota
+                const int LimiteParadaPorRota; // minimo de repeticao de parada entre rotas
+                const double PenalidadeParadaEntreRota; // diferente rota
+                const double PenalidadeParadaMesmaRota; // mesma roota
             
-                const double PenalidadeParadasPercorridasGlobal = 1.0; // quantidade de paradas percorridas
+                const double PenalidadeParadasPercorridasGlobal; // quantidade de paradas percorridas
 
             // Torneio
-            const double PorcentagemTorneioK = 0.10; // tamanho k com base na quantidade de individuos
-            const double TaxaDecaimentoTorneio = 0.40;
+            const double PorcentagemTorneioK; // tamanho k com base na quantidade de individuos
+            const double TaxaDecaimentoTorneio;
 
             // Selecao
-            const double PesoDistParada  = 0.5;   // peso de paradas vs estrutura de rotas na distância
-            const int    NVizinhosDiv    = 3;     // quantos vizinhos mais próximos entram na diversidade
-            const double PesoDiversidade = 0.8;   // 0 = só fitness; maior = mais diversidade
-            const double EpsClone        = 1e-9; // quanto menor, mais parecido
+            const double PesoDistParada;   // peso de paradas vs estrutura de rotas na distância
+            const int    NVizinhosDiv;     // quantos vizinhos mais próximos entram na diversidade
+            const double PesoDiversidade;   // 0 = só fitness; maior = mais diversidade
+            const double EpsClone; // quanto menor, mais parecido
             
             // Reproducao
-            const double ProbabilidadeCrossoverBloco = 0.65; // crossover pro bloco de rotas, ou gene a gene
-            const double TaxaDecaimentoRotasRep = 0.40; // selecao dos blocos de rota com mais alunos
-            const double ProbabilidadeMutacaoOnibus = 0.40;
+            const double ProbabilidadeCrossoverBloco; // crossover pro bloco de rotas, ou gene a gene
+            const double TaxaDecaimentoRotasRep; // selecao dos blocos de rota com mais alunos
+            const double ProbabilidadeMutacaoOnibus;
 
             // Geracao da solucao Inicial
-            const double TaxaDecaimentoSolucaoInicial = 0.2;
-            const double TaxaDecaimentoRotaInicial    = 0.2;
+            const double TaxaDecaimentoSolucaoInicial;
+            const double TaxaDecaimentoRotaInicial;
 
         // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ //
         
@@ -285,49 +299,50 @@ class Metaheuristica{
         // ================================================================== //
         //                            BUSCA TABU                              //
         // ================================================================== //
-        const int TamanhoRCL = 150;
-        const double TaxaDecaimentoRCL = 0.25; // quanto maior, mais pende pros melhores. menor, mais uniforme
-        const double TenureTaxaTamRota = 0.05; // tenure com base no Tamanho da rota;
-        const int IteracoesTabu = 300; 
+        const int TamanhoRCL;
+        const double TaxaDecaimentoRCL; // quanto maior, mais pende pros melhores. menor, mais uniforme
+        const double TenureTaxaTamRota; // tenure com base no Tamanho da rota;
+        const int IteracoesTabu; 
 
-        const double RecompensaNovoMelhor = 3.0; // achou novo melhor global da rota
-        const double RecompensaMelhora    = 1.5; // melhorou o atual, mesmo sem ser o melhor
-        const double RecompensaAceito     = 0.5; // aceito, mas não melhorou
+        const double RecompensaNovoMelhor; // achou novo melhor global da rota
+        const double RecompensaMelhora; // melhorou o atual, mesmo sem ser o melhor
+        const double RecompensaAceito; // aceito, mas não melhorou
 
-        const double FatorDecaimentoPeso = 0.70; // memória: quanto do peso antigo mantém
-        const int TamanhoSegmento        = 10; // quantas iterações tem decaimento
+        const double FatorDecaimentoPeso; // memória: quanto do peso antigo mantém
+        const int TamanhoSegmento; // quantas iterações tem decaimento
         
-        // novo(n tem na struct parametros)
-        const int NumTrajetorias = 3; // quantidade de instancias paralelas por cada tabu
-        // novo(n tem na struct parametros)
-        const int PeriodoTroca = 25; // a cada iterações, um compartilhamento do tabu
-        // novo(n tem na struct parametros)
-        const int ForcaPerturbacaoTabu = 20; // iteracoes de busca
-        // novo(n tem na struct parametros)
-        const int LimiarEstagnacaoTabu = 10; // iterações estagnadas
+        const int NumTrajetorias; // quantidade de instancias paralelas por cada tabu
+        const int PeriodoTroca; // a cada iterações, um compartilhamento do tabu
+
+        const int ForcaPerturbacaoTabu; // iteracoes de busca
+        const int LimiarEstagnacaoTabu; // iterações estagnadas
         // ================================================================== //
         
         
     public:
 	    Metaheuristica(infoSBRP& pobrema, const ParametrosAlgoritmo &p) : problema(pobrema),
-            // gen(p.seed),
+            gen(p.seed),
             numeroMaxGeracoes(p.numeroMaxGeracoes),
             TamanhoDaPopulacao(p.tamanhoDaPopulacao),
             ProbabilidadeCrossover(p.probabilidadeCrossover),
             Elitismo(p.elitismo),
+
             ProbabilidadeMutacao(p.probabilidadeMutacao),
             PisoTaxaMutacao(p.pisoTaxaMutacao),
             TetoTaxaMutacao(p.tetoTaxaMutacao),
             limiarEstagnacaoMutacao(p.limiarEstagnacaoMutacao),
             ProbabilidadeMacroMutacao(p.probabilidadeMacroMutacao),
+            
             PorcentagemBaseInjecao(p.porcentagemBaseInjecao),
             PorcentagemExtraInjecao(p.porcentagemExtraInjecao),
             PorcentagemMaximaNovosIndividuos(p.porcentagemMaximaNovosIndividuos),
+            
             TamanhoGaveta(p.tamanhoGaveta),
             PeriodoArquivamento(p.periodoArquivamento),
             LimiarGaveta(p.limiarGaveta),
             EngavetadosK(p.engavetadosK),
             SemelhancaGaveta(p.semelhancaGaveta),
+            
             PenalidadePorRotaAtiva(p.penalidadePorRotaAtiva),
             LimiarParadasPorRotas(p.limiarParadasPorRotas),
             PenalidadeRotaExtraPequena(p.penalidadeRotaExtraPequena),
@@ -335,8 +350,11 @@ class Metaheuristica{
             LimiteParadaPorRota(p.limiteParadaPorRota),
             PenalidadeParadaEntreRota(p.penalidadeParadaEntreRota),
             PenalidadeParadaMesmaRota(p.penalidadeParadaMesmaRota),
+            PenalidadeParadasPercorridasGlobal(p.PenalidadeParadasPercorridasGlobal),
+            
             PorcentagemTorneioK(p.porcentagemTorneioK),
             TaxaDecaimentoTorneio(p.taxaDecaimentoTorneio),
+            
             PesoDistParada(p.pesoDistParada),
             NVizinhosDiv(p.nVizinhosDiv),
             PesoDiversidade(p.pesoDiversidade),
@@ -346,17 +364,21 @@ class Metaheuristica{
             ProbabilidadeMutacaoOnibus(p.probabilidadeMutacaoOnibus),
             TaxaDecaimentoSolucaoInicial(p.taxaDecaimentoSolucaoInicial),
             TaxaDecaimentoRotaInicial(p.taxaDecaimentoRotaInicial),
+
             TamanhoRCL(p.tamanhoRCL),
             TaxaDecaimentoRCL(p.taxaDecaimentoRCL),
             TenureTaxaTamRota(p.tenureTaxaTamRota),
             IteracoesTabu(p.iteracoesTabu),
+            NumTrajetorias(p.NumTrajetorias),
+            PeriodoTroca(p.PeriodoTroca),
+            ForcaPerturbacaoTabu(p.ForcaPerturbacaoTabu),
+            LimiarEstagnacaoTabu(p.LimiarEstagnacaoTabu),
+            
             RecompensaNovoMelhor(p.recompensaNovoMelhor),
             RecompensaMelhora(p.recompensaMelhora),
             RecompensaAceito(p.recompensaAceito),
             FatorDecaimentoPeso(p.fatorDecaimentoPeso),
-            TamanhoSegmento(p.tamanhoSegmento),
-            PenalidadeParadasPercorridasGlobal(p.PenalidadeParadasPercorridasGlobal)
-
+            TamanhoSegmento(p.tamanhoSegmento)
         {
 			quantidadeMaxRota = pobrema.quantidadeRotas; // n precisava, mas depois arrumo
 		}

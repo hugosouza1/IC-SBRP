@@ -5,7 +5,7 @@ g++ y_gerador_entrada.cpp -o geradorEntrada.exe
 
 mkdir -p Instancias_120
 
-ARQ="${1:-parametros_120_instancias.txt}"
+ARQ="${1:-parametros_instancias.txt}"
 BIN="./geradorEntrada.exe"
 
 if [ ! -f "$ARQ" ]; then

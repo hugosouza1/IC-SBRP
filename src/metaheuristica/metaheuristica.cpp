@@ -33,7 +33,7 @@ int somenteTabu(Metaheuristica &meta){
 
 
 int hibrido(Metaheuristica &meta, infoSBRP &dados){
-    cout << "\nAG-BT:\n";
+    // cout << "\nAG-BT:\n";
 
     auto [valoresGeracoes, ciclano]  = meta.AG(1);
 
@@ -264,6 +264,22 @@ ParametrosAlgoritmo parseParametros(int argc, char** argv) {
         else if (arg == "--iteracoes_tabu")
             p.iteracoesTabu =
                 stoi(next("--iteracoes_tabu"));
+                
+        else if (arg == "--num_trajetorias")
+            p.NumTrajetorias =
+                stoi(next("--num_trajetorias"));
+
+        else if (arg == "--periodo_troca")
+            p.PeriodoTroca =
+                stoi(next("--periodo_troca"));
+                
+        else if (arg == "--forcaPerturbacaoTabu")
+            p.ForcaPerturbacaoTabu =
+                stoi(next("--forcaPerturbacaoTabu"));
+
+        else if (arg == "--limiarEstagnacaoTabu")
+            p.limiarEstagnacaoMutacao =
+                stoi(next("--limiarEstagnacaoTabu"));
 
 
         // Recompensas

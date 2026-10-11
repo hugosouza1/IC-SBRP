@@ -846,7 +846,11 @@ pair<vector<double>, Individuo> Metaheuristica::AG(int opc){
     // max iter e estagnação
     
     vector<double> valores;
-    
+
+    // no AG, antes do loop
+    auto inicio = steady_clock::now();
+    // primeira linha dentro do for das gerações:
+    int TempoMaxSegundos = 20;
     for(int i = 0; i < numeroMaxGeracoes; ++i){
         
         double temperaturaSelecao = 0.4; 
@@ -914,6 +918,10 @@ pair<vector<double>, Individuo> Metaheuristica::AG(int opc){
             // cout << "\n";
             // cout << "Geracao:" << i << " // melhor fitness atual = " << melhorFitness << "\n";
         // }
+
+
+        // if(duration<double>(steady_clock::now() - inicio).count() > TempoMaxSegundos) break;
+        
     }
     
     // cout << "\n\n";

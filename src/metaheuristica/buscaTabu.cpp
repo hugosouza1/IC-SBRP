@@ -362,18 +362,33 @@ Movimento Metaheuristica::melhorVizinho(vector<int>& rota, vector<bool>& estaNaR
 
     double distanciaAtual = distancia(rota);
 
-    vector<Movimento> candidatos = candidatosInsercao(rota, estaNaRota, tabu, melhorDistanciaGlobal, distanciaAtual, iteracao);
+    vector<Movimento> candidatos;
+    
+    int segmento = TamanhoRCL / 5;
 
+    vector<Movimento> ins = candidatosInsercao(rota, estaNaRota, tabu, melhorDistanciaGlobal, distanciaAtual, iteracao);
+    shuffle(ins.begin(), ins.end(), gen);
+    ins.resize(max(segmento, (int)ins.size()));
+    candidatos.insert(candidatos.end(), ins.begin(), ins.end());
+    
     vector<Movimento> rem = candidatosRemocao(rota, paradaObrigatoria, tabu, melhorDistanciaGlobal, distanciaAtual, iteracao);
+    shuffle(rem.begin(), rem.end(), gen);
+    rem.resize(max(segmento, (int)rem.size()));
     candidatos.insert(candidatos.end(), rem.begin(), rem.end());
-
+    
     vector<Movimento> tr = candidatosTroca(rota, tabu, melhorDistanciaGlobal, distanciaAtual, iteracao);
+    shuffle(tr.begin(), tr.end(), gen);
+    tr.resize(max(segmento, (int)tr.size()));
     candidatos.insert(candidatos.end(), tr.begin(), tr.end());
-
+    
     vector<Movimento> sub = candidatosSubstituir(rota, estaNaRota, paradaObrigatoria, tabu, melhorDistanciaGlobal, distanciaAtual, iteracao);
+    shuffle(sub.begin(), sub.end(), gen);
+    sub.resize(max(segmento, (int)sub.size()));
     candidatos.insert(candidatos.end(), sub.begin(), sub.end());
-
+    
     vector<Movimento> mov = candidatosMover(rota, paradaObrigatoria, tabu, melhorDistanciaGlobal, distanciaAtual, iteracao);
+    shuffle(mov.begin(), mov.end(), gen);
+    mov.resize(max(segmento, (int)mov.size()));
     candidatos.insert(candidatos.end(), mov.begin(), mov.end());
 
     Movimento nenhum;
@@ -386,17 +401,11 @@ Movimento Metaheuristica::melhorVizinho(vector<int>& rota, vector<bool>& estaNaR
 
     int limite = min((int)candidatos.size(), TamanhoRCL);
 
-
-    // vector<double> pesos(limite);
-    // for(int i = 0; i < limite; ++i) pesos[i] = exp(-TaxaDecaimentoRCL * i);
-    
     vector<double> pesos(limite);
     for(int i = 0; i < limite; ++i){
         double pesoRank = exp(-TaxaDecaimentoRCL * i);
         pesos[i] = pesoRank * Adapt.pesoOperador[candidatos[i].tipo]; // combina rank + aprendizado do operador
     }
-
-
 
     discrete_distribution<int> distPeso(pesos.begin(), pesos.end());
     return candidatos[distPeso(gen)];
