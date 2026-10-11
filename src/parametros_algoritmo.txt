@@ -1,14 +1,18 @@
 --seed 123
 --log true
 
---max_geracoes 90
+--max_geracoes 80
 --populacao 200
 --crossover 0.9595
 --elitismo 1
 
---mutacao 0.01
+--lambdaFreq 2.4
+--decaimentoFreq 0.18
+--elitePctFreq 0.30
+
+--mutacao 0.0286
 --piso_mutacao 0.0286
---teto_mutacao 0.1645
+--teto_mutacao 0.2645
 --macro_mutacao 0.4646
 --limiar_estagnacao_mutacao 3
 

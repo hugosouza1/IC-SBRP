@@ -56,6 +56,10 @@ struct ParametrosAlgoritmo {
     double probabilidadeMacroMutacao = 0.4646;
     int limiarEstagnacaoMutacao = 3;
 
+    double lambdaFreq = 2.0;      // 0 = desliga 
+    double decaimentoFreq = 0.1;  // evaporação por geração
+    double elitePctFreq = 0.1;    // fração da população que reforça
+
     // Injeção de indivíduos novos
     double porcentagemBaseInjecao = 0.0319;
     double porcentagemExtraInjecao = 0.216;
@@ -235,6 +239,12 @@ class Metaheuristica{
             const double TetoTaxaMutacao;
             const int limiarEstagnacaoMutacao;
             const double ProbabilidadeMacroMutacao; // mutação violenta (reprodução)
+
+            // reforço de frequencia
+            const double LambdaFreq, DecaimentoFreq, ElitePctFreq;
+                vector<double> freqParada;
+                double freqMax = 0;
+                int sinalFreq = 1; // +1 intensifica, -1 diversifica
             
             // injeção de individuos na estagnação (imigração)
             const double PorcentagemBaseInjecao;
@@ -318,6 +328,10 @@ class Metaheuristica{
             TetoTaxaMutacao(p.tetoTaxaMutacao),
             limiarEstagnacaoMutacao(p.limiarEstagnacaoMutacao),
             ProbabilidadeMacroMutacao(p.probabilidadeMacroMutacao),
+
+            LambdaFreq(p.lambdaFreq), 
+            DecaimentoFreq(p.decaimentoFreq),
+            ElitePctFreq(p.elitePctFreq),
             
             PorcentagemBaseInjecao(p.porcentagemBaseInjecao),
             PorcentagemExtraInjecao(p.porcentagemExtraInjecao),
@@ -362,6 +376,8 @@ class Metaheuristica{
             LimiarEstagnacaoTabu(p.LimiarEstagnacaoTabu)
         {
 			quantidadeMaxRota = pobrema.quantidadeRotas; // n precisava, mas depois arrumo
+
+            freqParada.assign(pobrema.quantidadeParadas, 0.0);
 		}
 
         int qr(){return quantidadeMaxRota;};
@@ -370,70 +386,42 @@ class Metaheuristica{
         pair<vector<double>, Individuo> AG(int opc);
 		
         Individuo geraSolucaoInicial();
-
         double distancia(vector<int>& caminho);
-
         vector<Individuo> popIni(int tamanhoPopulacao);
-            
         double aplicaPenalidades(Individuo& individuo);
-
         bool maisViavel(const Individuo &a, const Individuo &b);
-
         int selecionaTorneio(vector<Individuo> &populacao);
-
         vector<Individuo> novaPopTorneioElitista(vector<Individuo> &filhos, vector<Individuo> &pais);
-
         vector<pair<int,int>> escolhendoPais(vector<Individuo> &populacao);
-
         vector<Individuo> reproducao(vector<pair<int,int>> &paisEscolhidos, vector<Individuo> &populacao);
-
         void mutacaoIndividuo(Individuo &filho, vector<double> intensidadePermutacao1, vector<double> intensidadePermutacao2,  bool forcarMacro = false);
-
         void injecaoNovosIndividuos(int opc, int geracoesSemMelhora, int i, vector<Individuo> &novaPopulacao);
-
         double distanciaIndividuos(const Individuo& a, const Individuo& b);
-
         vector<Individuo> selecionaSobreviventes(vector<Individuo>& pool);
+
+        double pesoFreq(int parada);
+        int sorteiaParada(const estudante& aluno);
+        void atualizaFrequencias(const vector<Individuo>& popOrdenada);
 
 		// ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 		vector<int> contrucaoRota(vector<int> paradasMinimas, bool& sucesso);
-
 		vector<int> bfs(int a, int b);
-
-        // vector<int> dijkstra(int a, int b);
-
 		vector<vector<int>> caminhosIniciais(Individuo &configParada, vector<bool>& sucesso, vector<vector<int>> *paradaDasRotas = {});
-
         void finalizaSolucao(Individuo& configParada, vector<vector<int>>& rotas, const vector<bool>& sucesso);
-
-
         vector<Movimento> candidatosRemocao(vector<int>& rota, vector<bool>& paradaObrigatoria, unordered_map<ChaveTabu, int>& tabu, double melhorDistanciaGlobal, double distanciaAtual, int iteracao);
-
         vector<Movimento> candidatosInsercao(vector<int>& rota, vector<bool>& estaNaRota, unordered_map<ChaveTabu, int>& tabu, double melhorDistanciaGlobal, double distanciaAtual, int iteracao);
-
         vector<Movimento> candidatosTroca(vector<int>& rota, unordered_map<ChaveTabu, int>& tabu, double melhorDistanciaGlobal, double distanciaAtual, int iteracao);
-
         vector<Movimento> candidatosMover(vector<int>& rota, vector<bool>& paradaObrigatoria, unordered_map<ChaveTabu, int>& tabu, double melhorDistanciaGlobal, double distanciaAtual, int iteracao);
-
         vector<Movimento> candidatosSubstituir(vector<int>& rota, vector<bool>& estaNaRota, vector<bool>& paradaObrigatoria, unordered_map<ChaveTabu, int>& tabu, double melhorDistanciaGlobal, double distanciaAtual, int iteracao);
-
         Movimento melhorVizinho(vector<int>& rota, vector<bool>& estaNaRota, vector<bool>& paradaObrigatoria, unordered_map<ChaveTabu, int>& tabu, double melhorDistanciaGlobal, int iteracao);
-
 		void aplicaMovimento(vector<int>& rota, vector<bool>& estaNaRota, Movimento mov);
-
 		double buscaTabu(Individuo& configParada);
-
         ChaveTabu chaveTabu(TipoMovimento tipo, int anterior, int parada, int proximo);
-
         bool movimentoTabu(unordered_map<ChaveTabu, int>& tabu, TipoMovimento tipo, int anterior, int parada, int proximo, int iteracao );
-        
         void atualizaTabu( unordered_map<ChaveTabu, int>& tabu, Movimento mov, int tenure, int iteracao);
-
         void pertubacaoRota(vector<vector<int>> &rota, vector<double> intensidade);
-
         void avancaTrajetoria(Trajetoria& traj, vector<bool>& paradaObrigatoria, int tenure, int it);
-
         void perturbaTrajetoria(Trajetoria& t, vector<bool>& obrig, int forca);
 
         // -+-+--+-+-+-+-++-+

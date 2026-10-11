@@ -58,7 +58,8 @@ Individuo Metaheuristica::geraSolucaoInicial(){
 
         vector<double> pesosParada(aux.size());
         for(int i = 0; i < (int)aux.size(); ++i){
-            pesosParada[i] = exp(-TaxaDecaimentoSolucaoInicial * i);
+            // pesosParada[i] = exp(-TaxaDecaimentoSolucaoInicial * i);
+            pesosParada[i] = exp(-TaxaDecaimentoSolucaoInicial * i) * pesoFreq(aux[i].first);
         }
 
         discrete_distribution<int> distPesoParada(pesosParada.begin(), pesosParada.end());
@@ -480,8 +481,7 @@ void Metaheuristica::mutacaoIndividuo(Individuo &filho, vector<double> intensida
             const estudante& aluno = problema.alunosParadas[g];
 
             if(!aluno.paradasPossiveis.empty()){
-                uniform_int_distribution<int> distParada(0, aluno.paradasPossiveis.size() - 1);
-                filho.atrAlunoParada[g] = aluno.paradasPossiveis[distParada(gen)].first;
+                filho.atrAlunoParada[g] = sorteiaParada(aluno);
             }
         }
 
@@ -528,8 +528,7 @@ void Metaheuristica::mutacaoIndividuo(Individuo &filho, vector<double> intensida
                     // sorteia nova parada dentre as possíveis do aluno
                     const estudante& aluno = problema.alunosParadas[g];
                     if(!aluno.paradasPossiveis.empty()){
-                        uniform_int_distribution<int> distParada(0, aluno.paradasPossiveis.size() - 1);
-                        filho.atrAlunoParada[g] = aluno.paradasPossiveis[distParada(gen)].first;
+                        filho.atrAlunoParada[g] = sorteiaParada(aluno);
                     }
 
                     // sorteia nova rota, com capacidade
@@ -551,6 +550,33 @@ void Metaheuristica::mutacaoIndividuo(Individuo &filho, vector<double> intensida
     }
 }
 
+
+double Metaheuristica::pesoFreq(int p){
+    if(freqMax <= 0) return 1.0;
+    double fn = freqParada[p] / freqMax;              // [0,1]
+    return max(0.05, 1.0 + sinalFreq * LambdaFreq * fn); // piso evita peso <= 0
+}
+
+int Metaheuristica::sorteiaParada(const estudante& aluno){
+    int k = aluno.paradasPossiveis.size();
+    vector<double> pesos(k);
+    for(int i = 0; i < k; ++i)
+        pesos[i] = pesoFreq(aluno.paradasPossiveis[i].first);
+
+    discrete_distribution<int> d(pesos.begin(), pesos.end());
+    return aluno.paradasPossiveis[d(gen)].first;
+}
+
+void Metaheuristica::atualizaFrequencias(const vector<Individuo>& pop){
+    for(double& f : freqParada) f *= (1.0 - DecaimentoFreq);
+
+    int E = max(1, (int)(pop.size() * ElitePctFreq));
+    for(int e = 0; e < E; ++e){
+        unordered_set<int> usadas(pop[e].atrAlunoParada.begin(), pop[e].atrAlunoParada.end());
+        for(int p : usadas) freqParada[p] += 1.0 / E;
+    }
+    freqMax = *max_element(freqParada.begin(), freqParada.end());
+}
 
 
 vector<Individuo> Metaheuristica::novaPopTorneioElitista(vector<Individuo> &filhos, vector<Individuo> &pais){
@@ -912,6 +938,9 @@ pair<vector<double>, Individuo> Metaheuristica::AG(int opc){
             estagnado = i;
             ProbabilidadeMutacao = PisoTaxaMutacao; 
         }
+
+        atualizaFrequencias(novaPopulacao);
+        sinalFreq = (geracoesSemMelhora > LimiarGaveta) ? -1 : 1; // diversifica quando estagna'
         
         populacao.swap(novaPopulacao);
 

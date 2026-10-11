@@ -107,6 +107,15 @@ ParametrosAlgoritmo parseParametros(int argc, char** argv) {
 
         else if (arg == "--elitismo")
             p.elitismo = stoi(next("--elitismo"));
+            
+        else if (arg == "--lambdaFreq")
+            p.lambdaFreq = stod(next("--lambdaFreq"));
+            
+        else if (arg == "--decaimentoFreq")
+            p.decaimentoFreq = stod(next("--decaimentoFreq"));
+
+        else if (arg == "--elitePctFreq")
+            p.elitePctFreq = stod(next("--elitePctFreq"));
 
 
         // Mutação
@@ -120,26 +129,21 @@ ParametrosAlgoritmo parseParametros(int argc, char** argv) {
             p.tetoTaxaMutacao = stod(next("--teto_mutacao"));
 
         else if (arg == "--limiar_estagnacao_mutacao")
-            p.limiarEstagnacaoMutacao =
-                stoi(next("--limiar_estagnacao_mutacao"));
+            p.limiarEstagnacaoMutacao = stoi(next("--limiar_estagnacao_mutacao"));
 
         else if (arg == "--macro_mutacao")
-            p.probabilidadeMacroMutacao =
-                stod(next("--macro_mutacao"));
+            p.probabilidadeMacroMutacao = stod(next("--macro_mutacao"));
 
 
         // Injeção de indivíduos
         else if (arg == "--injecao_base")
-            p.porcentagemBaseInjecao =
-                stod(next("--injecao_base"));
+            p.porcentagemBaseInjecao = stod(next("--injecao_base"));
 
         else if (arg == "--injecao_extra")
-            p.porcentagemExtraInjecao =
-                stod(next("--injecao_extra"));
+            p.porcentagemExtraInjecao = stod(next("--injecao_extra"));
 
         else if (arg == "--injecao_max")
-            p.porcentagemMaximaNovosIndividuos =
-                stod(next("--injecao_max"));
+            p.porcentagemMaximaNovosIndividuos = stod(next("--injecao_max"));
 
 
         // Gaveta
@@ -147,8 +151,7 @@ ParametrosAlgoritmo parseParametros(int argc, char** argv) {
             p.tamanhoGaveta = stoi(next("--tamanho_gaveta"));
 
         else if (arg == "--periodo_arquivamento")
-            p.periodoArquivamento =
-                stoi(next("--periodo_arquivamento"));
+            p.periodoArquivamento = stoi(next("--periodo_arquivamento"));
 
         else if (arg == "--limiar_gaveta")
             p.limiarGaveta = stoi(next("--limiar_gaveta"));
@@ -157,8 +160,7 @@ ParametrosAlgoritmo parseParametros(int argc, char** argv) {
             p.engavetadosK = stoi(next("--engavetados_k"));
 
         else if (arg == "--semelhanca_gaveta")
-            p.semelhancaGaveta =
-                stod(next("--semelhanca_gaveta"));
+            p.semelhancaGaveta = stod(next("--semelhanca_gaveta"));
 
 
         // Penalidades de rota
@@ -177,7 +179,6 @@ ParametrosAlgoritmo parseParametros(int argc, char** argv) {
         else if (arg == "--penalidadeEstouroCapacidade")
             p.penalidadeDesbalanceamento = stod(next("--penalidadeEstouroCapacidade"));
 
-        
         else if (arg == "--penalidadeParadasPercorridasGlobal")
             p.PenalidadeParadasPercorridasGlobal = stod(next("--penalidadeParadasPercorridasGlobal"));
 
@@ -257,7 +258,7 @@ ParametrosAlgoritmo parseParametros(int argc, char** argv) {
             p.PeriodoTroca = stoi(next("--periodo_troca"));
                 
         else if (arg == "--forcaPerturbacaoTabu")
-            p.ForcaPerturbacaoTabu = stoi(next("--forcaPerturbacaoTabu"));
+            p.ForcaPerturbacaoTabu = stod(next("--forcaPerturbacaoTabu"));
 
         else if (arg == "--limiarEstagnacaoTabu")
             p.limiarEstagnacaoMutacao = stoi(next("--limiarEstagnacaoTabu"));
