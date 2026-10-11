@@ -32,12 +32,12 @@ int somenteTabu(Metaheuristica &meta){
 }
 
 
-int hibrido(Metaheuristica &meta, infoSBRP &dados){
-    // cout << "\nAG-BT:\n";
+int hibrido(Metaheuristica &meta, infoSBRP &dados, bool log){
+    if(log) cout << "\nAG-BT:\n";
 
     auto [valoresGeracoes, ciclano]  = meta.AG(1);
-
-    meta.imprimeSolucao(ciclano, dados, valoresGeracoes);
+    
+    if(log) meta.imprimeSolucao(ciclano, dados, valoresGeracoes);
 
     return 0;
 }
@@ -50,13 +50,12 @@ int main(int argc, char *argv[]){
     }
 
     infoSBRP dados(argv[1]);
-    // dados.leitura(argv[1]);
 
     ParametrosAlgoritmo p = parseParametros(argc, argv);
 
     Metaheuristica meta(dados, p);
 
-    hibrido(meta, dados);
+    hibrido(meta, dados, p.log);
 
     return 0;
 }
@@ -86,7 +85,12 @@ ParametrosAlgoritmo parseParametros(int argc, char** argv) {
         };
 
         if(arg == "--seed") // coisa
-            p.seed = stoi((next("--seed")));            
+            p.seed = stoi((next("--seed")));    
+
+
+        else if (arg == "--log")
+            p.log = "true" == (next("--log"));
+            
         // ============================================================
         // ALGORITMO GENÉTICO
         // ============================================================
@@ -159,90 +163,75 @@ ParametrosAlgoritmo parseParametros(int argc, char** argv) {
 
         // Penalidades de rota
         else if (arg == "--penalidade_rota")
-            p.penalidadePorRotaAtiva =
-                stod(next("--penalidade_rota"));
+            p.penalidadePorRotaAtiva = stod(next("--penalidade_rota"));
 
         else if (arg == "--limiar_paradas_rota")
-            p.limiarParadasPorRotas =
-                stoi(next("--limiar_paradas_rota"));
+            p.limiarParadasPorRotas = stoi(next("--limiar_paradas_rota"));
 
         else if (arg == "--penalidade_rota_curta")
-            p.penalidadeRotaExtraPequena =
-                stod(next("--penalidade_rota_curta"));
+            p.penalidadeRotaExtraPequena = stod(next("--penalidade_rota_curta"));
 
         else if (arg == "--penalidade_desbalanceamento")
-            p.penalidadeDesbalanceamento =
-                stod(next("--penalidade_desbalanceamento"));
+            p.penalidadeDesbalanceamento = stod(next("--penalidade_desbalanceamento"));
+
+        else if (arg == "--penalidadeEstouroCapacidade")
+            p.penalidadeDesbalanceamento = stod(next("--penalidadeEstouroCapacidade"));
+
         
-        else if (arg == "--PenalidadeParadasPercorridasGlobal")
-            p.PenalidadeParadasPercorridasGlobal =
-                stod(next("--PenalidadeParadasPercorridasGlobal"));
+        else if (arg == "--penalidadeParadasPercorridasGlobal")
+            p.PenalidadeParadasPercorridasGlobal = stod(next("--penalidadeParadasPercorridasGlobal"));
 
 
         // Penalidades de parada
         else if (arg == "--limite_parada_rota")
-            p.limiteParadaPorRota =
-                stoi(next("--limite_parada_rota"));
+            p.limiteParadaPorRota = stoi(next("--limite_parada_rota"));
 
         else if (arg == "--penalidade_parada_entre")
-            p.penalidadeParadaEntreRota =
-                stod(next("--penalidade_parada_entre"));
+            p.penalidadeParadaEntreRota = stod(next("--penalidade_parada_entre"));
 
         else if (arg == "--penalidade_parada_mesma")
-            p.penalidadeParadaMesmaRota =
-                stod(next("--penalidade_parada_mesma"));
+            p.penalidadeParadaMesmaRota = stod(next("--penalidade_parada_mesma"));
 
 
         // Torneio
         else if (arg == "--torneio_k")
-            p.porcentagemTorneioK =
-                stod(next("--torneio_k"));
+            p.porcentagemTorneioK = stod(next("--torneio_k"));
 
         else if (arg == "--decaimento_torneio")
-            p.taxaDecaimentoTorneio =
-                stod(next("--decaimento_torneio"));
+            p.taxaDecaimentoTorneio = stod(next("--decaimento_torneio"));
 
 
         // Seleção
         else if (arg == "--peso_dist_parada")
-            p.pesoDistParada =
-                stod(next("--peso_dist_parada"));
+            p.pesoDistParada = stod(next("--peso_dist_parada"));
 
         else if (arg == "--vizinhos_div")
-            p.nVizinhosDiv =
-                stoi(next("--vizinhos_div"));
+            p.nVizinhosDiv = stoi(next("--vizinhos_div"));
 
         else if (arg == "--peso_diversidade")
-            p.pesoDiversidade =
-                stod(next("--peso_diversidade"));
+            p.pesoDiversidade = stod(next("--peso_diversidade"));
 
         else if (arg == "--eps_clone")
-            p.epsClone =
-                stod(next("--eps_clone"));
+            p.epsClone = stod(next("--eps_clone"));
 
 
         // Reprodução
         else if (arg == "--crossover_bloco")
-            p.probabilidadeCrossoverBloco =
-                stod(next("--crossover_bloco"));
+            p.probabilidadeCrossoverBloco = stod(next("--crossover_bloco"));
 
         else if (arg == "--decaimento_rotas_rep")
-            p.taxaDecaimentoRotasRep =
-                stod(next("--decaimento_rotas_rep"));
+            p.taxaDecaimentoRotasRep = stod(next("--decaimento_rotas_rep"));
 
         else if (arg == "--mutacao_onibus")
-            p.probabilidadeMutacaoOnibus =
-                stod(next("--mutacao_onibus"));
+            p.probabilidadeMutacaoOnibus = stod(next("--mutacao_onibus"));
 
 
         // Solução inicial
         else if (arg == "--decaimento_solucao_inicial")
-            p.taxaDecaimentoSolucaoInicial =
-                stod(next("--decaimento_solucao_inicial"));
+            p.taxaDecaimentoSolucaoInicial = stod(next("--decaimento_solucao_inicial"));
 
         else if (arg == "--decaimento_rota_inicial")
-            p.taxaDecaimentoRotaInicial =
-                stod(next("--decaimento_rota_inicial"));
+            p.taxaDecaimentoRotaInicial = stod(next("--decaimento_rota_inicial"));
 
 
         // ============================================================
@@ -250,66 +239,40 @@ ParametrosAlgoritmo parseParametros(int argc, char** argv) {
         // ============================================================
 
         else if (arg == "--rcl")
-            p.tamanhoRCL =
-                stoi(next("--rcl"));
+            p.tamanhoRCL = stoi(next("--rcl"));
 
         else if (arg == "--decaimento_rcl")
-            p.taxaDecaimentoRCL =
-                stod(next("--decaimento_rcl"));
+            p.taxaDecaimentoRCL = stod(next("--decaimento_rcl"));
 
         else if (arg == "--tenure_rota")
-            p.tenureTaxaTamRota =
-                stod(next("--tenure_rota"));
+            p.tenureTaxaTamRota = stod(next("--tenure_rota"));
 
         else if (arg == "--iteracoes_tabu")
-            p.iteracoesTabu =
-                stoi(next("--iteracoes_tabu"));
+            p.iteracoesTabu = stoi(next("--iteracoes_tabu"));
                 
         else if (arg == "--num_trajetorias")
-            p.NumTrajetorias =
-                stoi(next("--num_trajetorias"));
+            p.NumTrajetorias = stoi(next("--num_trajetorias"));
 
         else if (arg == "--periodo_troca")
-            p.PeriodoTroca =
-                stoi(next("--periodo_troca"));
+            p.PeriodoTroca = stoi(next("--periodo_troca"));
                 
         else if (arg == "--forcaPerturbacaoTabu")
-            p.ForcaPerturbacaoTabu =
-                stoi(next("--forcaPerturbacaoTabu"));
+            p.ForcaPerturbacaoTabu = stoi(next("--forcaPerturbacaoTabu"));
 
         else if (arg == "--limiarEstagnacaoTabu")
-            p.limiarEstagnacaoMutacao =
-                stoi(next("--limiarEstagnacaoTabu"));
-
-
-        // Recompensas
-        else if (arg == "--recompensa_novo_melhor")
-            p.recompensaNovoMelhor =
-                stod(next("--recompensa_novo_melhor"));
-
-        else if (arg == "--recompensa_melhora")
-            p.recompensaMelhora =
-                stod(next("--recompensa_melhora"));
-
-        else if (arg == "--recompensa_aceito")
-            p.recompensaAceito =
-                stod(next("--recompensa_aceito"));
-
-
-        // Memória
-        else if (arg == "--decaimento_peso")
-            p.fatorDecaimentoPeso =
-                stod(next("--decaimento_peso"));
-
-        else if (arg == "--tamanho_segmento")
-            p.tamanhoSegmento =
-                stoi(next("--tamanho_segmento"));
+            p.limiarEstagnacaoMutacao = stoi(next("--limiarEstagnacaoTabu"));
     }
 
     return p;
 }
 
     
+
+
+
+
+
+
 
 
 

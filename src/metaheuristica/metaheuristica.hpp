@@ -38,7 +38,7 @@ using namespace std;
 struct ParametrosAlgoritmo {
 
     int seed = 123;
-
+    bool log = true;
     // ================================================================
     // ALGORITMO GENÉTICO
     // ================================================================
@@ -53,8 +53,8 @@ struct ParametrosAlgoritmo {
     double probabilidadeMutacao = 0.01;
     double pisoTaxaMutacao = 0.0286;
     double tetoTaxaMutacao = 0.1645;
-    int limiarEstagnacaoMutacao = 3;
     double probabilidadeMacroMutacao = 0.4646;
+    int limiarEstagnacaoMutacao = 3;
 
     // Injeção de indivíduos novos
     double porcentagemBaseInjecao = 0.0319;
@@ -76,9 +76,10 @@ struct ParametrosAlgoritmo {
 
     // Penalidade - paradas
     int limiteParadaPorRota = 1;
-    double penalidadeParadaEntreRota = 500.0;
-    double penalidadeParadaMesmaRota = 50.0;
+    double penalidadeParadaEntreRota = 20.0;
+    double penalidadeParadaMesmaRota = 20.0;
     double PenalidadeParadasPercorridasGlobal = 1.0;
+    double PenalidadeEstouroCapacidade = 10.0;
 
     // Torneio
     double porcentagemTorneioK = 0.2182;
@@ -108,19 +109,11 @@ struct ParametrosAlgoritmo {
     double taxaDecaimentoRCL = 0.3623;
     double tenureTaxaTamRota = 0.486;
     int iteracoesTabu = 180;
+
     int NumTrajetorias = 3;
     int PeriodoTroca = 15; 
     int ForcaPerturbacaoTabu = 20;
     int LimiarEstagnacaoTabu = 10; 
-
-    // Recompensas
-    double recompensaNovoMelhor = 10.0;
-    double recompensaMelhora = 3.0;
-    double recompensaAceito = 1.5;
-
-    // Memória
-    double fatorDecaimentoPeso = 0.7766;
-    int tamanhoSegmento = 6;
 };
 
 class infoSBRP;
@@ -145,6 +138,7 @@ struct Individuo {
     vector<bool> rotaViavel;
 
     int alunosInviaveisQuant;
+
 	vector<int> alunoPorRota;
 
     // Apenas armazenado após a avaliação pelo Tabu
@@ -195,11 +189,6 @@ using ChaveTabu = uint64_t;
 
 // +-+--+-++--+-++--+-+-+-+-+-+-+-+-+-+-+-+-+-+-+---+-+-+
 
-struct ALNS{
-    unordered_map<TipoMovimento, double> pesoOperador = {{INSERIR, 1.0}, {REMOVER, 1.0}, {TROCAR, 1.0}, {SUBSTITUIR, 1.0}, {MOVER, 1.0}};
-    unordered_map<TipoMovimento, double> scoreAcumulado = {{INSERIR, 0.0}, {REMOVER, 0.0}, {TROCAR, 0.0}, {SUBSTITUIR, 0.0}, {MOVER, 0.0}};
-    unordered_map<TipoMovimento, int> usosNoSegmento = {{INSERIR, 0}, {REMOVER, 0}, {TROCAR, 0}, {SUBSTITUIR, 0}, {MOVER, 0}};
-};
 
 struct Trajetoria {
     vector<int> rotaAtual;
@@ -208,7 +197,6 @@ struct Trajetoria {
     vector<int> melhorRota;
     double melhorDistancia;
     int semMelhora = 0;
-    ALNS adapt;
 };
 
 
@@ -222,6 +210,8 @@ class Metaheuristica{
 
         infoSBRP& problema;
         mt19937 gen;
+
+        bool log;
         
         // std::mt19937 gen;
 		
@@ -267,6 +257,8 @@ class Metaheuristica{
                 const int LimiarParadasPorRotas; //minimo de paradas pro rota
                 const double PenalidadeRotaExtraPequena; // penalidade de rota muito curta
                 const double PenalidadeDesbalanceamento; // penalidade de rotas com alunos desbalanceado
+                const double PenalidadeEstouroCapacidade;
+
                 // paradas
                 const int LimiteParadaPorRota; // minimo de repeticao de parada entre rotas
                 const double PenalidadeParadaEntreRota; // diferente rota
@@ -304,13 +296,6 @@ class Metaheuristica{
         const double TenureTaxaTamRota; // tenure com base no Tamanho da rota;
         const int IteracoesTabu; 
 
-        const double RecompensaNovoMelhor; // achou novo melhor global da rota
-        const double RecompensaMelhora; // melhorou o atual, mesmo sem ser o melhor
-        const double RecompensaAceito; // aceito, mas não melhorou
-
-        const double FatorDecaimentoPeso; // memória: quanto do peso antigo mantém
-        const int TamanhoSegmento; // quantas iterações tem decaimento
-        
         const int NumTrajetorias; // quantidade de instancias paralelas por cada tabu
         const int PeriodoTroca; // a cada iterações, um compartilhamento do tabu
 
@@ -321,7 +306,8 @@ class Metaheuristica{
         
     public:
 	    Metaheuristica(infoSBRP& pobrema, const ParametrosAlgoritmo &p) : problema(pobrema),
-            gen(p.seed),
+            // gen(p.seed),
+            log(p.log),
             numeroMaxGeracoes(p.numeroMaxGeracoes),
             TamanhoDaPopulacao(p.tamanhoDaPopulacao),
             ProbabilidadeCrossover(p.probabilidadeCrossover),
@@ -347,6 +333,7 @@ class Metaheuristica{
             LimiarParadasPorRotas(p.limiarParadasPorRotas),
             PenalidadeRotaExtraPequena(p.penalidadeRotaExtraPequena),
             PenalidadeDesbalanceamento(p.penalidadeDesbalanceamento),
+            PenalidadeEstouroCapacidade(p.PenalidadeEstouroCapacidade),
             LimiteParadaPorRota(p.limiteParadaPorRota),
             PenalidadeParadaEntreRota(p.penalidadeParadaEntreRota),
             PenalidadeParadaMesmaRota(p.penalidadeParadaMesmaRota),
@@ -372,13 +359,7 @@ class Metaheuristica{
             NumTrajetorias(p.NumTrajetorias),
             PeriodoTroca(p.PeriodoTroca),
             ForcaPerturbacaoTabu(p.ForcaPerturbacaoTabu),
-            LimiarEstagnacaoTabu(p.LimiarEstagnacaoTabu),
-            
-            RecompensaNovoMelhor(p.recompensaNovoMelhor),
-            RecompensaMelhora(p.recompensaMelhora),
-            RecompensaAceito(p.recompensaAceito),
-            FatorDecaimentoPeso(p.fatorDecaimentoPeso),
-            TamanhoSegmento(p.tamanhoSegmento)
+            LimiarEstagnacaoTabu(p.LimiarEstagnacaoTabu)
         {
 			quantidadeMaxRota = pobrema.quantidadeRotas; // n precisava, mas depois arrumo
 		}
@@ -437,7 +418,7 @@ class Metaheuristica{
 
         vector<Movimento> candidatosSubstituir(vector<int>& rota, vector<bool>& estaNaRota, vector<bool>& paradaObrigatoria, unordered_map<ChaveTabu, int>& tabu, double melhorDistanciaGlobal, double distanciaAtual, int iteracao);
 
-        Movimento melhorVizinho(vector<int>& rota, vector<bool>& estaNaRota, vector<bool>& paradaObrigatoria, unordered_map<ChaveTabu, int>& tabu, double melhorDistanciaGlobal, int iteracao, ALNS &Adapt);
+        Movimento melhorVizinho(vector<int>& rota, vector<bool>& estaNaRota, vector<bool>& paradaObrigatoria, unordered_map<ChaveTabu, int>& tabu, double melhorDistanciaGlobal, int iteracao);
 
 		void aplicaMovimento(vector<int>& rota, vector<bool>& estaNaRota, Movimento mov);
 

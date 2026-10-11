@@ -159,6 +159,7 @@ double Metaheuristica::aplicaPenalidades(Individuo& individuo){
             }
         }
     }
+
     penalidade += rotasAtivas * PenalidadePorRotaAtiva;
 
     // --- penalidade por parada repetida entre rotas ---
@@ -202,6 +203,17 @@ double Metaheuristica::aplicaPenalidades(Individuo& individuo){
     }
     penalidade += totalParadas * PenalidadeParadasPercorridasGlobal;
 
+
+    // --- penalidade de estouro de capacidade ---
+    int estouro = 0, contador = 0;
+    for(int i = 0; i < individuo.rotasFeitas.size(); ++i){
+        estouro = individuo.alunoPorRota[i] - problema.capacidadeOnibus[individuo.atrOnibusRota[i]];
+        if(estouro > 0){
+            contador += estouro;
+        }
+    }
+
+    penalidade += PenalidadeEstouroCapacidade * contador; 
         
     individuo.penalidadeFitness = penalidade;
     individuo.fitness = individuo.fitnessPuro + penalidade;
@@ -602,7 +614,6 @@ void compactarRotas(Individuo& individuo) {
         }
     }
 
-
     
     individuo.atrOnibusRota = move(novaOniRota);
     individuo.alunoPorRota = move(alPRota);
@@ -903,14 +914,16 @@ pair<vector<double>, Individuo> Metaheuristica::AG(int opc){
         }
         
         populacao.swap(novaPopulacao);
-        
-        cout << "G: " << i << " | ";
-        for(int imp = 0; imp < min(15, TamanhoDaPopulacao); ++imp){
-            // if(imp == 0)
-             cout << populacao[imp].fitnessPuro << "(" << populacao[imp].penalidadeFitness << ")" <<  " | ";
-            // else cout << populacao[imp].fitness << " | ";
+
+        if(log){
+            cout << "G: " << i << " | ";
+            for(int imp = 0; imp < min(15, TamanhoDaPopulacao); ++imp){
+                // if(imp == 0)
+                cout << populacao[imp].fitnessPuro << "(" << populacao[imp].penalidadeFitness << ")" <<  " | ";
+                // else cout << populacao[imp].fitness << " | ";
+            }
+            cout << "\n\n";
         }
-        cout << "\n\n";
         
         // valores.push_back(populacao[0].fitness);
         
@@ -929,9 +942,7 @@ pair<vector<double>, Individuo> Metaheuristica::AG(int opc){
     
     compactarRotas(melhorIndividuo); 
     
-    cout << melhorIndividuo.fitnessPuro << "\n"; fflush(stdout);
-    // cout << "owvnwdon";
-    
+    if(log){ cout << melhorIndividuo.fitnessPuro << "\n"; fflush(stdout);}
     
     return {valores, melhorIndividuo};
 }
