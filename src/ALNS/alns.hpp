@@ -28,7 +28,7 @@ struct ParametrosALNS {
 
     // Orçamento
     double tempoMaxSegundos = 20.0;
-    long maxIteracoes = 10000;
+    long maxIteracoes = 2000;
 
     // Destruição
     double fracaoMinRemocao = 0.05; // fração dos alunos removidos por iteração

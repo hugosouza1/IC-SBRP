@@ -27,10 +27,12 @@ struct estudante{
 
 class Metaheuristica;
 class ModeloMatematico;
+class ALNS;
 
 class infoSBRP{
 	friend class Metaheuristica;
 	friend class ModeloMatematico;
+	friend class ALNS;
 
 	private:
 	    // matriz de distâncias/custos entre paradas
