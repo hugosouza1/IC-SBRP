@@ -241,29 +241,42 @@ vector<int> ALNS::destruicaoAleatoria(SolucaoALNS& s, int quantidade){
     return alunos;
 }
 
-// remove os alunos cuja saída mais economiza distância
+// remove as paradas (com todos os alunos) cuja saída mais economiza, por aluno
 vector<int> ALNS::destruicaoPior(SolucaoALNS& s, int quantidade){
-    vector<pair<double,int>> economias;
+    vector<pair<double, pair<int,int>>> economias; // (economia por aluno, (rota, parada))
 
-    for(int a : alunosAtribuidos(s)){
-        int rota = s.atrAlunoRota[a];
-        int parada = s.atrAlunoParada[a];
+    for(int r = 0; r < quantidadeMaxRota; ++r){
+        for(int parada : s.paradasDaRota[r]){
+            int membros = s.alunosNaParada[r][parada];
+            int cargaDepois = s.alunoPorRota[r] - membros;
 
-        double economia = 0.0;
-        if(s.alunosNaParada[rota][parada] == 1){
-            vector<int> semParada = s.paradasDaRota[rota];
+            vector<int> semParada = s.paradasDaRota[r];
             semParada.erase(find(semParada.begin(), semParada.end(), parada));
-            economia = s.distanciaRota[rota] - distanciaSequencia(semParada);
+
+            double economia = s.distanciaRota[r] - distanciaSequencia(semParada);
+
+            int estouro = s.alunoPorRota[r] - capacidadeRota(s, r);
+            if(estouro > 0) economia += PenalidadeEstouroCapacidade * min(membros, estouro);
+            if(cargaDepois == 0) economia += PenalidadePorRotaAtiva;
+
+            economias.push_back({economia / membros, {r, parada}});
         }
-        economias.push_back({economia, a});
     }
 
-    sort(economias.rbegin(), economias.rend());
+    // embaralha antes pra não desempatar sempre pelo mesmo (rota, parada)
+    shuffle(economias.begin(), economias.end(), gen);
+    stable_sort(economias.begin(), economias.end(), [](const auto& a, const auto& b){
+        return a.first > b.first;
+    });
 
     vector<int> removidos;
     while((int)removidos.size() < quantidade && !economias.empty()){
         int idx = (int)(pow(sorteio01(), 2.0) * economias.size()); // enviesado pros piores
-        removidos.push_back(economias[idx].second);
+        auto [rota, parada] = economias[idx].second;
+
+        for(int a = 0; a < problema.quantidadeAlunos; ++a){
+            if(s.atrAlunoRota[a] == rota && s.atrAlunoParada[a] == parada) removidos.push_back(a);
+        }
         economias.erase(economias.begin() + idx);
     }
 
@@ -326,14 +339,15 @@ vector<int> ALNS::destruicaoRelacionada(SolucaoALNS& s, int quantidade){
     int semente = alunos[sorteioInteiro(0, alunos.size() - 1)];
 
     vector<pair<double,int>> relacao;
+
     for(int a : alunos){
         if(a == semente) continue;
 
-        double r = distancias[s.atrAlunoParada[semente]][s.atrAlunoParada[a]] / distanciaMaxima
-                 + (s.atrAlunoRota[semente] == s.atrAlunoRota[a] ? 0.0 : 0.5);
+        double r = distancias[s.atrAlunoParada[semente]][s.atrAlunoParada[a]] / distanciaMaxima + (s.atrAlunoRota[semente] == s.atrAlunoRota[a] ? 0.0 : 0.5);
         relacao.push_back({r, a});
     }
-    sort(relacao.begin(), relacao.end());
+
+    sort(relacao.begin(), relacao.end()); // parecidos prox de 0
 
     vector<int> removidos = {semente};
     while((int)removidos.size() < quantidade && !relacao.empty()){
@@ -352,6 +366,7 @@ vector<int> ALNS::destruicaoRelacionada(SolucaoALNS& s, int quantidade){
 
 void ALNS::reparar(SolucaoALNS& s, vector<int> pendentes, const ConfigReparo& config){
     uniform_real_distribution<double> ruido(1.0 - config.amplitudeRuido, 1.0 + config.amplitudeRuido);
+    
     double penalidadeParadaNova = config.fatorPenalidadeParadaNova * distanciaMedia;
 
     while(!pendentes.empty()){
@@ -379,6 +394,7 @@ void ALNS::reparar(SolucaoALNS& s, vector<int> pendentes, const ConfigReparo& co
             for(const auto& c : candidatosPorRota){
                 if(c.custo < INFINITO / 2) viaveis.push_back(c);
             }
+            
             if(viaveis.empty()) continue;
 
             sort(viaveis.begin(), viaveis.end(), [](const CandidatoInsercao& a, const CandidatoInsercao& b){
@@ -475,11 +491,11 @@ void ALNS::trocaOnibusEntreRotas(SolucaoALNS& s){
 
 void ALNS::registraOperadores(){
     destruicoes = {
-        {"aleatoria",   [this](SolucaoALNS& s, int q){ return destruicaoAleatoria(s, q); }},
-        {"pior",        [this](SolucaoALNS& s, int q){ return destruicaoPior(s, q); }},
-        {"parada",      [this](SolucaoALNS& s, int q){ return destruicaoParada(s, q); }},
-        {"rota",        [this](SolucaoALNS& s, int q){ return destruicaoRota(s, q); }},
-        {"relacionada", [this](SolucaoALNS& s, int q){ return destruicaoRelacionada(s, q); }},
+        {"aleatoria",   [this](SolucaoALNS& s, int q){ return destruicaoAleatoria(s, q); }}, // aleatorio
+        {"pior",        [this](SolucaoALNS& s, int q){ return destruicaoPior(s, q); }}, // remove alunos de paradas are a quantidade 
+        {"parada",      [this](SolucaoALNS& s, int q){ return destruicaoParada(s, q); }}, // escolhe uma parada e rota para tirar
+        {"rota",        [this](SolucaoALNS& s, int q){ return destruicaoRota(s, q); }}, // rota inteira
+        {"relacionada", [this](SolucaoALNS& s, int q){ return destruicaoRelacionada(s, q); }}, // remove os mais parecidos
     };
 
     //            nome    /  k  / ruido  / penalidade parada nova
@@ -501,6 +517,7 @@ SolucaoALNS ALNS::construirSolucaoInicial(){
     reparar(s, todos, reparos[1]); // regret-2
 
     for(int r = 0; r < quantidadeMaxRota; ++r) buscaLocal2Opt(s, r);
+
     trocaOnibusEntreRotas(s);
     avaliar(s);
 

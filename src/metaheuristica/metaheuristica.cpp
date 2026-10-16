@@ -177,7 +177,7 @@ ParametrosAlgoritmo parseParametros(int argc, char** argv) {
             p.penalidadeDesbalanceamento = stod(next("--penalidade_desbalanceamento"));
 
         else if (arg == "--penalidadeEstouroCapacidade")
-            p.penalidadeDesbalanceamento = stod(next("--penalidadeEstouroCapacidade"));
+            p.PenalidadeEstouroCapacidade = stod(next("--penalidadeEstouroCapacidade"));
 
         else if (arg == "--penalidadeParadasPercorridasGlobal")
             p.PenalidadeParadasPercorridasGlobal = stod(next("--penalidadeParadasPercorridasGlobal"));
@@ -238,12 +238,6 @@ ParametrosAlgoritmo parseParametros(int argc, char** argv) {
         // ============================================================
         // BUSCA TABU
         // ============================================================
-
-        else if (arg == "--rcl")
-            p.tamanhoRCL = stoi(next("--rcl"));
-
-        else if (arg == "--decaimento_rcl")
-            p.taxaDecaimentoRCL = stod(next("--decaimento_rcl"));
 
         else if (arg == "--tenure_rota")
             p.tenureTaxaTamRota = stod(next("--tenure_rota"));

@@ -1,8 +1,8 @@
 --seed 123
 --log true
 
---max_geracoes 80
---populacao 200
+--max_geracoes 3000
+--populacao 20
 --crossover 0.9595
 --elitismo 1
 
@@ -31,10 +31,10 @@
 --penalidade_rota_curta 10.0
 --penalidade_desbalanceamento 0.0
 --limite_parada_rota 1
---penalidade_parada_entre 10.0
---penalidade_parada_mesma 10.0
+--penalidade_parada_entre 1.0
+--penalidade_parada_mesma 1.0
 --penalidadeParadasPercorridasGlobal 1.0
---penalidadeEstouroCapacidade 1.0
+--penalidadeEstouroCapacidade 200.0
 
 --torneio_k 0.2182
 --decaimento_torneio 0.4341
@@ -42,7 +42,7 @@
 --peso_dist_parada 0.2602
 --vizinhos_div 11
 --peso_diversidade 0.1587
---eps_clone 1e-9
+--eps_clone 1e-7
 
 --crossover_bloco 0.86
 --decaimento_rotas_rep 0.924
@@ -50,12 +50,12 @@
 --decaimento_solucao_inicial 0.64
 --decaimento_rota_inicial 0.66
 
---rcl 125
+--rcl 10
 --decaimento_rcl 0.3623
---tenure_rota 0.486
---iteracoes_tabu 180
+--tenure_rota 0.386
+--iteracoes_tabu 100
 
---num_trajetorias 3
---periodo_troca 15
+--num_trajetorias 5
+--periodo_troca 10
 --forcaPerturbacaoTabu 20   
 --limiarEstagnacaoTabu 10

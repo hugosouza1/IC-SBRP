@@ -1,37 +1,6 @@
 #include "metaheuristica.hpp"
 
 
-void Metaheuristica::finalizaSolucao(Individuo& configParada, vector<vector<int>>& rotas, const vector<bool>& sucesso) {
-    // Garante que o vetor tenha todas as rotas
-    configParada.rotasFeitas.assign(quantidadeMaxRota, {});
-
-    double distanciaTotal = 0.0;
-    int alunosAfetados = 0;
-
-    for(int r = 0; r < quantidadeMaxRota; ++r){
-
-        // Se a rota não foi construída ou é inviável
-        if(r >= (int)rotas.size() || r >= (int)sucesso.size() || !sucesso[r] || rotas[r].empty()) {
-
-            configParada.rotasFeitas[r] = {};
-            configParada.rotaViavel[r] = false;
-            alunosAfetados += configParada.alunoPorRota[r];
-            continue;
-        }
-
-        // Rota válida
-        configParada.rotasFeitas[r] = rotas[r];
-        configParada.rotaViavel[r] = true;
-
-        distanciaTotal += distancia(rotas[r]);
-    }
-
-    configParada.alunosInviaveisQuant = alunosAfetados;
-    configParada.fitness = distanciaTotal;
-    configParada.fitnessPuro = distanciaTotal;
-}
-
-
 Individuo Metaheuristica::geraSolucaoInicial(){
     // cout << "opa\n\n"; fflush(stdout);
     Individuo fulano;
@@ -392,32 +361,32 @@ vector<Individuo> Metaheuristica::reproducao(vector<pair<int,int>> &paisEscolhid
         mutacaoIndividuo(filho, pai1.intensidadePermutaRota, pai2.intensidadePermutaRota);
         
         
-        //  Assegura um filho factivel. Remanejo de aluno
-        vector<int> cargaRota(quantidadeMaxRota, 0); 
-        for(int g = 0; g < gene; ++g) cargaRota[filho.atrAlunoRota[g]]++;
-        for(int g = 0; g < gene; ++g){
-            int rotaAtual = filho.atrAlunoRota[g];
+        // //  Assegura um filho factivel. Remanejo de aluno
+        // vector<int> cargaRota(quantidadeMaxRota, 0); 
+        // for(int g = 0; g < gene; ++g) cargaRota[filho.atrAlunoRota[g]]++;
+        // for(int g = 0; g < gene; ++g){
+        //     int rotaAtual = filho.atrAlunoRota[g];
 
-            if(cargaRota[rotaAtual] > problema.capacidadeOnibus[filho.atrOnibusRota[rotaAtual]]){
-                vector<int> candidatas;
+        //     if(cargaRota[rotaAtual] > problema.capacidadeOnibus[filho.atrOnibusRota[rotaAtual]]){
+        //         vector<int> candidatas;
 
-                for(int r = 0; r < quantidadeMaxRota; ++r){
-                    if(cargaRota[r] < problema.capacidadeOnibus[filho.atrOnibusRota[r]])
-                        candidatas.push_back(r);
-                }
+        //         for(int r = 0; r < quantidadeMaxRota; ++r){
+        //             if(cargaRota[r] < problema.capacidadeOnibus[filho.atrOnibusRota[r]])
+        //                 candidatas.push_back(r);
+        //         }
 
-                if(!candidatas.empty()){
+        //         if(!candidatas.empty()){
 
-                    uniform_int_distribution<int> dist(0, candidatas.size() - 1);
-                    int novaRota = candidatas[dist(gen)];
+        //             uniform_int_distribution<int> dist(0, candidatas.size() - 1);
+        //             int novaRota = candidatas[dist(gen)];
 
-                    cargaRota[rotaAtual]--;
-                    cargaRota[novaRota]++;
+        //             cargaRota[rotaAtual]--;
+        //             cargaRota[novaRota]++;
 
-                    filho.atrAlunoRota[g] = novaRota;
-                }
-            }
-        }
+        //             filho.atrAlunoRota[g] = novaRota;
+        //         }
+        //     }
+        // }
           
 
 
@@ -688,14 +657,10 @@ void Metaheuristica::injecaoNovosIndividuos(int opc, int geracoesSemMelhora, int
         if(idx < Elitismo) break;
 
         Individuo novo = geraSolucaoInicial();
-        if(opc){
+      
             buscaTabu(novo);
-        } 
-        else {
-            vector<bool> sucesso;
-            vector<vector<int>> rotasTemp = caminhosIniciais(novo, sucesso);
-            finalizaSolucao(novo, rotasTemp, sucesso);
-        }
+        
+        
 
         aplicaPenalidades(novo);
         
@@ -729,11 +694,6 @@ void Metaheuristica::injecaoNovosIndividuos(int opc, int geracoesSemMelhora, int
             mutacaoIndividuo(reinserido, intenso1, intenso2, true);
 
             if(opc) buscaTabu(reinserido);
-            else {
-                vector<bool> sucesso;
-                vector<vector<int>> rotasTemp = caminhosIniciais(reinserido, sucesso);
-                finalizaSolucao(reinserido, rotasTemp, sucesso);
-            }
 
             aplicaPenalidades(reinserido);
             
@@ -859,19 +819,11 @@ pair<vector<double>, Individuo> Metaheuristica::AG(int opc){
     
     vector<Individuo> populacao = popIni(TamanhoDaPopulacao);
     
-    if(opc){
         for(int i = 0; i < TamanhoDaPopulacao; i++){
             buscaTabu(populacao[i]);
             aplicaPenalidades(populacao[i]);
         } 
-    } else {
-        for(int i = 0; i < TamanhoDaPopulacao; i++){
-            vector<bool> sucesso;
-            vector<vector<int>> rotasTemp = caminhosIniciais(populacao[i], sucesso);
-            finalizaSolucao(populacao[i], rotasTemp, sucesso);
-            aplicaPenalidades(populacao[i]);
-        } 
-    }
+    
 
     int idxInit = 0;
     for(int i = 1; i < TamanhoDaPopulacao; ++i)
@@ -897,23 +849,13 @@ pair<vector<double>, Individuo> Metaheuristica::AG(int opc){
         vector<Individuo> filhos = reproducao(paisEscolhidos, populacao);
 
 
-        if(opc){
-            int itera = 0;
+       int itera = 0;
             for (auto& filho : filhos){
                 buscaTabu(filho);
                 aplicaPenalidades(filho);
                 ++itera;
             }
-        } else {
-            int itera = 0;
-            for (auto& filho : filhos){
-                vector<bool> sucesso;
-                vector<vector<int>> rotasTemp = caminhosIniciais(filho, sucesso);
-                finalizaSolucao(filho, rotasTemp, sucesso);
-                aplicaPenalidades(filho);
-                ++itera;
-            } 
-        }
+      
         
         // ja chega ordenado
         vector<Individuo> novaPopulacao = novaPopTorneioElitista(filhos, populacao);
@@ -933,7 +875,7 @@ pair<vector<double>, Individuo> Metaheuristica::AG(int opc){
             [](const Individuo& a, const Individuo& b){ return a.fitnessPuro < b.fitnessPuro;});
 
         // if (maisViavel(melhorDaGeracao, melhorIndividuo)){
-        if (melhorDaGeracao.fitnessPuro <  melhorIndividuo.fitnessPuro ){
+        if (melhorDaGeracao.fitnessPuro <=  melhorIndividuo.fitnessPuro ){
             melhorIndividuo = melhorDaGeracao;
             estagnado = i;
             ProbabilidadeMutacao = PisoTaxaMutacao; 
@@ -944,7 +886,7 @@ pair<vector<double>, Individuo> Metaheuristica::AG(int opc){
         
         populacao.swap(novaPopulacao);
 
-        if(log){
+        if(log && i % 20 == 0){
             cout << "G: " << i << " | ";
             for(int imp = 0; imp < min(15, TamanhoDaPopulacao); ++imp){
                 // if(imp == 0)

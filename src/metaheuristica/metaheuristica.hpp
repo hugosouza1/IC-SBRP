@@ -22,6 +22,7 @@
 
 #include "../SBRP.hpp"
 
+#include "distancias.hpp"
 
 using namespace chrono;
 using namespace std;
@@ -109,8 +110,6 @@ struct ParametrosAlgoritmo {
     // BUSCA TABU
     // ================================================================
 
-    int tamanhoRCL = 150;
-    double taxaDecaimentoRCL = 0.3623;
     double tenureTaxaTamRota = 0.486;
     int iteracoesTabu = 180;
 
@@ -155,49 +154,10 @@ struct Individuo {
 };
 
 
-// +-+--+-+-+-+-+-+-+-+-+-+-+-+-+-+---+---+--++--
-enum TipoMovimento{
-    INSERIR,
-    REMOVER,
-    TROCAR,
-    SUBSTITUIR,
-    MOVER
-};
-
-struct Movimento{
-
-    TipoMovimento tipo;
-
-    int posicao;     // REMOVER / INSERIR: posição do alvo
-    int posOrigem;   // MOVER: posição de onde a parada sai
-    int posDestino;  // MOVER: posição (gap) pra onde vai
-
-    int anterior, parada, proximo; // chave tabu / valores da operação
-
-    int paradaAntiga; // SUBSTITUIR: parada removida
-    int paradaNova;   // SUBSTITUIR / INSERIR / MOVER: parada envolvida
-
-    int trocaA, trocaB; // TROCAR: posições trocadas
-
-    double delta;
-};
-
-
-// 64 bits:
-// 4 : inserir / remover
-// 20: anterior
-// 20: parada
-// 20: proximo
-// arco : anterior -> parada -> proximo
-using ChaveTabu = uint64_t;
-
-// +-+--+-++--+-++--+-+-+-+-+-+-+-+-+-+-+-+-+-+-+---+-+-+
-
 
 struct Trajetoria {
     vector<int> rotaAtual;
     vector<bool> estaNaRota;
-    unordered_map<ChaveTabu, int> tabu;
     vector<int> melhorRota;
     double melhorDistancia;
     int semMelhora = 0;
@@ -216,6 +176,10 @@ class Metaheuristica{
         mt19937 gen;
 
         bool log;
+
+        DistanciasSobDemanda distancias;
+        unordered_map<string, pair<double, vector<int>>> cacheRotas;
+        const int LimiteExato = 12;
         
         // std::mt19937 gen;
 		
@@ -301,8 +265,6 @@ class Metaheuristica{
         // ================================================================== //
         //                            BUSCA TABU                              //
         // ================================================================== //
-        const int TamanhoRCL;
-        const double TaxaDecaimentoRCL; // quanto maior, mais pende pros melhores. menor, mais uniforme
         const double TenureTaxaTamRota; // tenure com base no Tamanho da rota;
         const int IteracoesTabu; 
 
@@ -366,8 +328,6 @@ class Metaheuristica{
             TaxaDecaimentoSolucaoInicial(p.taxaDecaimentoSolucaoInicial),
             TaxaDecaimentoRotaInicial(p.taxaDecaimentoRotaInicial),
 
-            TamanhoRCL(p.tamanhoRCL),
-            TaxaDecaimentoRCL(p.taxaDecaimentoRCL),
             TenureTaxaTamRota(p.tenureTaxaTamRota),
             IteracoesTabu(p.iteracoesTabu),
             NumTrajetorias(p.NumTrajetorias),
@@ -378,6 +338,8 @@ class Metaheuristica{
 			quantidadeMaxRota = pobrema.quantidadeRotas; // n precisava, mas depois arrumo
 
             freqParada.assign(pobrema.quantidadeParadas, 0.0);
+
+            iniciaDistancias();
 		}
 
         int qr(){return quantidadeMaxRota;};
@@ -405,24 +367,16 @@ class Metaheuristica{
 
 		// ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-		vector<int> contrucaoRota(vector<int> paradasMinimas, bool& sucesso);
-		vector<int> bfs(int a, int b);
-		vector<vector<int>> caminhosIniciais(Individuo &configParada, vector<bool>& sucesso, vector<vector<int>> *paradaDasRotas = {});
-        void finalizaSolucao(Individuo& configParada, vector<vector<int>>& rotas, const vector<bool>& sucesso);
-        vector<Movimento> candidatosRemocao(vector<int>& rota, vector<bool>& paradaObrigatoria, unordered_map<ChaveTabu, int>& tabu, double melhorDistanciaGlobal, double distanciaAtual, int iteracao);
-        vector<Movimento> candidatosInsercao(vector<int>& rota, vector<bool>& estaNaRota, unordered_map<ChaveTabu, int>& tabu, double melhorDistanciaGlobal, double distanciaAtual, int iteracao);
-        vector<Movimento> candidatosTroca(vector<int>& rota, unordered_map<ChaveTabu, int>& tabu, double melhorDistanciaGlobal, double distanciaAtual, int iteracao);
-        vector<Movimento> candidatosMover(vector<int>& rota, vector<bool>& paradaObrigatoria, unordered_map<ChaveTabu, int>& tabu, double melhorDistanciaGlobal, double distanciaAtual, int iteracao);
-        vector<Movimento> candidatosSubstituir(vector<int>& rota, vector<bool>& estaNaRota, vector<bool>& paradaObrigatoria, unordered_map<ChaveTabu, int>& tabu, double melhorDistanciaGlobal, double distanciaAtual, int iteracao);
-        Movimento melhorVizinho(vector<int>& rota, vector<bool>& estaNaRota, vector<bool>& paradaObrigatoria, unordered_map<ChaveTabu, int>& tabu, double melhorDistanciaGlobal, int iteracao);
-		void aplicaMovimento(vector<int>& rota, vector<bool>& estaNaRota, Movimento mov);
-		double buscaTabu(Individuo& configParada);
-        ChaveTabu chaveTabu(TipoMovimento tipo, int anterior, int parada, int proximo);
-        bool movimentoTabu(unordered_map<ChaveTabu, int>& tabu, TipoMovimento tipo, int anterior, int parada, int proximo, int iteracao );
-        void atualizaTabu( unordered_map<ChaveTabu, int>& tabu, Movimento mov, int tenure, int iteracao);
-        void pertubacaoRota(vector<vector<int>> &rota, vector<double> intensidade);
-        void avancaTrajetoria(Trajetoria& traj, vector<bool>& paradaObrigatoria, int tenure, int it);
-        void perturbaTrajetoria(Trajetoria& t, vector<bool>& obrig, int forca);
+        void iniciaDistancias();
+        double distanciaSequencia(const vector<int>& paradas);
+        double rotaExata(const vector<int>& paradas, vector<int>& ordem);
+        vector<int> insercaoMaisBarata(const vector<int>& paradas);
+        double tabuSequencia(vector<int>& sequencia, int iteracoes);
+        double melhorOrdemRota(vector<int> paradas, vector<int>& ordem);
+        vector<int> trajetoReal(const vector<int>& ordem);
+
+
+       double buscaTabu(Individuo& configParada);
 
         // -+-+--+-+-+-+-++-+
         
