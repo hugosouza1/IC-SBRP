@@ -3,76 +3,6 @@
 static ParametrosALNS parseParametros(int argc, char **argv);
 
 
-// ---------- distâncias de caminho mínimo (sob demanda) ----------
-
-void DistanciasSobDemanda::inicia(const vector<vector<double>>& g){
-    grafo = g;
-    quantidadeParadas = g.size();
-    distancia.assign(quantidadeParadas, {});
-    predecessor.assign(quantidadeParadas, {});
-    calculada.assign(quantidadeParadas, 0);
-}
-
-const vector<double>& DistanciasSobDemanda::operator[](int origem) const {
-    if(!calculada[origem]) dijkstra(origem);
-    return distancia[origem];
-}
-
-const vector<int>& DistanciasSobDemanda::predecessoresDe(int origem) const {
-    if(!calculada[origem]) dijkstra(origem);
-    return predecessor[origem];
-}
-
-void DistanciasSobDemanda::dijkstra(int origem) const {
-    vector<double>& dist = distancia[origem];
-    vector<int>& pai = predecessor[origem];
-
-    dist.assign(quantidadeParadas, INFINITO);
-    pai.assign(quantidadeParadas, -1);
-    dist[origem] = 0;
-
-    priority_queue<pair<double,int>, vector<pair<double,int>>, greater<pair<double,int>>> fila;
-    fila.push({0.0, origem});
-
-    while(!fila.empty()){
-        auto [du, u] = fila.top(); fila.pop();
-        if(du > dist[u]) continue;
-
-        for(int v = 0; v < quantidadeParadas; ++v){
-            double peso = grafo[u][v];
-            if(peso > 0 && du + peso < dist[v]){
-                dist[v] = du + peso;
-                pai[v] = u;
-                fila.push({dist[v], v});
-            }
-        }
-    }
-    calculada[origem] = 1;
-}
-
-
-void ALNS::iniciaDistancias(){
-    int n = problema.quantidadeParadas;
-    vector<vector<double>> grafo(n, vector<double>(n, 0.0));
-    for(int i = 0; i < n; ++i)
-        for(int j = 0; j < n; ++j)
-            grafo[i][j] = problema.grafoParadas[i][j];
- 
-    distancias.inicia(grafo);
- 
-    double soma = 0;
-    int contados = 0;
-    for(int p = 1; p < problema.quantidadeParadas; ++p){
-        if(distancias[0][p] < INFINITO / 2){
-            distanciaMaxima = max(distanciaMaxima, 2 * distancias[0][p]);
-            soma += distancias[0][p];
-            contados++;
-        }
-    }
-    distanciaMedia = contados ? soma / contados : 1;
-}
-
-
 vector<int> ALNS::caminhoReal(int origem, int destino) const {
     const vector<int>& pai = distancias.predecessoresDe(origem);
 
@@ -566,7 +496,7 @@ SolucaoALNS ALNS::executar(){
         avaliar(nova);
 
         bool aceita = nova.fitness < atual.fitness - 1e-9
-                   || sorteio01() < exp(-(nova.fitness - atual.fitness) / max(temperatura, 1e-12));
+                   || sorteio01() < exp(-(nova.fitness - atual.fitness) / max(temperatura, 1e-12)); // SA
 
         double pontos = 0.0;
         if(nova.fitness < melhor.fitness - 1e-9){

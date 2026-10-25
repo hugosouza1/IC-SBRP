@@ -36,7 +36,7 @@ int hibrido(Metaheuristica &meta, infoSBRP &dados, bool log){
     if(log) cout << "\nAG-BT:\n";
 
     auto [valoresGeracoes, ciclano]  = meta.AG(1);
-    
+
     if(log) meta.imprimeSolucao(ciclano, dados, valoresGeracoes);
 
     return 0;
@@ -116,6 +116,12 @@ ParametrosAlgoritmo parseParametros(int argc, char** argv) {
 
         else if (arg == "--elitePctFreq")
             p.elitePctFreq = stod(next("--elitePctFreq"));
+            
+        else if (arg == "--lambda_rota")
+            p.LambdaRota = stod(next("--lambda_rota"));
+
+        else if (arg == "--beta_carga")
+            p.BetaCarga = stod(next("--beta_carga"));
 
 
         // Mutação

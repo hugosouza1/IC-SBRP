@@ -14,12 +14,10 @@
 #include <set>
 
 #include "../SBRP.hpp"
+#include "../distancias.hpp"
 
 using namespace std;
 using namespace chrono;
-
-inline constexpr double INFINITO = 1e18;
-
 
 struct ParametrosALNS {
 
@@ -28,7 +26,7 @@ struct ParametrosALNS {
 
     // Orçamento
     double tempoMaxSegundos = 20.0;
-    long maxIteracoes = 2000;
+    long maxIteracoes = 100000;
 
     // Destruição
     double fracaoMinRemocao = 0.05; // fração dos alunos removidos por iteração
@@ -86,20 +84,6 @@ struct ConfigReparo {
     double fatorPenalidadeParadaNova; // x distância média, pra consolidar paradas
 };
 
-struct DistanciasSobDemanda {
- 
-    vector<vector<double>> grafo; // (0 = sem aresta)
-    int quantidadeParadas = 0;
- 
-    mutable vector<vector<double>> distancia;
-    mutable vector<vector<int>> predecessor;
-    mutable vector<char> calculada;
- 
-    void inicia(const vector<vector<double>>& g);
-    const vector<double>& operator[](int origem) const;
-    const vector<int>& predecessoresDe(int origem) const;
-    void dijkstra(int origem) const;
-};
 class infoSBRP;
 
 class ALNS{
@@ -163,7 +147,7 @@ class ALNS{
             PenalidadeEstouroCapacidade(p.penalidadeEstouroCapacidade)
         {
             quantidadeMaxRota = pobrema.quantidadeRotas;
-            iniciaDistancias();
+            distancias.inicia(pobrema.grafoParadas);
             registraOperadores();
         }
 
@@ -173,7 +157,6 @@ class ALNS{
         void imprimeSolucao(SolucaoALNS& sol);
 
         // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-        void iniciaDistancias();
 
         vector<int> caminhoReal(int origem, int destino) const;
 

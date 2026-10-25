@@ -6,8 +6,11 @@ CXX = g++
 CXXFLAGS = -O3
 SRC_DIR = src
 BUILD_DIR = build
-ENTRADA ?= Instancias/instancia.txt
+E ?= Instancias/instancia.txt
 PARAMETROS ?= src/parametros_algoritmo.txt
+
+
+.PHONY: all heuristica alns modelo runHeuristica runModelo clean rebuild
 
 # =======================================
 # CPLEX
@@ -30,6 +33,7 @@ FLAGS = -DIL_STD -fPIC -fno-strict-aliasing -fexceptions -DNDEBUG -w
 
 METAHEURISTICA_DIR = $(SRC_DIR)/metaheuristica
 MODELO_MAT_DIR = $(SRC_DIR)/modelo_matematico
+ALNS_DIR = $(SRC_DIR)/ALNS
 
 
 # =======================================
@@ -38,6 +42,7 @@ MODELO_MAT_DIR = $(SRC_DIR)/modelo_matematico
 
 EXEC_HEURISTICA = heuristica.exe
 EXEC_MODELO = modelo.exe
+EXEC_ALNS = alns.exe
 
 
 # =======================================
@@ -64,6 +69,25 @@ SRC_MODELO = \
     $(MODELO_MAT_DIR)/modelo.cpp
 
 OBJ_MODELO = $(SRC_MODELO:$(SRC_DIR)/%.cpp=$(BUILD_DIR)/%.o)
+
+
+# =======================================
+# ALNS
+# =======================================
+
+SRC_ALNS = \
+    $(SRC_DIR)/SBRP.cpp \
+    $(ALNS_DIR)/alns.cpp
+
+OBJ_ALNS = $(SRC_ALNS:$(SRC_DIR)/%.cpp=$(BUILD_DIR)/%.o)
+
+alns: $(EXEC_ALNS)
+
+$(EXEC_ALNS): $(OBJ_ALNS)
+	$(CXX) $(CXXFLAGS) -o $@ $^
+
+runALNS: $(EXEC_ALNS)
+	./$(EXEC_ALNS) $(E)
 
 
 # =======================================
@@ -97,11 +121,10 @@ $(BUILD_DIR)/%.o: $(SRC_DIR)/%.cpp
 # =======================================
 
 runHeuristica: $(EXEC_HEURISTICA)
-	./$(EXEC_HEURISTICA) $(ENTRADA) $(shell cat $(PARAMETROS))
+	./$(EXEC_HEURISTICA) $(E) $(shell cat $(PARAMETROS))
 
 runModelo: clean $(EXEC_MODELO)
-	./$(EXEC_MODELO) $(ENTRADA)
-
+	./$(EXEC_MODELO) $(E)
 
 # =======================================
 # LIMPEZA

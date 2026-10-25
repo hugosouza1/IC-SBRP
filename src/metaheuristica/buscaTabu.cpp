@@ -226,7 +226,18 @@ double Metaheuristica::melhorOrdemRota(vector<int> paradas, vector<int>& ordem){
 
     if(it != cacheRotas.end()){
         ordem = it->second.second;
-        return it->second.first;
+        double custo = it->second.first;
+
+        if((int)paradas.size() > LimiteExato && (uniform_real_distribution<double>(0.0, 1.0)(gen) < 0.1)){
+            vector<int> seq = ordem;
+            double c = tabuSequencia(seq, IteracoesTabu / max(1, NumTrajetorias));
+            if(c < custo - 1e-9){
+                custo = c; ordem = seq;
+                it->second = {custo, ordem};
+            }
+        }
+        
+        return custo;
     }
 
     double custo;
@@ -254,7 +265,7 @@ double Metaheuristica::melhorOrdemRota(vector<int> paradas, vector<int>& ordem){
     return custo;
 }
 
-// expande a ordem das paradas no trajeto real (depósito -> ... -> depósito) pelos predecessores do Dijkstra
+// expande a ordem das paradas no trajeto real ( 0 -> ... -> 0 ) pelos predecessores do Dijkstra
 vector<int> Metaheuristica::trajetoReal(const vector<int>& ordem){
     vector<int> alvo = ordem;
     alvo.push_back(0);
