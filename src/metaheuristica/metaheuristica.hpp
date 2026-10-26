@@ -12,7 +12,6 @@
 #include <algorithm>
 #include <numeric>
 #include <chrono>
-#include <unistd.h>
 #include <iomanip>
 #include <climits>
 
@@ -40,35 +39,32 @@ using namespace std;
 struct ParametrosAlgoritmo {
 
     int seed = 123;
-    bool log = true;
+    bool log = false;
     // ================================================================
     // ALGORITMO GENÉTICO
     // ================================================================
 
     // Parâmetros gerais
-    int numeroMaxGeracoes = 87;
-    int tamanhoDaPopulacao = 120;
-    double probabilidadeCrossover = 0.95;
+    int numeroMaxGeracoes = 10000;
+    int tamanhoDaPopulacao = 25;
+    double probabilidadeCrossover = 0.9398;
     int elitismo = 1;
 
     // Taxas de mutação
-    double probabilidadeMutacao = 0.01;
-    double pisoTaxaMutacao = 0.0286;
-    double tetoTaxaMutacao = 0.1645;
-    double probabilidadeMacroMutacao = 0.2;
-    int limiarEstagnacaoMutacao = 3;
+    double probabilidadeMutacao = 0.0481;
+    double probabilidadeMacroMutacao = 0.2137;
 
     double lambdaFreq = 2.0;      // 0 = desliga 
     double decaimentoFreq = 0.1;  // evaporação por geração
     double elitePctFreq = 0.1;    // fração da população que reforça
+    int LimiarFreqParadas = 40;  // estagnação
     double distMediaEntreParadas = 10;
     double LambdaRota = 0.5;
     double BetaCarga = 0.5;
 
     // Injeção de indivíduos novos
-    double porcentagemBaseInjecao = 0.0319;
-    double porcentagemExtraInjecao = 0.216;
-    double porcentagemMaximaNovosIndividuos = 0.4017;
+    double porcentagemBaseInjecao = 0.08;
+    // double porcentagemMaximaNovosIndividuos = 0.0928;
 
     // Gaveta de indivíduos antigos
     int tamanhoGaveta = 25;
@@ -89,11 +85,11 @@ struct ParametrosAlgoritmo {
     double penalidadeParadaMesmaRota = 20.0;
     double PenalidadeParadasPercorridasGlobal = 1.0;
 
-    double PenalidadeEstouroCapacidade = 10.0;
+    double PenalidadeEstouroCapacidade = 85.5;
 
     // Torneio
-    double porcentagemTorneioK = 0.2182;
-    double taxaDecaimentoTorneio = 0.4341;
+    double porcentagemTorneioK = 0.256;
+    double taxaDecaimentoTorneio = 0.4492;
 
     // Seleção
     double pesoDistParada = 0.2602;
@@ -115,10 +111,10 @@ struct ParametrosAlgoritmo {
     // BUSCA TABU
     // ================================================================
 
-    double tenureTaxaTamRota = 0.486;
-    int iteracoesTabu = 180;
+    double tenureTaxaTamRota = 0.1683;
+    int iteracoesTabu = 84;
 
-    int NumTrajetorias = 3;
+    int NumTrajetorias = 6;
     int PeriodoTroca = 15; 
     int ForcaPerturbacaoTabu = 20;
     int LimiarEstagnacaoTabu = 10; 
@@ -201,15 +197,13 @@ class Metaheuristica{
             
             // Taxas de mutação
             double ProbabilidadeMutacao; 
-            const double PisoTaxaMutacao;
-            const double TetoTaxaMutacao;
-            const int limiarEstagnacaoMutacao;
             const double ProbabilidadeMacroMutacao; // mutação violenta (reprodução)
 
             // reforço de frequencia
             const double LambdaFreq, DecaimentoFreq, ElitePctFreq;
                 vector<double> freqParada;
                 double freqMaxParada = 0;
+                const int LimiarFreqParadas;
                 int sinalFreqParada = 1; // +1 intensifica, -1 diversifica
 
                 double distMediaEntreParadas;
@@ -218,8 +212,8 @@ class Metaheuristica{
             
             // injeção de individuos na estagnação (imigração)
             const double PorcentagemBaseInjecao;
-            const double PorcentagemExtraInjecao; 
-            const double PorcentagemMaximaNovosIndividuos; 
+            // const double PorcentagemExtraInjecao; 
+            // const double PorcentagemMaximaNovosIndividuos; 
             
             // injeção de individuos na estagnação (Antigos)
             deque<Individuo> Gaveta;
@@ -286,7 +280,7 @@ class Metaheuristica{
         
     public:
 	    Metaheuristica(infoSBRP& pobrema, const ParametrosAlgoritmo &p) : problema(pobrema),
-            // gen(p.seed),
+            gen(p.seed),
             log(p.log),
             numeroMaxGeracoes(p.numeroMaxGeracoes),
             TamanhoDaPopulacao(p.tamanhoDaPopulacao),
@@ -294,20 +288,17 @@ class Metaheuristica{
             // Elitismo(p.elitismo),
 
             ProbabilidadeMutacao(p.probabilidadeMutacao),
-            PisoTaxaMutacao(p.pisoTaxaMutacao),
-            TetoTaxaMutacao(p.tetoTaxaMutacao),
-            limiarEstagnacaoMutacao(p.limiarEstagnacaoMutacao),
             ProbabilidadeMacroMutacao(p.probabilidadeMacroMutacao),
 
             LambdaFreq(p.lambdaFreq), 
             DecaimentoFreq(p.decaimentoFreq),
             ElitePctFreq(p.elitePctFreq),
+            LimiarFreqParadas(p.LimiarFreqParadas),
             LambdaRota(p.LambdaRota),
             BetaCarga(p.BetaCarga),
             
             PorcentagemBaseInjecao(p.porcentagemBaseInjecao),
-            PorcentagemExtraInjecao(p.porcentagemExtraInjecao),
-            PorcentagemMaximaNovosIndividuos(p.porcentagemMaximaNovosIndividuos),
+            // PorcentagemMaximaNovosIndividuos(p.porcentagemMaximaNovosIndividuos),
             
             TamanhoGaveta(p.tamanhoGaveta),
             PeriodoArquivamento(p.periodoArquivamento),
@@ -351,16 +342,14 @@ class Metaheuristica{
             freqParada.assign(pobrema.quantidadeParadas, 0.0);
 
             iniciaDistancias();
-            
-            int distTotal = 0, qq = 0;
-            for(int i = 0; i < problema.quantidadeParadas; ++i){
-                for(int j = i + 1; j < problema.quantidadeParadas; ++j){
-                    distTotal += distancias.distancia[i][j];
-                    ++qq;
-                }
-            }
 
-            distMediaEntreParadas = distTotal / qq;
+            double distTotal = 0; long long qq = 0;
+            for(int i = 0; i < problema.quantidadeParadas; ++i)
+                for(int j = i + 1; j < problema.quantidadeParadas; ++j){
+                    double d = distancias[i][j];
+                    if(d < INFINITO / 2){ distTotal += d; ++qq; }
+                }
+            distMediaEntreParadas = qq ? distTotal / qq : 1.0;
 		}
 
         int qr(){return quantidadeMaxRota;};
@@ -377,6 +366,7 @@ class Metaheuristica{
         vector<pair<int,int>> escolhendoPais(vector<Individuo> &populacao);
         vector<Individuo> reproducao(vector<pair<int,int>> &paisEscolhidos, vector<Individuo> &populacao);
         void mutacaoIndividuo(Individuo &filho, bool forcarMacro = false);
+        void engavetamento(int i, vector<Individuo>& novaPopulacao);
         void injecaoNovosIndividuos(int opc, int geracoesSemMelhora, int i, vector<Individuo> &novaPopulacao);
         double distanciaIndividuos(const Individuo& a, const Individuo& b);
         vector<Individuo> selecionaSobreviventes(vector<Individuo>& pool);

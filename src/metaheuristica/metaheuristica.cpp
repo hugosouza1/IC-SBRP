@@ -116,6 +116,9 @@ ParametrosAlgoritmo parseParametros(int argc, char** argv) {
 
         else if (arg == "--elitePctFreq")
             p.elitePctFreq = stod(next("--elitePctFreq"));
+        
+        else if (arg == "--limitar_freq_paradas")
+            p.LimiarFreqParadas = stod(next("--limitar_freq_paradas"));
             
         else if (arg == "--lambda_rota")
             p.LambdaRota = stod(next("--lambda_rota"));
@@ -128,14 +131,14 @@ ParametrosAlgoritmo parseParametros(int argc, char** argv) {
         else if (arg == "--mutacao")
             p.probabilidadeMutacao = stod(next("--mutacao"));
 
-        else if (arg == "--piso_mutacao")
-            p.pisoTaxaMutacao = stod(next("--piso_mutacao"));
+        // else if (arg == "--piso_mutacao")
+            // p.pisoTaxaMutacao = stod(next("--piso_mutacao"));
 
-        else if (arg == "--teto_mutacao")
-            p.tetoTaxaMutacao = stod(next("--teto_mutacao"));
+        // else if (arg == "--teto_mutacao")
+            // p.tetoTaxaMutacao = stod(next("--teto_mutacao"));
 
-        else if (arg == "--limiar_estagnacao_mutacao")
-            p.limiarEstagnacaoMutacao = stoi(next("--limiar_estagnacao_mutacao"));
+        // else if (arg == "--limiar_estagnacao_mutacao")
+            // p.limiarEstagnacaoMutacao = stoi(next("--limiar_estagnacao_mutacao"));
 
         else if (arg == "--macro_mutacao")
             p.probabilidadeMacroMutacao = stod(next("--macro_mutacao"));
@@ -145,11 +148,11 @@ ParametrosAlgoritmo parseParametros(int argc, char** argv) {
         else if (arg == "--injecao_base")
             p.porcentagemBaseInjecao = stod(next("--injecao_base"));
 
-        else if (arg == "--injecao_extra")
-            p.porcentagemExtraInjecao = stod(next("--injecao_extra"));
+        // else if (arg == "--injecao_extra")
+            // p.porcentagemExtraInjecao = stod(next("--injecao_extra"));
 
-        else if (arg == "--injecao_max")
-            p.porcentagemMaximaNovosIndividuos = stod(next("--injecao_max"));
+        // else if (arg == "--injecao_max")
+        //     p.porcentagemMaximaNovosIndividuos = stod(next("--injecao_max"));
 
 
         // Gaveta
@@ -260,8 +263,8 @@ ParametrosAlgoritmo parseParametros(int argc, char** argv) {
         else if (arg == "--forcaPerturbacaoTabu")
             p.ForcaPerturbacaoTabu = stod(next("--forcaPerturbacaoTabu"));
 
-        else if (arg == "--limiarEstagnacaoTabu")
-            p.limiarEstagnacaoMutacao = stoi(next("--limiarEstagnacaoTabu"));
+        // else if (arg == "--limiarEstagnacaoTabu")
+            // p.limiarEstagnacaoMutacao = stoi(next("--limiarEstagnacaoTabu"));
     }
 
     return p;

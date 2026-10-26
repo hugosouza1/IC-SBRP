@@ -471,8 +471,9 @@ void Metaheuristica::mutacaoIndividuo(Individuo &filho, bool forcarMacro){
             }
 
             if(!candidatas.empty()){
-                uniform_int_distribution<int> distRota(0, candidatas.size() - 1);
-                int novaRota = candidatas[distRota(gen)];
+                // uniform_int_distribution<int> distRota(0, candidatas.size() - 1);
+                // int novaRota = candidatas[distRota(gen)];
+                int novaRota = sorteiaRota(candidatas, filho, filho.atrAlunoParada[g]);
 
 
                 cargaRota[rotaAtual]--;
@@ -485,7 +486,6 @@ void Metaheuristica::mutacaoIndividuo(Individuo &filho, bool forcarMacro){
 
 
     if(forcarMacro || muta(gen) < ProbabilidadeMacroMutacao){
-
         vector<int> possi;
         for(int r = 0; r < quantidadeMaxRota; ++r){
             if(cargaRota[r] > 0) possi.push_back(r);
@@ -510,9 +510,12 @@ void Metaheuristica::mutacaoIndividuo(Individuo &filho, bool forcarMacro){
                         if(r != rotaAlvo && cargaRota[r] < problema.capacidadeOnibus[filho.atrOnibusRota[r]])
                             candidatas.push_back(r);
                     }
+
                     if(!candidatas.empty()){
-                        uniform_int_distribution<int> distR(0, candidatas.size() - 1);
-                        int novaRota = candidatas[distR(gen)];
+                        // uniform_int_distribution<int> distR(0, candidatas.size() - 1);
+                        // int novaRota = candidatas[distR(gen)];
+                        int novaRota = sorteiaRota(candidatas, filho, filho.atrAlunoParada[g]);
+
                         cargaRota[rotaAlvo]--;
                         cargaRota[novaRota]++;
                         filho.atrAlunoRota[g] = novaRota;
@@ -523,12 +526,7 @@ void Metaheuristica::mutacaoIndividuo(Individuo &filho, bool forcarMacro){
     }
 }
 
-/*
-escolher uma rota
-a rota que tem uma parada possivel
-parada com mais estudantes 
-*/
-
+ 
 int Metaheuristica::sorteiaRota(const vector<int>& candidatas, const Individuo& filho, int parada){
     vector<vector<int>> paradasNaRota(quantidadeMaxRota);
     vector<int> cargaRota(quantidadeMaxRota, 0);
@@ -598,31 +596,6 @@ vector<Individuo> Metaheuristica::novaPopTorneioElitista(vector<Individuo> &filh
     return nova;
 }
 
-// vector<Individuo> Metaheuristica::novaPopTorneioElitista(vector<Individuo> &filhos, vector<Individuo> &pais){
-
-//     vector<Individuo> combinado = filhos;
-//     combinado.insert(combinado.end(), pais.begin(), pais.end());
-
-//     std::sort(combinado.begin(), combinado.end(), [this](const Individuo &a, const Individuo &b){
-//         return maisViavel(a, b);
-//     });
-
-//     vector<Individuo> novaPop(combinado.begin(), combinado.begin() + Elitismo);
-//     vector<Individuo> resto(combinado.begin() + Elitismo, combinado.end());
-
-//     while(novaPop.size() < (size_t)TamanhoDaPopulacao){
-//         int idxRo = selecionaTorneio(resto);
-//         novaPop.push_back(resto[idxRo]);
-//     }
-
-//     std::sort(novaPop.begin(), novaPop.end(), [](Individuo a, Individuo b){
-//         return a.fitness < b.fitness;
-//     });
-
-//     return novaPop;
-// }
-
-
 void compactarRotas(Individuo& individuo) {
 
     vector<vector<int>> novasRotas;
@@ -679,38 +652,7 @@ double desvio(const vector<double>& valores) {
 }
 
 
-void Metaheuristica::injecaoNovosIndividuos(int opc, int geracoesSemMelhora, int i, vector<Individuo> &novaPopulacao){
-    // aumento da mutação por estagnação
-    if(geracoesSemMelhora > limiarEstagnacaoMutacao){
-        double excesso = geracoesSemMelhora - limiarEstagnacaoMutacao;
-        double incremento = 0.001 * (1.0 + excesso * 0.05); // cresce com o tempo estagnado
-        ProbabilidadeMutacao = clamp(ProbabilidadeMutacao + incremento, PisoTaxaMutacao, TetoTaxaMutacao);
-    }
-
-    // injeção de individuos na estagnação
-    int baseInjecao  = max(1, (int)(TamanhoDaPopulacao * PorcentagemBaseInjecao));
-    int extraInjecao = (int)(geracoesSemMelhora * PorcentagemExtraInjecao);
-    int quantInjetar = min((int)(TamanhoDaPopulacao * PorcentagemMaximaNovosIndividuos), baseInjecao + extraInjecao);
-    quantInjetar = quantInjetar / 4;
-
-    for(int k = 0; k < quantInjetar; ++k){
-        int idx = TamanhoDaPopulacao - 1 - k;
-        // if(idx < Elitismo) break;
-
-        Individuo novo = geraSolucaoInicial();
-      
-            buscaTabu(novo);
-        
-        
-
-        aplicaPenalidades(novo);
-        
-        novaPopulacao[idx] = move(novo);
-    }
-
-        
-
-
+void Metaheuristica::engavetamento(int i, vector<Individuo>& novaPopulacao){
     if(i % PeriodoArquivamento == 0){
         for(int k = 0; k < EngavetadosK; ++k){
             bool novo = true;
@@ -720,24 +662,35 @@ void Metaheuristica::injecaoNovosIndividuos(int opc, int geracoesSemMelhora, int
         }
         while((int)Gaveta.size() > TamanhoGaveta) Gaveta.pop_front();
     }
+}
+
+
+void Metaheuristica::injecaoNovosIndividuos(int opc, int geracoesSemMelhora, int i, vector<Individuo> &novaPopulacao){
+    // injeção de individuos na estagnação
+    int baseInjecao  = max(1, (int)(TamanhoDaPopulacao * PorcentagemBaseInjecao));
+    int quantInjetar = baseInjecao / 4;
+    
+    // if(geracoesSemMelhora > LimiarGaveta)
+        for(int k = 0; k < quantInjetar; ++k){
+            int idx = TamanhoDaPopulacao - 1 - k;
+            // if(idx < Elitismo) break;
+            Individuo novo = geraSolucaoInicial();
+            buscaTabu(novo);      
+            aplicaPenalidades(novo);
+            novaPopulacao[idx] = move(novo);
+        }
 
     
     if(geracoesSemMelhora > LimiarGaveta && !Gaveta.empty()){
-        int quant = min((int)Gaveta.size(), quantInjetar * 3 / 4);
+        int quant = min((int)Gaveta.size(), (int)(quantInjetar * 0.75));
         for(int k = 0; k < quant; ++k){
             uniform_int_distribution<int> distGaveta(0, Gaveta.size() - 1);
             Individuo reinserido = Gaveta[distGaveta(gen)];
             
-            // perturba antes de reinserir (macro-mutação), depois reavalia se mexeu nos genes
-            vector<double> intenso1(quantidadeMaxRota, 0.3); // gambiarra
-            vector<double> intenso2(quantidadeMaxRota, 0.7);
-
             mutacaoIndividuo(reinserido, true);
-
-            if(opc) buscaTabu(reinserido);
-
+            buscaTabu(reinserido);
             aplicaPenalidades(reinserido);
-            
+
             int idx = TamanhoDaPopulacao - 1 - k;
             // if(idx < Elitismo) break;
             novaPopulacao[idx] = move(reinserido);
@@ -875,14 +828,11 @@ pair<vector<double>, Individuo> Metaheuristica::AG(int opc){
     
     double estagnado = 0;
     
-    // max iter e estagnação
-    
     vector<double> valores;
 
-    // no AG, antes do loop
     auto inicio = steady_clock::now();
-    // primeira linha dentro do for das gerações:
-    int TempoMaxSegundos = 20;
+    int TempoMaxSegundos = 30;
+
     for(int i = 0; i < numeroMaxGeracoes; ++i){
         
         double temperaturaSelecao = 0.4; 
@@ -905,8 +855,11 @@ pair<vector<double>, Individuo> Metaheuristica::AG(int opc){
 
         // quantidade de gerações estagnadas
         int geracoesSemMelhora = i - estagnado;
-
-        injecaoNovosIndividuos(opc, geracoesSemMelhora, i, novaPopulacao);
+        
+        engavetamento(i, novaPopulacao);
+        
+        // if(geracoesSemMelhora > LimiarGaveta)
+            injecaoNovosIndividuos(opc, geracoesSemMelhora, i, novaPopulacao);
 
         // sort para prox pop
         sort(novaPopulacao.begin(), novaPopulacao.end(), [this](const Individuo& a, const Individuo& b){
@@ -923,46 +876,36 @@ pair<vector<double>, Individuo> Metaheuristica::AG(int opc){
             melhorIndividuo = melhorDaGeracao;
             historico.push_back({i, melhorIndividuo.fitnessPuro});
             estagnado = i;
-            ProbabilidadeMutacao = PisoTaxaMutacao;
         }
 
         atualizaFrequencias(novaPopulacao);
-        sinalFreqParada = (geracoesSemMelhora > LimiarGaveta) ? -1 : 1; // diversifica quando estagna'
+
+        sinalFreqParada = (geracoesSemMelhora > LimiarFreqParadas) ? -1 : 1; // diversifica quando estagna'
         
         populacao.swap(novaPopulacao);
 
         if(log && i % 20 == 0){
-            cout << "G: " << i << " | ";
-            for(int imp = 0; imp < min(15, TamanhoDaPopulacao); ++imp){
+            cout << "G: " << i << " - ";
+            for(int imp = 0; imp < min(20, TamanhoDaPopulacao); ++imp){
                 // if(imp == 0)
-                cout << populacao[imp].fitnessPuro << "(" << populacao[imp].penalidadeFitness << ")" <<  " | ";
+                cout << populacao[imp].fitnessPuro << "(" << populacao[imp].penalidadeFitness << ")" <<  " < ";
                 // else cout << populacao[imp].fitness << " | ";
             }
             cout << "\n\n";
         }
-        
-        // valores.push_back(populacao[0].fitness);
-        
-        // if ( (i % 15) == 0){
-            // cout << "\n";
-            // cout << "Geracao:" << i << " // melhor fitness atual = " << melhorFitness << "\n";
-        // }
-
-
-        // if(duration<double>(steady_clock::now() - inicio).count() > TempoMaxSegundos) break;
-        
+        if(duration<double>(steady_clock::now() - inicio).count() > TempoMaxSegundos) break;
     }
     
-    // cout << "\n\n";
-
-    for(auto [a, b]: historico){
-        cout << "it: " << a << ", fit " << b << "\n";        
-    }
+    if(log)
+        for(auto [a, b]: historico){
+            cout << "it: " << a << ", fit " << b << "\n";        
+        }
     
     
     compactarRotas(melhorIndividuo); 
     
-    // if(log){ cout << melhorIndividuo[0].fitnessPuro << "\n"; fflush(stdout);}
+    if(!log)
+        { cout << melhorIndividuo.fitnessPuro << "\n"; fflush(stdout);}
         
     return {valores, melhorIndividuo};
 }
