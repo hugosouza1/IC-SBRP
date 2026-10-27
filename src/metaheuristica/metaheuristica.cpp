@@ -84,9 +84,10 @@ ParametrosAlgoritmo parseParametros(int argc, char** argv) {
             return argv[++i];
         };
 
-        if(arg == "--seed") // coisa
-            p.seed = stoi((next("--seed")));    
-
+        if(arg == "--seed"){
+            int num = stoi((next("--seed")));    
+            if(num >= 0) p.seed = num;
+        }
 
         else if (arg == "--log")
             p.log = "true" == (next("--log"));
@@ -226,9 +227,6 @@ ParametrosAlgoritmo parseParametros(int argc, char** argv) {
 
 
         // Reprodução
-        else if (arg == "--crossover_bloco")
-            p.probabilidadeCrossoverBloco = stod(next("--crossover_bloco"));
-
         else if (arg == "--decaimento_rotas_rep")
             p.taxaDecaimentoRotasRep = stod(next("--decaimento_rotas_rep"));
 

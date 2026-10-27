@@ -249,6 +249,163 @@ vector<pair<int,int>> Metaheuristica::escolhendoPais(vector<Individuo> &populaca
     return paisEscolhidos;
 }
 
+void Metaheuristica::crossoverRotas(const Individuo& A, const Individuo& B, Individuo& filho){
+    int n = problema.quantidadeAlunos;
+    int R = quantidadeMaxRota;
+    int P = problema.quantidadeParadas;
+    uniform_real_distribution<double> zeroUm(0.0, 1.0);
+
+    filho.atrAlunoParada.assign(n, -1);
+    filho.atrAlunoRota.assign(n, -1);
+    filho.atrOnibusRota = A.atrOnibusRota; // facilitar na parte do remanejo
+    filho.atrOnibusRota.resize(R);
+
+    vector<int> carga(R, 0);
+    vector<char> usada(R, 0);
+    vector<vector<int>> alunosA(R), alunosB(R);
+
+    // mapeia as paradas de cada rota
+    for(int g = 0; g < n; ++g){
+        alunosA[A.atrAlunoRota[g]].push_back(g);
+        alunosB[B.atrAlunoRota[g]].push_back(g);
+    }
+
+    auto copiaRota = [&](const Individuo& pai, int rPai, const vector<int>& alunos, int rFilho){
+        filho.atrOnibusRota[rFilho] = pai.atrOnibusRota[rPai];
+
+        usada[rFilho] = 1;
+        carga[rFilho] = alunos.size();
+
+        for(int g : alunos){
+            filho.atrAlunoRota[g]   = rFilho;
+            filho.atrAlunoParada[g] = pai.atrAlunoParada[g];
+        }
+    };
+
+    // 1) k rotas de A (viés para as maiores), copiadas como unidade
+    vector<int> cand;
+    for(int r = 0; r < R; ++r) 
+        if(!alunosA[r].empty()) cand.push_back(r);
+
+    sort(cand.begin(), cand.end(), [&](int x, int y){ return alunosA[x].size() > alunosA[y].size(); });
+
+    int kMax = max(1, (int)cand.size() / 2);
+    int k = uniform_int_distribution<int>(1, kMax)(gen);
+
+    while(k-- > 0 && !cand.empty()){
+        vector<double> w(cand.size());
+        for(int i = 0; i < (int)cand.size(); ++i) 
+            w[i] = exp(-TaxaDecaimentoRotasRep * i); // maiores rotas tem mais chances de serem selecionadas
+
+        int i = discrete_distribution<int>(w.begin(), w.end())(gen);
+        int r = cand[i];
+        
+        cand.erase(cand.begin() + i);
+        copiaRota(A, r, alunosA[r], r);
+    }
+
+    // 2) rotas de B que não colidem com nada já herdado
+    vector<int> ordemB(R);
+    iota(ordemB.begin(), ordemB.end(), 0);
+    shuffle(ordemB.begin(), ordemB.end(), gen);
+
+    for(int rb : ordemB){
+        if(alunosB[rb].empty()) continue;
+
+        bool livre = true;
+        for(int g : alunosB[rb]) 
+            if(filho.atrAlunoRota[g] >= 0) // filho n atribuido
+                { livre = false; break; }
+
+        if(!livre) continue;
+
+        int rf = -1;
+        for(int r = 0; r < R; ++r) if(!usada[r]){ rf = r; break; }
+
+        if(rf < 0) break; // sem rótulo livre
+
+        copiaRota(B, rb, alunosB[rb], rf);
+    }
+
+    // 3) reinserção dos alunos que sobraram
+    vector<vector<char>> presente(R, vector<char>(P, 0)); // para mapear o custo de inserção
+    vector<vector<int>> paradas(R);
+    
+    // ver quais rotas e paradas ja foram atribuidas
+    for(int g = 0; g < n; ++g){
+        int r = filho.atrAlunoRota[g];
+        if(r < 0) continue;
+
+        int p = filho.atrAlunoParada[g];
+        if(!presente[r][p])
+            { presente[r][p] = 1; paradas[r].push_back(p); }
+    }
+
+    vector<int> pend;
+    for(int g = 0; g < n; ++g) 
+        if(filho.atrAlunoRota[g] < 0) 
+            pend.push_back(g);
+
+    shuffle(pend.begin(), pend.end(), gen);
+
+    uniform_real_distribution<double> ruido(0.9, 1.1);
+
+    for(int g : pend){
+        const auto& poss = problema.alunosParadas[g].paradasPossiveis;
+        double melhor = INFINITO;
+        int bp = -1, br = -1;
+
+        for(int r = 0; r < R; ++r){
+            if(carga[r] >= problema.capacidadeOnibus[filho.atrOnibusRota[r]]) continue;
+
+            for(const auto& par : poss){
+                int p = par.first;
+                double c;
+
+                if(presente[r][p]) 
+                    c = 0.0;                                     // parada já aberta: custo zero
+                else {
+                    double dmin = distancias[0][p];              // proxy do custo de inserção
+                    for(int q : paradas[r]) 
+                        dmin = min(dmin, distancias[p][q]);
+                    c = 2.0 * dmin * ruido(gen);
+                }
+
+                if(c < melhor)
+                    { melhor = c; bp = p; br = r; }
+            }
+        }
+
+        if(br < 0){ // tudo cheio: joga na rota mais vazia (a penalidade de capacidade cobra)
+            br = 0;
+            for(int r = 1; r < R; ++r) 
+                if(carga[r] < carga[br]) 
+                    br = r;
+
+            bp = poss[0].first;
+            for(const auto& par : poss) 
+                if(par.second < poss[0].second) 
+                bp = par.first;
+        }
+
+        filho.atrAlunoRota[g] = br;
+        filho.atrAlunoParada[g] = bp;
+        carga[br]++;
+        usada[br] = 1;
+        if(!presente[br][bp]){ presente[br][bp] = 1; paradas[br].push_back(bp); }
+    }
+
+    // mutação de ônibus, só se a capacidade nova comportar a rota
+    uniform_int_distribution<int> distOnibus(0, problema.quantidadeOnibus - 1);
+    for(int r = 0; r < R; ++r){
+        if(zeroUm(gen) < ProbabilidadeMutacaoOnibus){
+            int b = distOnibus(gen);
+            if(problema.capacidadeOnibus[b] >= carga[r]) filho.atrOnibusRota[r] = b;
+        }
+    }
+}
+
+
 vector<Individuo> Metaheuristica::reproducao(vector<pair<int,int>> &paisEscolhidos, vector<Individuo> &populacao){
     vector<Individuo> filhos;
     filhos.reserve(TamanhoDaPopulacao);
@@ -266,133 +423,15 @@ vector<Individuo> Metaheuristica::reproducao(vector<pair<int,int>> &paisEscolhid
         Individuo &pai1 = populacao[idxPai1];
         Individuo &pai2 = populacao[idxPai2];
 
-        Individuo filho; // parada e rota devem ser herdadas do mesmo pai, caso contrário fica quebrado
-        filho.atrAlunoParada.resize(gene);
-        filho.atrAlunoRota.resize(gene);
-        // filho.intensidadePermutaRota.resize(quantidadeMaxRota);
-        filho.atrOnibusRota = pai1.atrOnibusRota;
-        
-        // Cruzamento + mutação do mapeamento rota->onibus
-        filho.atrOnibusRota.resize(quantidadeMaxRota);
-        uniform_int_distribution<int> distOnibus(0, problema.quantidadeOnibus - 1);
-        for(int r = 0; r < quantidadeMaxRota; ++r){
-            filho.atrOnibusRota[r] = (zeroUm(gen) < 0.5) ? pai1.atrOnibusRota[r] : pai2.atrOnibusRota[r];
+        Individuo filho;
 
-            if(zeroUm(gen) < ProbabilidadeMutacaoOnibus){
-                filho.atrOnibusRota[r] = distOnibus(gen);
-            }
-        }
-
-        
-        // Cruzamento das rotas
         if (zeroUm(gen) < ProbabilidadeCrossover){
-
-            bool usaCrossoverPorRota = zeroUm(gen) < ProbabilidadeCrossoverBloco; // 50% bloco de rota, 50% gene a gene
-
-            if(usaCrossoverPorRota){
-
-                bool herdaDoPai2 = zeroUm(gen) < 0.5;
-                Individuo &paiHerdar = herdaDoPai2 ? pai2 : pai1;
-                Individuo &otoPai    = herdaDoPai2 ? pai1 : pai2;
-
-                // Começa herdando tudo do "outro pai"
-                filho.atrAlunoParada = otoPai.atrAlunoParada;
-                filho.atrAlunoRota   = otoPai.atrAlunoRota;
-
-                vector<int> tamanhoRotaHerdar(quantidadeMaxRota, 0);
-                for(int g = 0; g < gene; ++g) tamanhoRotaHerdar[paiHerdar.atrAlunoRota[g]]++;
-
-                vector<int> rotasCandidatas;
-                for(int r = 0; r < quantidadeMaxRota; ++r){
-                    if(tamanhoRotaHerdar[r] > 0) rotasCandidatas.push_back(r);
-                }
-
-                int quantMax = min((int)rotasCandidatas.size(), max(1, (int)(quantidadeMaxRota * 0.5)));
-                uniform_int_distribution<int> distQuant(1, max(1, quantMax));
-                int quantidadeASerHerdada = distQuant(gen);
-
-                std::sort(rotasCandidatas.begin(), rotasCandidatas.end(),
-                    [&](int x, int y){ return tamanhoRotaHerdar[x] > tamanhoRotaHerdar[y]; });
-
-                // const double decaimento = 0.2;
-                // const double alpha = 0.5; 
-                set<int> selecionadas;
-                vector<int> disponiveis = rotasCandidatas;
-
-                while((int)selecionadas.size() < quantidadeASerHerdada && !disponiveis.empty()){
-                    vector<double> pesos(disponiveis.size());
-                    for(int i = 0; i < (int)disponiveis.size(); ++i){
-                        // double pesoRank = exp(-decaimento * i);
-                        // pesos[i] = alpha + (1.0 - alpha) * pesoRank;
-                        pesos[i] = exp(-TaxaDecaimentoRotasRep * i);
-                    }
-
-                    discrete_distribution<int> distPeso(pesos.begin(), pesos.end());
-                    int idxEscolhido = distPeso(gen);
-
-                    selecionadas.insert(disponiveis[idxEscolhido]);
-                    disponiveis.erase(disponiveis.begin() + idxEscolhido);
-                }
-
-                for(int g = 0; g < gene; ++g){
-                    if(selecionadas.count(paiHerdar.atrAlunoRota[g])){
-                        filho.atrAlunoParada[g] = paiHerdar.atrAlunoParada[g];
-                        filho.atrAlunoRota[g]   = paiHerdar.atrAlunoRota[g];
-                    }
-                }
-
-            } else {
-                // uniform crossover: 50/50 por gene, sem noção de rota/bloco
-                for(int c = 0; c < gene; c++){
-                    if(zeroUm(gen) < 0.5){
-                        filho.atrAlunoParada[c] = pai1.atrAlunoParada[c];
-                        filho.atrAlunoRota[c]   = pai1.atrAlunoRota[c];
-                    } else {
-                        filho.atrAlunoParada[c] = pai2.atrAlunoParada[c];
-                        filho.atrAlunoRota[c]   = pai2.atrAlunoRota[c];
-                    }
-                }
-            }
-
+            crossoverRotas(pai1, pai2, filho);
         } else {
-            // sem crossover: copia aleatoriamente um dos pais
-            if (zeroUm(gen) < 0.5) filho = pai1;
-            else filho = pai2;
+            filho = (zeroUm(gen) < 0.5) ? pai1 : pai2;
         }
-        
-        // mutação
+
         mutacaoIndividuo(filho);
-        
-        
-        // //  Assegura um filho factivel. Remanejo de aluno
-        // vector<int> cargaRota(quantidadeMaxRota, 0); 
-        // for(int g = 0; g < gene; ++g) cargaRota[filho.atrAlunoRota[g]]++;
-        // for(int g = 0; g < gene; ++g){
-        //     int rotaAtual = filho.atrAlunoRota[g];
-
-        //     if(cargaRota[rotaAtual] > problema.capacidadeOnibus[filho.atrOnibusRota[rotaAtual]]){
-        //         vector<int> candidatas;
-
-        //         for(int r = 0; r < quantidadeMaxRota; ++r){
-        //             if(cargaRota[r] < problema.capacidadeOnibus[filho.atrOnibusRota[r]])
-        //                 candidatas.push_back(r);
-        //         }
-
-        //         if(!candidatas.empty()){
-
-        //             uniform_int_distribution<int> dist(0, candidatas.size() - 1);
-        //             int novaRota = candidatas[dist(gen)];
-
-        //             cargaRota[rotaAtual]--;
-        //             cargaRota[novaRota]++;
-
-        //             filho.atrAlunoRota[g] = novaRota;
-        //         }
-        //     }
-        // }
-          
-
-
         filhos.push_back(move(filho)); 
     }
     return filhos;
@@ -668,9 +707,9 @@ void Metaheuristica::engavetamento(int i, vector<Individuo>& novaPopulacao){
 void Metaheuristica::injecaoNovosIndividuos(int opc, int geracoesSemMelhora, int i, vector<Individuo> &novaPopulacao){
     // injeção de individuos na estagnação
     int baseInjecao  = max(1, (int)(TamanhoDaPopulacao * PorcentagemBaseInjecao));
-    int quantInjetar = baseInjecao / 4;
+    int quantInjetar = baseInjecao / 2;
     
-    // if(geracoesSemMelhora > LimiarGaveta)
+    if(geracoesSemMelhora > LimiarGaveta)
         for(int k = 0; k < quantInjetar; ++k){
             int idx = TamanhoDaPopulacao - 1 - k;
             // if(idx < Elitismo) break;
@@ -682,7 +721,7 @@ void Metaheuristica::injecaoNovosIndividuos(int opc, int geracoesSemMelhora, int
 
     
     if(geracoesSemMelhora > LimiarGaveta && !Gaveta.empty()){
-        int quant = min((int)Gaveta.size(), (int)(quantInjetar * 0.75));
+        int quant = min((int)Gaveta.size(), (int)(quantInjetar));
         for(int k = 0; k < quant; ++k){
             uniform_int_distribution<int> distGaveta(0, Gaveta.size() - 1);
             Individuo reinserido = Gaveta[distGaveta(gen)];
@@ -831,7 +870,7 @@ pair<vector<double>, Individuo> Metaheuristica::AG(int opc){
     vector<double> valores;
 
     auto inicio = steady_clock::now();
-    int TempoMaxSegundos = 30;
+    int TempoMaxSegundos = 120;
 
     for(int i = 0; i < numeroMaxGeracoes; ++i){
         
@@ -884,16 +923,27 @@ pair<vector<double>, Individuo> Metaheuristica::AG(int opc){
         
         populacao.swap(novaPopulacao);
 
-        if(log && i % 20 == 0){
-            cout << "G: " << i << " - ";
-            for(int imp = 0; imp < min(20, TamanhoDaPopulacao); ++imp){
-                // if(imp == 0)
-                cout << populacao[imp].fitnessPuro << "(" << populacao[imp].penalidadeFitness << ")" <<  " < ";
+        double TickingAwayTheMomentsThatMakeUpADullDay = duration<double>(steady_clock::now() - inicio).count();
+
+        if(log && i % 100 == 0){
+            cout << "G: " << i << " : ";
+            cout << TickingAwayTheMomentsThatMakeUpADullDay  << "s\n";
+            cout << "populacao:\n";
+            for(int imp = 0; imp < min(40, TamanhoDaPopulacao); ++imp){
+                if(imp%10 == 0 && imp !=0) cout << "\n";
+                cout << "" << populacao[imp].fitnessPuro << "(" << populacao[imp].penalidadeFitness << ")" <<  "\t";
                 // else cout << populacao[imp].fitness << " | ";
             }
+
+            cout << "\ngaveta:\n";
+            for(int imp = 0; imp < min(20, (int)Gaveta.size()); ++imp){
+                if(imp%10 == 0 && imp !=0) cout << "\n";
+                cout << "" << Gaveta[imp].fitnessPuro << "(" << Gaveta[imp].penalidadeFitness << ")" <<  "\t";
+            }
+
             cout << "\n\n";
         }
-        if(duration<double>(steady_clock::now() - inicio).count() > TempoMaxSegundos) break;
+        if(TickingAwayTheMomentsThatMakeUpADullDay > TempoMaxSegundos) break;
     }
     
     if(log)

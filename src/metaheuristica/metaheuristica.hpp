@@ -27,18 +27,11 @@
 using namespace chrono;
 using namespace std;
 
-// Description of the best-so-far configuration:
-//    .ID. populacao crossover crossover_bloco piso_mutacao teto_mutacao macro_mutacao injecao_base injecao_max torneio_k decaimento_torneio peso_diversidade peso_dist_parada decaimento_rcl tenure_rota iteracoes_tabu num_trajetorias periodo_troca .PARENT.
-// 92   92       126    0.9244          0.8697       0.0286       0.1645        0.4646       0.0319      0.4017    0.2182             0.4341           0.1587           0.2602         0.3623       0.486             63               2            33       54
-
-// Description of the best-so-far configuration:
-//    .ID. limiar_estagnacao_mutacao injecao_extra vizinhos_div decaimento_rotas_rep mutacao_onibus decaimento_solucao_inicial decaimento_rota_inicial tamanho_gaveta periodo_arquivamento limiar_gaveta engavetados_k semelhanca_gaveta recompensa_novo_melhor recompensa_melhora recompensa_aceito decaimento_peso tamanho_segmento .PARENT.
-// 16   16                         3         0.216           11                0.924         0.0364                     0.6487                  0.6623             25                   16            17             3            0.1293                10.0104             3.0069            1.5714          0.7766                6       NA
-
+inline std::random_device rd;
 
 struct ParametrosAlgoritmo {
+    unsigned int seed = rd();
 
-    int seed = 123;
     bool log = false;
     // ================================================================
     // ALGORITMO GENÉTICO
@@ -98,7 +91,6 @@ struct ParametrosAlgoritmo {
     double epsClone = 1e-9;
 
     // Reprodução
-    double probabilidadeCrossoverBloco = 0.86;
     double taxaDecaimentoRotasRep = 0.924;
     double probabilidadeMutacaoOnibus = 0.0364;
 
@@ -170,8 +162,7 @@ class Metaheuristica{
     private:
     
         infoSBRP& problema;
-        std::random_device rd;
-        std::mt19937 gen{rd()};
+        std::mt19937 gen;
 
         bool log;
 
@@ -253,7 +244,6 @@ class Metaheuristica{
             const double EpsClone; // quanto menor, mais parecido
             
             // Reproducao
-            const double ProbabilidadeCrossoverBloco; // crossover pro bloco de rotas, ou gene a gene
             const double TaxaDecaimentoRotasRep; // selecao dos blocos de rota com mais alunos
             const double ProbabilidadeMutacaoOnibus;
 
@@ -324,7 +314,7 @@ class Metaheuristica{
             NVizinhosDiv(p.nVizinhosDiv),
             PesoDiversidade(p.pesoDiversidade),
             EpsClone(p.epsClone),
-            ProbabilidadeCrossoverBloco(p.probabilidadeCrossoverBloco),
+
             TaxaDecaimentoRotasRep(p.taxaDecaimentoRotasRep),
             ProbabilidadeMutacaoOnibus(p.probabilidadeMutacaoOnibus),
             TaxaDecaimentoSolucaoInicial(p.taxaDecaimentoSolucaoInicial),
@@ -370,6 +360,8 @@ class Metaheuristica{
         void injecaoNovosIndividuos(int opc, int geracoesSemMelhora, int i, vector<Individuo> &novaPopulacao);
         double distanciaIndividuos(const Individuo& a, const Individuo& b);
         vector<Individuo> selecionaSobreviventes(vector<Individuo>& pool);
+
+        void crossoverRotas(const Individuo& A, const Individuo& B, Individuo& filho);
 
         double pesoFreq(int parada);
         int sorteiaParada(const estudante& aluno);

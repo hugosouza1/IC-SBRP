@@ -1,9 +1,9 @@
---seed 123
+--seed 2
 --log true
 
 --max_geracoes 20000
---populacao 25
---crossover 0.6
+--populacao 60
+--crossover 0.9
 --elitismo 1
 
 --lambdaFreq 2.0
@@ -11,19 +11,19 @@
 --elitePctFreq 0.40
 --limitar_freq_paradas 100
 
---beta_carga 0.8
---lambda_rota 0.2
+--beta_carga 0.5
+--lambda_rota 0.5
 
---mutacao 0.007
+--mutacao 0.009
 --macro_mutacao 0.005
 
 --injecao_base 0.5
 
---tamanho_gaveta 20
+--tamanho_gaveta 25
 --periodo_arquivamento 50
---limiar_gaveta 200
+--limiar_gaveta 1000
 --engavetados_k 5
---semelhanca_gaveta 0.05
+--semelhanca_gaveta 0.1
 
 --penalidade_rota 0.0
 --limiar_paradas_rota 0
@@ -33,8 +33,8 @@
 --penalidade_parada_entre 0.0
 --penalidade_parada_mesma 0.0
 
---penalidadeParadasPercorridasGlobal 40.0
---penalidadeEstouroCapacidade 100.0
+--penalidadeParadasPercorridasGlobal 0.0x
+--penalidadeEstouroCapacidade 200.0
 
 --torneio_k 0.2182
 --decaimento_torneio 0.4341
@@ -42,9 +42,8 @@
 --peso_dist_parada 0.26
 --vizinhos_div 11
 --peso_diversidade 0.4
---eps_clone 0.3
+--eps_clone 0.1
 
---crossover_bloco 0.86
 --decaimento_rotas_rep 0.924
 --mutacao_onibus 0.0364
 --decaimento_solucao_inicial 0.64
