@@ -626,11 +626,23 @@ void Metaheuristica::atualizaFrequencias(const vector<Individuo>& pop){
 }
 
 
-vector<Individuo> Metaheuristica::novaPopTorneioElitista(vector<Individuo> &filhos, vector<Individuo> &pais){
-    vector<Individuo> combinado = filhos;
-    combinado.insert(combinado.end(), pais.begin(), pais.end());
+// vector<Individuo> Metaheuristica::novaPopTorneioElitista(vector<Individuo> &filhos, vector<Individuo> &pais){
+//     vector<Individuo> combinado = filhos;
+//     combinado.insert(combinado.end(), pais.begin(), pais.end());
 
-    vector<Individuo> nova = selecionaSobreviventes(combinado);
+//     vector<Individuo> nova = selecionaSobreviventes(combinado);
+//     sort(nova.begin(), nova.end(), [](const Individuo& a, const Individuo& b){ return a.fitness < b.fitness; });
+//     return nova;
+// }
+
+vector<Individuo> Metaheuristica::novaPopTorneioElitista(vector<Individuo>& filhos, vector<Individuo>& pais, int geracao){
+    vector<Individuo> combinado = filhos, protegidos;
+    for(auto& p : pais) (p.protegidoAte > geracao ? protegidos : combinado).push_back(p);
+
+    int alvo = TamanhoDaPopulacao - (int)protegidos.size();
+    vector<Individuo> nova = selecionaSobreviventes(combinado, alvo);
+    nova.insert(nova.end(), protegidos.begin(), protegidos.end());
+
     sort(nova.begin(), nova.end(), [](const Individuo& a, const Individuo& b){ return a.fitness < b.fitness; });
     return nova;
 }
@@ -703,37 +715,39 @@ void Metaheuristica::engavetamento(int i, vector<Individuo>& novaPopulacao){
     }
 }
 
+void Metaheuristica::injecaoNovosIndividuos(int semMelhora, int i, vector<Individuo>& novaPopulacao, int& ultimaGaveta, int& ultimaImig){
+    int InjecaoImig = max(1, (int)(TamanhoDaPopulacao * PorcentagemInjecaoImigrantes));
+    int InjecaoGav  = max(1, (int)(TamanhoDaPopulacao * PorcentagemInjecaoGaveta));
 
-void Metaheuristica::injecaoNovosIndividuos(int opc, int geracoesSemMelhora, int i, vector<Individuo> &novaPopulacao){
-    // injeção de individuos na estagnação
-    int baseInjecao  = max(1, (int)(TamanhoDaPopulacao * PorcentagemBaseInjecao));
-    int quantInjetar = baseInjecao / 2;
-    
-    if(geracoesSemMelhora > LimiarGaveta)
-        for(int k = 0; k < quantInjetar; ++k){
-            int idx = TamanhoDaPopulacao - 1 - k;
-            // if(idx < Elitismo) break;
+    bool dispImig   = semMelhora > LimiarImigrantes && i - ultimaImig >= LimiarImigrantes;
+    bool dispGaveta = semMelhora > LimiarGaveta     && i - ultimaGaveta >= LimiarGaveta && !Gaveta.empty();
+
+    int slot = TamanhoDaPopulacao - 1;   // população já vem ordenada (pior no fim)
+
+    if(dispImig){
+        for(int k = 0; k < InjecaoImig && slot >= 1; ++k){   // protege o melhor
             Individuo novo = geraSolucaoInicial();
-            buscaTabu(novo);      
+            buscaTabu(novo);
             aplicaPenalidades(novo);
-            novaPopulacao[idx] = move(novo);
+            novo.protegidoAte = i + JanelaProtecao;
+            novaPopulacao[slot--] = move(novo);
         }
+        ultimaImig = i;
+    }
 
-    
-    if(geracoesSemMelhora > LimiarGaveta && !Gaveta.empty()){
-        int quant = min((int)Gaveta.size(), (int)(quantInjetar));
-        for(int k = 0; k < quant; ++k){
+    if(dispGaveta){
+        int quant = min((int)Gaveta.size(), InjecaoGav);
+        for(int k = 0; k < quant && slot >= 1; ++k){
             uniform_int_distribution<int> distGaveta(0, Gaveta.size() - 1);
             Individuo reinserido = Gaveta[distGaveta(gen)];
-            
+
             mutacaoIndividuo(reinserido, true);
             buscaTabu(reinserido);
             aplicaPenalidades(reinserido);
-
-            int idx = TamanhoDaPopulacao - 1 - k;
-            // if(idx < Elitismo) break;
-            novaPopulacao[idx] = move(reinserido);
+            reinserido.protegidoAte = i + JanelaProtecao;
+            novaPopulacao[slot--] = move(reinserido);
         }
+        ultimaGaveta = i;
     }
 }
 
@@ -770,7 +784,7 @@ double Metaheuristica::distanciaIndividuos(const Individuo& a, const Individuo& 
 
 
 
-vector<Individuo> Metaheuristica::selecionaSobreviventes(vector<Individuo>& pool){
+vector<Individuo> Metaheuristica::selecionaSobreviventes(vector<Individuo>& pool, int alvo){
     int n = pool.size();
 
     vector<vector<double>> D(n, vector<double>(n, 0.0));
@@ -785,7 +799,7 @@ vector<Individuo> Metaheuristica::selecionaSobreviventes(vector<Individuo>& pool
     vector<bool> vivo(n, true);
     int vivos = n;
 
-    while(vivos > TamanhoDaPopulacao){ // 1 pra substituir, varioa para a seleção da prox geracao
+    while(vivos > alvo){ // 1 pra substituir, varioa para a seleção da prox geracao
 
         vector<int> idx;
         for(int i = 0; i < n; ++i) if(vivo[i]) idx.push_back(i);
@@ -842,7 +856,7 @@ vector<Individuo> Metaheuristica::selecionaSobreviventes(vector<Individuo>& pool
     }
 
     vector<Individuo> sobreviventes;
-    sobreviventes.reserve(TamanhoDaPopulacao);
+    sobreviventes.reserve(alvo);
     for(int i = 0; i < n; ++i) if(vivo[i]) sobreviventes.push_back(move(pool[i]));
     return sobreviventes;
 }
@@ -872,6 +886,8 @@ pair<vector<double>, Individuo> Metaheuristica::AG(int opc){
     auto inicio = steady_clock::now();
     int TempoMaxSegundos = 120;
 
+
+    int ultimoMelhorGlobal = 0, ultimaGaveta = 0, ultimaImig = 0;
     for(int i = 0; i < numeroMaxGeracoes; ++i){
         
         double temperaturaSelecao = 0.4; 
@@ -890,15 +906,12 @@ pair<vector<double>, Individuo> Metaheuristica::AG(int opc){
       
         
         // ja chega ordenado
-        vector<Individuo> novaPopulacao = novaPopTorneioElitista(filhos, populacao);
+        vector<Individuo> novaPopulacao = novaPopTorneioElitista(filhos, populacao, i);
 
-        // quantidade de gerações estagnadas
-        int geracoesSemMelhora = i - estagnado;
-        
+        int semMelhora = i - ultimoMelhorGlobal;
+
         engavetamento(i, novaPopulacao);
-        
-        // if(geracoesSemMelhora > LimiarGaveta)
-            injecaoNovosIndividuos(opc, geracoesSemMelhora, i, novaPopulacao);
+        injecaoNovosIndividuos(semMelhora, i, novaPopulacao, ultimaGaveta, ultimaImig);
 
         // sort para prox pop
         sort(novaPopulacao.begin(), novaPopulacao.end(), [this](const Individuo& a, const Individuo& b){
@@ -914,29 +927,33 @@ pair<vector<double>, Individuo> Metaheuristica::AG(int opc){
         if (melhorDaGeracao.fitnessPuro + 1e-12 < melhorIndividuo.fitnessPuro){
             melhorIndividuo = melhorDaGeracao;
             historico.push_back({i, melhorIndividuo.fitnessPuro});
-            estagnado = i;
+            ultimoMelhorGlobal = i;
+
         }
 
         atualizaFrequencias(novaPopulacao);
 
-        sinalFreqParada = (geracoesSemMelhora > LimiarFreqParadas) ? -1 : 1; // diversifica quando estagna'
+        sinalFreqParada = (semMelhora > LimiarFreqParadas) ? -1 : 1; // diversifica quando estagna'
         
         populacao.swap(novaPopulacao);
 
         double TickingAwayTheMomentsThatMakeUpADullDay = duration<double>(steady_clock::now() - inicio).count();
 
-        if(log && i % 100 == 0){
-            cout << "G: " << i << " : ";
-            cout << TickingAwayTheMomentsThatMakeUpADullDay  << "s\n";
+        if(log && i % 20 == 0){
+            cout << "G [" << i << "] : ";
+            cout << "time [" << TickingAwayTheMomentsThatMakeUpADullDay  << "s] : ";
+            cout << "ultGaveta [" << ultimaGaveta << "] : ";
+            cout << "ultImigrante [" << ultimaImig << "] : ";
+            cout << "\n";
             cout << "populacao:\n";
-            for(int imp = 0; imp < min(40, TamanhoDaPopulacao); ++imp){
+            for(int imp = 0; imp < min(60, TamanhoDaPopulacao); ++imp){
                 if(imp%10 == 0 && imp !=0) cout << "\n";
                 cout << "" << populacao[imp].fitnessPuro << "(" << populacao[imp].penalidadeFitness << ")" <<  "\t";
                 // else cout << populacao[imp].fitness << " | ";
             }
 
-            cout << "\ngaveta:\n";
-            for(int imp = 0; imp < min(20, (int)Gaveta.size()); ++imp){
+            cout << "\ngaveta[" << Gaveta.size() << "]:\n";
+            for(int imp = 0; imp < min(60, (int)Gaveta.size()); ++imp){
                 if(imp%10 == 0 && imp !=0) cout << "\n";
                 cout << "" << Gaveta[imp].fitnessPuro << "(" << Gaveta[imp].penalidadeFitness << ")" <<  "\t";
             }

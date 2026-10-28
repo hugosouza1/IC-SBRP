@@ -108,6 +108,9 @@ ParametrosAlgoritmo parseParametros(int argc, char** argv) {
 
         else if (arg == "--elitismo")
             p.elitismo = stoi(next("--elitismo"));
+
+        else if (arg == "--janela_protecao")
+            p.janelaProtecao = stoi(next("--janela_protecao"));
             
         else if (arg == "--lambdaFreq")
             p.lambdaFreq = stod(next("--lambdaFreq"));
@@ -146,14 +149,11 @@ ParametrosAlgoritmo parseParametros(int argc, char** argv) {
 
 
         // Injeção de indivíduos
-        else if (arg == "--injecao_base")
-            p.porcentagemBaseInjecao = stod(next("--injecao_base"));
+        else if (arg == "--injecao_imigrantes")
+            p.porcentagemInjecaoImigrantes = stod(next("--injecao_imigrantes"));
 
-        // else if (arg == "--injecao_extra")
-            // p.porcentagemExtraInjecao = stod(next("--injecao_extra"));
-
-        // else if (arg == "--injecao_max")
-        //     p.porcentagemMaximaNovosIndividuos = stod(next("--injecao_max"));
+        else if (arg == "--limiar_imigrantes")
+            p.limiarImigrantes = stod(next("--limiar_imigrantes"));
 
 
         // Gaveta
@@ -168,6 +168,9 @@ ParametrosAlgoritmo parseParametros(int argc, char** argv) {
 
         else if (arg == "--engavetados_k")
             p.engavetadosK = stoi(next("--engavetados_k"));
+
+        else if (arg == "--injecao_gaveta")
+            p.porcentagemInjecaoGaveta = stoi(next("--injecao_gaveta"));
 
         else if (arg == "--semelhanca_gaveta")
             p.semelhancaGaveta = stod(next("--semelhanca_gaveta"));

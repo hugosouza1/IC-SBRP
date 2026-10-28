@@ -43,7 +43,6 @@ struct ParametrosALNS {
     double fracaoTemperaturaInicial = 0.05; // aceita solução 5% pior com prob 0.5 no início
     double taxaResfriamento = 0.9995;
 
-    double penalidadePorRotaAtiva = 1.0;
     double penalidadeEstouroCapacidade = 1000.0;
 };
 
@@ -119,7 +118,7 @@ class ALNS{
         const double TaxaResfriamento;
 
         // Penalidades
-        const double PenalidadePorRotaAtiva;
+        // const double PenalidadePorRotaAtiva;
         const double PenalidadeEstouroCapacidade;
 
         // Operadores
@@ -143,7 +142,7 @@ class ALNS{
             RecompensaAceito(p.recompensaAceito),
             FracaoTemperaturaInicial(p.fracaoTemperaturaInicial),
             TaxaResfriamento(p.taxaResfriamento),
-            PenalidadePorRotaAtiva(p.penalidadePorRotaAtiva),
+            // PenalidadePorRotaAtiva(p.penalidadePorRotaAtiva),
             PenalidadeEstouroCapacidade(p.penalidadeEstouroCapacidade)
         {
             quantidadeMaxRota = pobrema.quantidadeRotas;

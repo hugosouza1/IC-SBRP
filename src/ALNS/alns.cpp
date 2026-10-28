@@ -50,7 +50,7 @@ void ALNS::avaliar(SolucaoALNS& s) const {
         if(s.alunoPorRota[r] == 0) continue;
 
         distanciaTotal += s.distanciaRota[r];
-        penalidade += PenalidadePorRotaAtiva;
+        // penalidade += PenalidadePorRotaAtiva;
 
         int estouro = s.alunoPorRota[r] - capacidadeRota(s, r);
         if(estouro > 0) penalidade += PenalidadeEstouroCapacidade * estouro;
@@ -113,7 +113,7 @@ CandidatoInsercao ALNS::avaliaInsercao(const SolucaoALNS& s, int parada, int rot
         c.posicao = pos;
     }
 
-    if(s.alunoPorRota[rota] == 0) custo += PenalidadePorRotaAtiva;
+    // if(s.alunoPorRota[rota] == 0) custo += PenalidadePorRotaAtiva;
     if(s.alunoPorRota[rota] + 1 > capacidadeRota(s, rota)) custo += PenalidadeEstouroCapacidade;
 
     c.custo = custo;
@@ -187,7 +187,7 @@ vector<int> ALNS::destruicaoPior(SolucaoALNS& s, int quantidade){
 
             int estouro = s.alunoPorRota[r] - capacidadeRota(s, r);
             if(estouro > 0) economia += PenalidadeEstouroCapacidade * min(membros, estouro);
-            if(cargaDepois == 0) economia += PenalidadePorRotaAtiva;
+            // if(cargaDepois == 0) economia += PenalidadePorRotaAtiva;
 
             economias.push_back({economia / membros, {r, parada}});
         }
@@ -503,6 +503,7 @@ SolucaoALNS ALNS::executar(){
             melhor = nova;
             pontos = RecompensaNovoMelhor;
         }
+        
         else if(nova.fitness < atual.fitness - 1e-9) pontos = RecompensaMelhora;
         else if(aceita) pontos = RecompensaAceito;
 
@@ -703,8 +704,8 @@ ParametrosALNS parseParametros(int argc, char** argv) {
             p.taxaResfriamento = stod(next("--resfriamento"));
 
         // Penalidades
-        else if (arg == "--penalidade_rota")
-            p.penalidadePorRotaAtiva = stod(next("--penalidade_rota"));
+        // else if (arg == "--penalidade_rota")
+            // p.penalidadePorRotaAtiva = stod(next("--penalidade_rota"));
 
         else if (arg == "--penalidade_estouro")
             p.penalidadeEstouroCapacidade = stod(next("--penalidade_estouro"));

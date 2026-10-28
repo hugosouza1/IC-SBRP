@@ -43,6 +43,8 @@ struct ParametrosAlgoritmo {
     double probabilidadeCrossover = 0.9398;
     int elitismo = 1;
 
+    int janelaProtecao = 10;
+
     // Taxas de mutação
     double probabilidadeMutacao = 0.0481;
     double probabilidadeMacroMutacao = 0.2137;
@@ -56,14 +58,15 @@ struct ParametrosAlgoritmo {
     double BetaCarga = 0.5;
 
     // Injeção de indivíduos novos
-    double porcentagemBaseInjecao = 0.08;
-    // double porcentagemMaximaNovosIndividuos = 0.0928;
+    double porcentagemInjecaoImigrantes = 0.5;
+    int limiarImigrantes = 1000;
 
     // Gaveta de indivíduos antigos
     int tamanhoGaveta = 25;
     int periodoArquivamento = 16;
     int limiarGaveta = 17;
     int engavetadosK = 3;
+    double porcentagemInjecaoGaveta = 0.2;
     double semelhancaGaveta = 0.1293;
 
     // Penalidade - construção de rotas
@@ -82,7 +85,7 @@ struct ParametrosAlgoritmo {
 
     // Torneio
     double porcentagemTorneioK = 0.256;
-    double taxaDecaimentoTorneio = 0.4492;
+    double taxaDecaimentoTorneio = 0.1;
 
     // Seleção
     double pesoDistParada = 0.2602;
@@ -115,6 +118,7 @@ struct ParametrosAlgoritmo {
 class infoSBRP;
 
 struct Individuo {
+    int protegidoAte = -1;   // geração até a qual não pode ser eliminado
 
     // índice = aluno
     // valor = parada escolhida para esse aluno
@@ -185,6 +189,8 @@ class Metaheuristica{
             const int TamanhoDaPopulacao;
             const double ProbabilidadeCrossover;
             // const int Elitismo;
+
+            const int JanelaProtecao;
             
             // Taxas de mutação
             double ProbabilidadeMutacao; 
@@ -202,16 +208,16 @@ class Metaheuristica{
                 const double BetaCarga;
             
             // injeção de individuos na estagnação (imigração)
-            const double PorcentagemBaseInjecao;
-            // const double PorcentagemExtraInjecao; 
-            // const double PorcentagemMaximaNovosIndividuos; 
+            double PorcentagemInjecaoImigrantes;
+            const int LimiarImigrantes;
             
             // injeção de individuos na estagnação (Antigos)
             deque<Individuo> Gaveta;
             const int TamanhoGaveta; 
             const int PeriodoArquivamento; // guarda a cada N gerações
             const int LimiarGaveta; // insere X a cada N gerações estagnadas,
-            const int EngavetadosK; // quantos na gaveta vão ser renseridos 
+            const int EngavetadosK; // quantos na gaveta vão ser engavetados
+            const double PorcentagemInjecaoGaveta;  // quantos % vai ser trocado
             const double SemelhancaGaveta; //menor, mair parecido
             // quantidade a ser inserida corrigida na gambiarra pela outra mutação (feature)
 
@@ -276,6 +282,7 @@ class Metaheuristica{
             TamanhoDaPopulacao(p.tamanhoDaPopulacao),
             ProbabilidadeCrossover(p.probabilidadeCrossover),
             // Elitismo(p.elitismo),
+            JanelaProtecao(p.janelaProtecao),
 
             ProbabilidadeMutacao(p.probabilidadeMutacao),
             ProbabilidadeMacroMutacao(p.probabilidadeMacroMutacao),
@@ -287,13 +294,14 @@ class Metaheuristica{
             LambdaRota(p.LambdaRota),
             BetaCarga(p.BetaCarga),
             
-            PorcentagemBaseInjecao(p.porcentagemBaseInjecao),
-            // PorcentagemMaximaNovosIndividuos(p.porcentagemMaximaNovosIndividuos),
+            PorcentagemInjecaoImigrantes(p.porcentagemInjecaoImigrantes),
+            LimiarImigrantes(p.limiarImigrantes),
             
             TamanhoGaveta(p.tamanhoGaveta),
             PeriodoArquivamento(p.periodoArquivamento),
             LimiarGaveta(p.limiarGaveta),
             EngavetadosK(p.engavetadosK),
+            PorcentagemInjecaoGaveta(p.porcentagemInjecaoGaveta),
             SemelhancaGaveta(p.semelhancaGaveta),
 
             PenalidadeEstouroCapacidade(p.PenalidadeEstouroCapacidade),
@@ -352,14 +360,15 @@ class Metaheuristica{
         double aplicaPenalidades(Individuo& individuo);
         bool maisViavel(const Individuo &a, const Individuo &b);
         int selecionaTorneio(vector<Individuo> &populacao);
-        vector<Individuo> novaPopTorneioElitista(vector<Individuo> &filhos, vector<Individuo> &pais);
+        vector<Individuo> novaPopTorneioElitista(vector<Individuo>& filhos, vector<Individuo>& pais, int geracao);
         vector<pair<int,int>> escolhendoPais(vector<Individuo> &populacao);
         vector<Individuo> reproducao(vector<pair<int,int>> &paisEscolhidos, vector<Individuo> &populacao);
         void mutacaoIndividuo(Individuo &filho, bool forcarMacro = false);
         void engavetamento(int i, vector<Individuo>& novaPopulacao);
-        void injecaoNovosIndividuos(int opc, int geracoesSemMelhora, int i, vector<Individuo> &novaPopulacao);
+        void injecaoNovosIndividuos(int semMelhora, int i, vector<Individuo>& novaPopulacao, int& ultimaGaveta, int& ultimaImig);
+        
         double distanciaIndividuos(const Individuo& a, const Individuo& b);
-        vector<Individuo> selecionaSobreviventes(vector<Individuo>& pool);
+        vector<Individuo> selecionaSobreviventes(vector<Individuo>& pool, int alvo);
 
         void crossoverRotas(const Individuo& A, const Individuo& B, Individuo& filho);
 
