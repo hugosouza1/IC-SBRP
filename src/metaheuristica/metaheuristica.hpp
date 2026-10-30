@@ -193,7 +193,7 @@ class Metaheuristica{
             const int JanelaProtecao;
             
             // Taxas de mutação
-            double ProbabilidadeMutacao; 
+            const double ProbabilidadeMutacao; 
             const double ProbabilidadeMacroMutacao; // mutação violenta (reprodução)
 
             // reforço de frequencia
@@ -244,7 +244,7 @@ class Metaheuristica{
             const double TaxaDecaimentoTorneio;
 
             // Selecao
-            const double PesoDistParada;   // peso de paradas vs estrutura de rotas na distância
+            const double PesoDistParada;   // peso de paradas vs estrutura de rotas na distância. 0 -> parda, 1 -> rota
             const int    NVizinhosDiv;     // quantos vizinhos mais próximos entram na diversidade
             const double PesoDiversidade;   // 0 = só fitness; maior = mais diversidade
             const double EpsClone; // quanto menor, mais parecido

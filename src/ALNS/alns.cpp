@@ -3,7 +3,7 @@
 static ParametrosALNS parseParametros(int argc, char **argv);
 
 
-vector<int> ALNS::caminhoReal(int origem, int destino) const {
+vector<int> ALNS::caminhoReal(int origem, int destino){
     const vector<int>& pai = distancias.predecessoresDe(origem);
 
     vector<int> caminho;
@@ -25,12 +25,12 @@ int ALNS::sorteioInteiro(int a, int b){
 
 // ---------- utilidades da solução ----------
 
-int ALNS::capacidadeRota(const SolucaoALNS& s, int rota) const {
+int ALNS::capacidadeRota(const SolucaoALNS& s, int rota){
     return problema.capacidadeOnibus[s.atrOnibusRota[rota]];
 }
 
 // depósito -> paradas na ordem -> depósito
-double ALNS::distanciaSequencia(const vector<int>& paradas) const {
+double ALNS::distanciaSequencia(const vector<int>& paradas){
     if(paradas.empty()) return 0;
 
     double soma = distancias[0][paradas[0]];
@@ -42,7 +42,7 @@ double ALNS::distanciaSequencia(const vector<int>& paradas) const {
     return soma;
 }
 
-void ALNS::avaliar(SolucaoALNS& s) const {
+void ALNS::avaliar(SolucaoALNS& s){
     double distanciaTotal = 0.0;
     double penalidade = 0.0;
 
@@ -80,7 +80,7 @@ SolucaoALNS ALNS::solucaoVazia(){
     return s;
 }
 
-pair<double, int> ALNS::melhorPosicaoInsercao(const vector<int>& paradas, int parada) const {
+pair<double, int> ALNS::melhorPosicaoInsercao(const vector<int>& paradas, int parada){
     double melhorDelta = INFINITO;
     int melhorPos = 0;
     int n = paradas.size();
@@ -99,8 +99,8 @@ pair<double, int> ALNS::melhorPosicaoInsercao(const vector<int>& paradas, int pa
     return {melhorDelta, melhorPos};
 }
 
-// custo marginal de colocar um aluno na parada X da rota R
-CandidatoInsercao ALNS::avaliaInsercao(const SolucaoALNS& s, int parada, int rota, double penalidadeParadaNova) const {
+// custo de colocar um aluno na parada X da rota R
+CandidatoInsercao ALNS::avaliaInsercao(const SolucaoALNS& s, int parada, int rota, double penalidadeParadaNova){
     CandidatoInsercao c;
     c.parada = parada;
     c.rota = rota;
@@ -151,7 +151,7 @@ void ALNS::removerAluno(SolucaoALNS& s, int aluno){
     s.atrAlunoRota[aluno] = -1;
 }
 
-vector<int> ALNS::alunosAtribuidos(const SolucaoALNS& s) const {
+vector<int> ALNS::alunosAtribuidos(const SolucaoALNS& s){
     vector<int> alunos;
     for(int a = 0; a < problema.quantidadeAlunos; ++a){
         if(s.atrAlunoRota[a] >= 0) alunos.push_back(a);
@@ -310,27 +310,29 @@ void ALNS::reparar(SolucaoALNS& s, vector<int> pendentes, const ConfigReparo& co
 
             // melhor candidato (parada, posição) de cada rota
             vector<CandidatoInsercao> candidatosPorRota(quantidadeMaxRota);
-
+                
+            // melhor custo de colocar x parda em y rota
             for(const auto& par : problema.alunosParadas[aluno].paradasPossiveis){
                 for(int r = 0; r < quantidadeMaxRota; ++r){
                     CandidatoInsercao c = avaliaInsercao(s, par.first, r, penalidadeParadaNova);
-
+                    
                     if(config.amplitudeRuido > 0 && c.custo > 0) c.custo *= ruido(gen);
                     if(c.custo < candidatosPorRota[r].custo) candidatosPorRota[r] = c;
                 }
             }
-
+            
             vector<CandidatoInsercao> viaveis;
             for(const auto& c : candidatosPorRota){
                 if(c.custo < INFINITO / 2) viaveis.push_back(c);
             }
             
             if(viaveis.empty()) continue;
-
+            
             sort(viaveis.begin(), viaveis.end(), [](const CandidatoInsercao& a, const CandidatoInsercao& b){
                 return a.custo < b.custo;
             });
-
+            
+            // ver qual é o aluno que tem piores opções depois da melhor dele. isso ae
             double prioridade;
             if(config.regretK <= 1){
                 prioridade = -viaveis[0].custo; // gulosa: menor custo primeiro
@@ -361,7 +363,6 @@ void ALNS::reparar(SolucaoALNS& s, vector<int> pendentes, const ConfigReparo& co
 
 
 // ---------- pós-reparo ----------
-
 void ALNS::buscaLocal2Opt(SolucaoALNS& s, int rota){
     vector<int>& paradas = s.paradasDaRota[rota];
     int n = paradas.size();

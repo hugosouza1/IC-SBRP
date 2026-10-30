@@ -3,9 +3,9 @@
 
 --max_geracoes 20000
 --populacao 40
---crossover 0.85
+--crossover 0.95
 --elitismo 1
---janela_protecao 25
+--janela_protecao 20
  
 --lambdaFreq 2.0
 --decaimentoFreq 0.18
@@ -15,18 +15,18 @@
 --beta_carga 0.5
 --lambda_rota 0.5
 
---mutacao 0.009
+--mutacao 0.01
 --macro_mutacao 0.0005
 
 --injecao_imigrantes 0.2
---limiar_imigrantes 200
+--limiar_imigrantes 500
 --injecao_gaveta 0.1
 --limiar_gaveta 100
 
 --tamanho_gaveta 20
 --periodo_arquivamento 50
 --engavetados_k 5
---semelhanca_gaveta 0.1
+--semelhanca_gaveta 0.15
 
 --penalidade_rota 0.0
 --limiar_paradas_rota 0
@@ -42,10 +42,10 @@
 --torneio_k 0.3
 --decaimento_torneio 0.1
 
---peso_dist_parada 0.5
+--peso_dist_parada 0.45
+--peso_diversidade 0.7
 --vizinhos_div 11
---peso_diversidade 0.4
---eps_clone 0.15
+--eps_clone 0.08
 
 --decaimento_rotas_rep 0.924
 --mutacao_onibus 0.0364

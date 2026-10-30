@@ -33,22 +33,24 @@ double Metaheuristica::distanciaSequencia(const vector<int>& paradas){
 double Metaheuristica::rotaExata(const vector<int>& paradas, vector<int>& ordem){
     int k = paradas.size();
     int total = 1 << k;
-
+   
+    // a máscara define quais paradas já foram visitadas, enquanto a coluna indica em qual parada a rota parcial terminou.
     vector<double> custo((size_t)total * k, INFINITO);
     vector<int> anterior((size_t)total * k, -1);
 
     auto idx = [&](int mascara, int j){ return (size_t)mascara * k + j; };
 
-    for(int i = 0; i < k; ++i) custo[idx(1 << i, i)] = distancias[0][paradas[i]];
+    for(int i = 0; i < k; ++i) 
+        custo[idx(1 << i, i)] = distancias[0][paradas[i]];
 
     for(int mascara = 1; mascara < total; ++mascara){
         for(int i = 0; i < k; ++i){
-            if(!(mascara >> i & 1)) continue;
+            if( ! (mascara >> i & 1)) continue; // ve se parada ja foi visitada
 
             double base = custo[idx(mascara, i)];
-            if(base >= INFINITO / 2) continue; // / 2 pq é soma
+            if(base >= INFINITO / 2) continue;
 
-            for(int j = 0; j < k; ++j){
+            for(int j = 0; j < k; ++j){ // tenta adicionar parada ainda não visitada
                 if(mascara >> j & 1) continue;
 
                 int nova = mascara | (1 << j);
@@ -61,6 +63,7 @@ double Metaheuristica::rotaExata(const vector<int>& paradas, vector<int>& ordem)
         }
     }
 
+    // achando a ultima parada do melhor custo
     double melhor = INFINITO;
     int ultima = -1;
     for(int i = 0; i < k; ++i){

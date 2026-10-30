@@ -35,7 +35,7 @@ struct ParametrosALNS {
     // Aprendizado dos pesos dos operadores
     int tamanhoSegmento = 100;       // iterações entre cada atualização dos pesos
     double taxaAprendizado = 0.1;    // w = (1 - taxa) * w + taxa * pontos / usos
-    double recompensaNovoMelhor = 33;
+    double recompensaNovoMelhor = 27;
     double recompensaMelhora = 9;    // melhor que a atual
     double recompensaAceito = 3;     // pior, mas aceita pelo SA
 
@@ -152,54 +152,36 @@ class ALNS{
 
         // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
         SolucaoALNS executar();
-
         void imprimeSolucao(SolucaoALNS& sol);
 
         // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-
-        vector<int> caminhoReal(int origem, int destino) const;
-
+        vector<int> caminhoReal(int origem, int destino);
         double sorteio01();
-
         int sorteioInteiro(int a, int b);
 
         // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-        int capacidadeRota(const SolucaoALNS& s, int rota) const;
-
-        double distanciaSequencia(const vector<int>& paradas) const;
-
-        void avaliar(SolucaoALNS& s) const;
-
+        int capacidadeRota(const SolucaoALNS& s, int rota);
+        double distanciaSequencia(const vector<int>& paradas);
+        void avaliar(SolucaoALNS& s);
         SolucaoALNS solucaoVazia();
-
-        pair<double, int> melhorPosicaoInsercao(const vector<int>& paradas, int parada) const;
-
-        CandidatoInsercao avaliaInsercao(const SolucaoALNS& s, int parada, int rota, double penalidadeParadaNova) const;
-
+        pair<double, int> melhorPosicaoInsercao(const vector<int>& paradas, int parada);
+        CandidatoInsercao avaliaInsercao(const SolucaoALNS& s, int parada, int rota, double penalidadeParadaNova);
         void inserirAluno(SolucaoALNS& s, int aluno, const CandidatoInsercao& c);
-
         void removerAluno(SolucaoALNS& s, int aluno);
-
-        vector<int> alunosAtribuidos(const SolucaoALNS& s) const;
+        vector<int> alunosAtribuidos(const SolucaoALNS& s);
 
         // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
         vector<int> destruicaoAleatoria(SolucaoALNS& s, int quantidade);
-
         vector<int> destruicaoPior(SolucaoALNS& s, int quantidade);
-
         vector<int> destruicaoParada(SolucaoALNS& s, int quantidade);
-
         vector<int> destruicaoRota(SolucaoALNS& s, int quantidade);
-
-        vector<int> destruicaoRelacionada(SolucaoALNS& s, int quantidade); // Shaw
+        vector<int> destruicaoRelacionada(SolucaoALNS& s, int quantidade); // Shaw 
 
         void reparar(SolucaoALNS& s, vector<int> pendentes, const ConfigReparo& config);
-
+        
         // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
         void buscaLocal2Opt(SolucaoALNS& s, int rota);
-
         void trocaOnibusEntreRotas(SolucaoALNS& s);
-
         void registraOperadores();
 
         SolucaoALNS construirSolucaoInicial();
