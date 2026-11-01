@@ -73,6 +73,7 @@ struct ParametrosAlgoritmo {
     int engavetadosK = 3;
     double porcentagemInjecaoGaveta = 0.2;
     double semelhancaGaveta = 0.1293;
+    double MaxExtraInjecao = 3.0;
 
     // Penalidade - construção de rotas
     double penalidadePorRotaAtiva = 1.0;
@@ -231,6 +232,7 @@ class Metaheuristica{
             const int EngavetadosK; // quantos na gaveta vão ser engavetados
             const double PorcentagemInjecaoGaveta;  // quantos % vai ser trocado
             const double SemelhancaGaveta; //menor, mair parecido
+            const double MaxExtraInjecao;
             // quantidade a ser inserida corrigida na gambiarra pela outra mutação (feature)
 
             
@@ -323,6 +325,7 @@ class Metaheuristica{
             EngavetadosK(p.engavetadosK),
             PorcentagemInjecaoGaveta(p.porcentagemInjecaoGaveta),
             SemelhancaGaveta(p.semelhancaGaveta),
+            MaxExtraInjecao(p.MaxExtraInjecao),
 
             PenalidadeEstouroCapacidade(p.PenalidadeEstouroCapacidade),
             

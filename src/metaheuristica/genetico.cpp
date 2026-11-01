@@ -437,6 +437,7 @@ vector<Individuo> Metaheuristica::reproducao(vector<pair<int,int>> &paisEscolhid
             crossoverRotas(pai1, pai2, filho);
         } else {
             filho = (zeroUm(gen) < 0.5) ? pai1 : pai2;
+            filho.protegidoAte = -1;
         }
 
         mutacaoIndividuo(filho);
@@ -666,19 +667,11 @@ void Metaheuristica::atualizaFrequencias(const vector<Individuo>& pop){
 
 vector<Individuo> Metaheuristica::novaPopTorneioElitista(vector<Individuo>& filhos, vector<Individuo>& pais, int geracao){
     vector<Individuo> combinado = filhos, protegidos;
-    for(auto& p : pais) (p.protegidoAte > geracao ? protegidos : combinado).push_back(p);
+    for(auto& p : pais) (p.protegidoAte > geracao ? protegidos : combinado).push_back(move(p));
 
-    sort(protegidos.begin(), protegidos.end(), [](const Individuo& a, const Individuo& b){ return a.fitness < b.fitness; });
-    int maxProt = TamanhoDaPopulacao / 2;
-
-    while((int)protegidos.size() > maxProt){
-        combinado.push_back(move(protegidos.back()));
-        protegidos.pop_back();
-    }
-
-    int alvo = TamanhoDaPopulacao - (int)protegidos.size();
-    vector<Individuo> nova = selecionaSobreviventes(combinado, alvo);
-    nova.insert(nova.end(), protegidos.begin(), protegidos.end());
+    // núcleo sempre com TamanhoDaPopulacao; protegidos ficam fora da competição
+    vector<Individuo> nova = selecionaSobreviventes(combinado, TamanhoDaPopulacao);
+    for(auto& p : protegidos) nova.push_back(move(p));
 
     sort(nova.begin(), nova.end(), [](const Individuo& a, const Individuo& b){ return a.fitness < b.fitness; });
     return nova;
@@ -758,24 +751,27 @@ void Metaheuristica::injecaoNovosIndividuos(int semMelhora, int i, vector<Indivi
 
     bool dispImig   = semMelhora > LimiarImigrantes && i - ultimaImig >= LimiarImigrantes;
     bool dispGaveta = semMelhora > LimiarGaveta     && i - ultimaGaveta >= LimiarGaveta && !Gaveta.empty();
+        
+    int maxExtras = max(1, (int)(TamanhoDaPopulacao * MaxExtraInjecao));
 
-    int slot = TamanhoDaPopulacao - 1;   // população já vem ordenada (pior no fim)
+    int extras = count_if(novaPopulacao.begin(), novaPopulacao.end(), [&](const Individuo& x){ return x.protegidoAte > i; });
+    int vagas = maxExtras - extras;
+    if(vagas <= 0) return;
 
     if(dispImig){
-        for(int k = 0; k < InjecaoImig && slot >= 1; ++k){   // protege o melhor
+        int nImig = min(InjecaoImig, vagas);
+        for(int k = 0; k < nImig; ++k){
             Individuo novo = geraSolucaoInicial();
-            buscaTabu(novo);
-            aplicaPenalidades(novo);
-            novo.protegidoAte = i + JanelaProtecao;
-            novaPopulacao[slot--] = move(novo);
+            buscaTabu(novo); aplicaPenalidades(novo);
+            novo.protegidoAte = i + JanelaProtecao * (k + 1);   // sai um de cada vez
+            novaPopulacao.push_back(move(novo));
         }
-        ultimaImig = i;
+        vagas -= nImig; ultimaImig = i;
     }
 
     if(dispGaveta){
-        int quant = min((int)Gaveta.size(), InjecaoGav);
-        // cout << "gaveeeta:" << quant << "\n";
-        for(int k = 0; k < quant && slot >= 1; ++k){
+        int quant = min({(int)Gaveta.size(), InjecaoGav, vagas});
+        for(int k = 0; k < quant; ++k){
             uniform_int_distribution<int> distGaveta(0, Gaveta.size() - 1);
             
             Individuo reinserido = Gaveta[distGaveta(gen)];
@@ -784,15 +780,15 @@ void Metaheuristica::injecaoNovosIndividuos(int semMelhora, int i, vector<Indivi
             double u = uniform_real_distribution<double>(0.0, 1.0)(gen);
             double taxaSacode = PisoSacode * pow(TetoSacode / PisoSacode, u);   // 0.01 a 0.4, escala log
 
-            mutacaoIndividuo(reinserido, uniform_real_distribution<double>(0.0, 1.0)(gen) < 0.5, taxaSacode);
+            mutacaoIndividuo(reinserido, uniform_real_distribution<double>(0.0, 1.0)(gen) < 0.1, taxaSacode);
             // mutacaoIndividuo(reinserido, true, taxaSacode);
             reinserido.taxaMutacao = herdada; 
 
-            buscaTabu(reinserido);
-            aplicaPenalidades(reinserido);
-            reinserido.protegidoAte = i + JanelaProtecao;
-            novaPopulacao[slot--] = move(reinserido);
+            buscaTabu(reinserido); aplicaPenalidades(reinserido);
+            reinserido.protegidoAte = i + JanelaProtecao * (k + 1);
+            novaPopulacao.push_back(reinserido);
         }
+
         ultimaGaveta = i;
     }
 }
@@ -966,7 +962,7 @@ pair<vector<double>, Individuo> Metaheuristica::AG(int opc){
         
         // sort pra salvar. ver com calma depois se o sort de cima precisa nas seleçõe de massa de probabilidade por exemplo 
         Individuo melhorDaGeracao = *min_element(novaPopulacao.begin(), novaPopulacao.end(),
-            [](const Individuo& a, const Individuo& b){ return a.fitnessPuro < b.fitnessPuro;});
+            [](const Individuo& a, const Individuo& b){ return a.fitness < b.fitness;});
 
         // if (maisViavel(melhorDaGeracao, melhorIndividuo)){
 
@@ -984,19 +980,29 @@ pair<vector<double>, Individuo> Metaheuristica::AG(int opc){
         populacao.swap(novaPopulacao);
 
         double TickingAwayTheMomentsThatMakeUpADullDay = duration<double>(steady_clock::now() - inicio).count();
-
+        
+        
         if(log && i % 40 == 0){
+            int quantosPorLinha = 5;
+            int prot = count_if(populacao.begin(), populacao.end(), [&](const Individuo& x){ return x.protegidoAte > i; });
             cout << "G [" << i << "] : ";
+            cout << "pop [" << populacao.size() << "] protegidos [" << prot << "]\n";
             cout << "time [" << TickingAwayTheMomentsThatMakeUpADullDay  << "s] : ";
             cout << "ultGaveta [" << ultimaGaveta << "] : ";
             cout << "ultImigrante [" << ultimaImig << "] : ";
             cout << "\n";
             cout << "populacao:\n";
-            for(int imp = 0; imp < min(100, TamanhoDaPopulacao); ++imp){
-                if(imp%5 == 0 && imp !=0) cout << "\n";
+            for(int imp = 0; imp < min(100, (int)populacao.size()); ++imp){
+                if(imp % quantosPorLinha == 0 && imp !=0) cout << "\n";
                 cout << "" << populacao[imp].fitnessPuro << "(" << populacao[imp].penalidadeFitness << ")[" << populacao[imp].taxaMutacao << "]" <<  "\t";
-                // else cout << populacao[imp].fitness << " | ";
             }
+
+            int mostrados   = min(100, (int)populacao.size());
+            int linhasUsadas = (mostrados + quantosPorLinha - 1) / quantosPorLinha;
+            int maxExtras = max(1, (int)(TamanhoDaPopulacao * MaxExtraInjecao));
+            int linhasMax = (min(100, TamanhoDaPopulacao + maxExtras) + quantosPorLinha - 1) / quantosPorLinha;
+            cout << string(max(0, linhasMax - linhasUsadas), '\n');
+
 
             cout << "\ngaveta[" << Gaveta.size() << "]:\n";
             for(int imp = 0; imp < min(60, (int)Gaveta.size()); ++imp){

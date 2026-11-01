@@ -164,6 +164,9 @@ ParametrosAlgoritmo parseParametros(int argc, char** argv) {
         else if (arg == "--limiar_imigrantes")
             p.limiarImigrantes = stod(next("--limiar_imigrantes"));
 
+        else if (arg == "--tamanho_max_extras")
+            p.MaxExtraInjecao = stod(next("--tamanho_max_extras"));
+
 
         // Gaveta
         else if (arg == "--tamanho_gaveta")
