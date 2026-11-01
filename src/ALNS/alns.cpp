@@ -423,7 +423,7 @@ void ALNS::trocaOnibusEntreRotas(SolucaoALNS& s){
 void ALNS::registraOperadores(){
     destruicoes = {
         {"aleatoria",   [this](SolucaoALNS& s, int q){ return destruicaoAleatoria(s, q); }}, // aleatorio
-        {"pior",        [this](SolucaoALNS& s, int q){ return destruicaoPior(s, q); }}, // remove alunos de paradas are a quantidade 
+        {"pior",        [this](SolucaoALNS& s, int q){ return destruicaoPior(s, q); }}, // remove alunos de paradas ate a quantidade 
         {"parada",      [this](SolucaoALNS& s, int q){ return destruicaoParada(s, q); }}, // escolhe uma parada e rota para tirar
         {"rota",        [this](SolucaoALNS& s, int q){ return destruicaoRota(s, q); }}, // rota inteira
         {"relacionada", [this](SolucaoALNS& s, int q){ return destruicaoRelacionada(s, q); }}, // remove os mais parecidos

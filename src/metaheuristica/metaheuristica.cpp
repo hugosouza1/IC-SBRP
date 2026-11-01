@@ -132,20 +132,29 @@ ParametrosAlgoritmo parseParametros(int argc, char** argv) {
 
 
         // Mutação
-        else if (arg == "--mutacao")
-            p.probabilidadeMutacao = stod(next("--mutacao"));
+        // else if (arg == "--mutacao")
+        //     p.probabilidadeMutacao = stod(next("--mutacao"));
 
-        // else if (arg == "--piso_mutacao")
-            // p.pisoTaxaMutacao = stod(next("--piso_mutacao"));
+        else if (arg == "--piso_mutacao")
+            p.PisoMutacao = stod(next("--piso_mutacao"));
 
-        // else if (arg == "--teto_mutacao")
-            // p.tetoTaxaMutacao = stod(next("--teto_mutacao"));
+        else if (arg == "--teto_mutacao")
+            p.TetoMutacao = stod(next("--teto_mutacao"));
+
+        // else if (arg == "--taxa_aumento_mutacao")
+        //     p.TaxaAumentoMutacao = stod(next("--taxa_aumento_mutacao"));
 
         // else if (arg == "--limiar_estagnacao_mutacao")
-            // p.limiarEstagnacaoMutacao = stoi(next("--limiar_estagnacao_mutacao"));
+        //     p.limiarMutacao = stoi(next("--limiar_estagnacao_mutacao"));
 
-        else if (arg == "--macro_mutacao")
-            p.probabilidadeMacroMutacao = stod(next("--macro_mutacao"));
+        else if (arg == "--fator_macro")
+            p.FatorMacro = stod(next("--fator_macro"));
+            
+        else if (arg == "--sacode_gaveta_piso")
+            p.PisoSacode = stod(next("--sacode_gaveta_piso"));
+
+        else if (arg == "--sacode_gaveta_teto")
+            p.TetoSacode = stod(next("--sacode_gaveta_teto"));
 
 
         // Injeção de indivíduos
@@ -170,7 +179,7 @@ ParametrosAlgoritmo parseParametros(int argc, char** argv) {
             p.engavetadosK = stoi(next("--engavetados_k"));
 
         else if (arg == "--injecao_gaveta")
-            p.porcentagemInjecaoGaveta = stoi(next("--injecao_gaveta"));
+            p.porcentagemInjecaoGaveta = stod(next("--injecao_gaveta"));
 
         else if (arg == "--semelhanca_gaveta")
             p.semelhancaGaveta = stod(next("--semelhanca_gaveta"));
@@ -264,8 +273,8 @@ ParametrosAlgoritmo parseParametros(int argc, char** argv) {
         else if (arg == "--forcaPerturbacaoTabu")
             p.ForcaPerturbacaoTabu = stod(next("--forcaPerturbacaoTabu"));
 
-        // else if (arg == "--limiarEstagnacaoTabu")
-            // p.limiarEstagnacaoMutacao = stoi(next("--limiarEstagnacaoTabu"));
+        else if (arg == "--limiarEstagnacaoTabu")
+            p.LimiarEstagnacaoTabu = stoi(next("--limiarEstagnacaoTabu"));
     }
 
     return p;

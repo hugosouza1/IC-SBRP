@@ -5,6 +5,15 @@ Individuo Metaheuristica::geraSolucaoInicial(){
     // cout << "opa\n\n"; fflush(stdout);
     Individuo fulano;
 
+    fulano.alunosInviaveisQuant = 0;
+    fulano.penalidadeFitness = 0;
+
+    double u = uniform_real_distribution<double>(0.0, 1.0)(gen);
+    double taxa = PisoMutacao * pow(TetoMutacao / PisoMutacao, u);
+    fulano.taxaMutacao = taxa;
+
+
+
     fulano.atrAlunoParada.resize(problema.quantidadeAlunos);
     fulano.atrAlunoRota.resize(problema.quantidadeAlunos);
 
@@ -96,13 +105,6 @@ Individuo Metaheuristica::geraSolucaoInicial(){
     }
 
     fulano.alunoPorRota = cargaRota;
-
-    // uniform_real_distribution<double> shake(0.3, 0.7);
-    // fulano.intensidadePermutaRota.resize(quantidadeMaxRota);
-    // for(int i = 0; i < quantidadeMaxRota; ++i){
-    //     fulano.intensidadePermutaRota[i] = shake(gen);
-    // }
-
 
     return fulano;
 }
@@ -260,6 +262,8 @@ void Metaheuristica::crossoverRotas(const Individuo& A, const Individuo& B, Indi
     filho.atrOnibusRota = A.atrOnibusRota; // facilitar na parte do remanejo
     filho.atrOnibusRota.resize(R);
 
+    filho.taxaMutacao = sqrt(A.taxaMutacao * B.taxaMutacao);
+
     vector<int> carga(R, 0);
     vector<char> usada(R, 0);
     vector<vector<int>> alunosA(R), alunosB(R);
@@ -381,11 +385,14 @@ void Metaheuristica::crossoverRotas(const Individuo& A, const Individuo& B, Indi
             for(int r = 1; r < R; ++r) 
                 if(carga[r] < carga[br]) 
                     br = r;
+            
+
 
             bp = poss[0].first;
-            for(const auto& par : poss) 
-                if(par.second < poss[0].second) 
-                bp = par.first;
+            double menor = poss[0].second;
+            for(const auto& par : poss){
+                if(par.second < menor){ menor = par.second; bp = par.first; }
+            }
         }
 
         filho.atrAlunoRota[g] = br;
@@ -422,9 +429,10 @@ vector<Individuo> Metaheuristica::reproducao(vector<pair<int,int>> &paisEscolhid
 
         Individuo &pai1 = populacao[idxPai1];
         Individuo &pai2 = populacao[idxPai2];
-
+        
         Individuo filho;
-
+        
+        
         if (zeroUm(gen) < ProbabilidadeCrossover){
             crossoverRotas(pai1, pai2, filho);
         } else {
@@ -432,63 +440,45 @@ vector<Individuo> Metaheuristica::reproducao(vector<pair<int,int>> &paisEscolhid
         }
 
         mutacaoIndividuo(filho);
+        
+        // if(uniform_real_distribution<double>(0.0, 1.0)(gen) < 0.15){
+        //     consolidaParadas(filho);
+        // }
+
+        if(sinalFreqParada == 1) consolidaParadas(filho);    
+
         filhos.push_back(move(filho)); 
     }
     return filhos;
 }
 
 
-
-void Metaheuristica::mutacaoIndividuo(Individuo &filho, bool forcarMacro){
+void Metaheuristica::mutacaoIndividuo(Individuo &filho, bool forcarMacro, double taxaForcada){
     int gene = filho.atrAlunoParada.size();
 
     uniform_real_distribution<double> muta(0.0, 1.0);
-    normal_distribution<double> ruido(0.0, 0.1); 
-    
-    // double mutacaoIntensa = 0.5;
-    // // cruzamento da intensidade de permutação
-    // for(int r = 0; r < quantidadeMaxRota; r++){
-    //     double v1 = intensidadePermutacao1[r];
-    //     double v2 = intensidadePermutacao2[r];
-
-    //     double lo = min(v1, v2);
-    //     double hi = max(v1, v2);
-    //     double range = hi - lo;
-
-    //     const double alphaBLX = 0.5; 
-
-    //     uniform_real_distribution<double> distBlend(lo - alphaBLX * range, hi + alphaBLX * range);
-    //     double filhoVal = distBlend(gen);
-
-    //     auto ajustaIntensidade = [](double valor) -> double {
-    //         if(valor > 1.0){
-    //             double excesso = valor - 1.0;
-    //             valor = 0.5 + excesso;
-    //         } else if(valor < 0.0){
-    //             double excesso = -valor;
-    //             valor = 0.5 - excesso;
-    //         }
-
-    //         return clamp(valor, 0.0, 1.0);
-    //     };
-
-    //     filho.intensidadePermutaRota[r] = ajustaIntensidade(filhoVal);
-
-    //     // cout << "\t " << filho.intensidadePermutaRota[r] << "   ";
-
-    //     // mutação
-    //     if(muta(gen) < mutacaoIntensa){ 
-    //         filho.intensidadePermutaRota[r] = ajustaIntensidade(filho.intensidadePermutaRota[r] + ruido(gen));
-    //     }
-    // }
 
     vector<int> cargaRota(quantidadeMaxRota, 0); 
     for(int g = 0; g < gene; ++g) cargaRota[filho.atrAlunoRota[g]]++;
+    
+    double TauAuto = 0.3;
+    normal_distribution<double> N(0.0, 1.0);
+    
+    double taxa;
+    if(taxaForcada > 0){
+        taxa = taxaForcada;                  // sacode: ignora piso/teto e não mexe na taxa herdável
+    } else {
+        filho.taxaMutacao *= exp(TauAuto * N(gen));
+        filho.taxaMutacao = clamp(filho.taxaMutacao, PisoMutacao, TetoMutacao);
+        taxa = filho.taxaMutacao;
+    }
 
     //  Mutação
     for(int g = 0; g < gene; ++g){
         // Mutação da parada
-        if(muta(gen) < ProbabilidadeMutacao){
+        if(muta(gen) < taxa){
+        // if(muta(gen) < ProbabilidadeMutacao){
+
             const estudante& aluno = problema.alunosParadas[g];
 
             if(!aluno.paradasPossiveis.empty()){
@@ -497,7 +487,8 @@ void Metaheuristica::mutacaoIndividuo(Individuo &filho, bool forcarMacro){
         }
 
         // Mutação da rota
-        if(muta(gen) < ProbabilidadeMutacao){
+        if(muta(gen) < taxa){
+        // if(muta(gen) < ProbabilidadeMutacao){
             int rotaAtual = filho.atrAlunoRota[g];
             vector<int> candidatas;
 
@@ -524,7 +515,9 @@ void Metaheuristica::mutacaoIndividuo(Individuo &filho, bool forcarMacro){
     }
 
 
-    if(forcarMacro || muta(gen) < ProbabilidadeMacroMutacao){
+    double pMacro = min(0.01, filho.taxaMutacao * FatorMacro);
+    // if(forcarMacro || muta(gen) < taxa){
+    if(forcarMacro || muta(gen) < pMacro){
         vector<int> possi;
         for(int r = 0; r < quantidadeMaxRota; ++r){
             if(cargaRota[r] > 0) possi.push_back(r);
@@ -565,6 +558,51 @@ void Metaheuristica::mutacaoIndividuo(Individuo &filho, bool forcarMacro){
     }
 }
 
+
+void Metaheuristica::consolidaParadas(Individuo& ind){
+    int R = quantidadeMaxRota, P = problema.quantidadeParadas;
+
+    // alunos de cada (rota, parada)
+    vector<vector<vector<int>>> membros(R, vector<vector<int>>(P));
+    for(int g = 0; g < problema.quantidadeAlunos; ++g)
+        membros[ind.atrAlunoRota[g]][ind.atrAlunoParada[g]].push_back(g);
+
+    for(int r = 0; r < R; ++r){
+        // paradas abertas, da menos povoada para a mais povoada
+        vector<int> abertas;
+        for(int p = 0; p < P; ++p) 
+            if(!membros[r][p].empty()) 
+                abertas.push_back(p);
+
+        sort(abertas.begin(), abertas.end(), [&](int a, int b){
+            return membros[r][a].size() < membros[r][b].size();
+        });
+
+        for(int p : abertas){
+            // só fecha p se TODOS os alunos dela têm alternativa já aberta na rota
+            vector<int> destino;
+            bool pode = true;
+            for(int g : membros[r][p]){
+                int melhorQ = -1; size_t melhorN = 0;
+                for(auto& [q, d] : problema.alunosParadas[g].paradasPossiveis){
+                    if(q == p || membros[r][q].empty()) continue;
+                    if(membros[r][q].size() > melhorN){ melhorN = membros[r][q].size(); melhorQ = q; }
+                }
+                
+                if(melhorQ < 0){ pode = false; break; }
+                destino.push_back(melhorQ);
+            }
+            if(!pode) continue;
+
+            for(size_t i = 0; i < destino.size(); ++i){
+                int g = membros[r][p][i];
+                ind.atrAlunoParada[g] = destino[i];
+                membros[r][destino[i]].push_back(g);
+            }
+            membros[r][p].clear();
+        }
+    }
+}
  
 int Metaheuristica::sorteiaRota(const vector<int>& candidatas, const Individuo& filho, int parada){
     vector<vector<int>> paradasNaRota(quantidadeMaxRota);
@@ -626,18 +664,17 @@ void Metaheuristica::atualizaFrequencias(const vector<Individuo>& pop){
 }
 
 
-// vector<Individuo> Metaheuristica::novaPopTorneioElitista(vector<Individuo> &filhos, vector<Individuo> &pais){
-//     vector<Individuo> combinado = filhos;
-//     combinado.insert(combinado.end(), pais.begin(), pais.end());
-
-//     vector<Individuo> nova = selecionaSobreviventes(combinado);
-//     sort(nova.begin(), nova.end(), [](const Individuo& a, const Individuo& b){ return a.fitness < b.fitness; });
-//     return nova;
-// }
-
 vector<Individuo> Metaheuristica::novaPopTorneioElitista(vector<Individuo>& filhos, vector<Individuo>& pais, int geracao){
     vector<Individuo> combinado = filhos, protegidos;
     for(auto& p : pais) (p.protegidoAte > geracao ? protegidos : combinado).push_back(p);
+
+    sort(protegidos.begin(), protegidos.end(), [](const Individuo& a, const Individuo& b){ return a.fitness < b.fitness; });
+    int maxProt = TamanhoDaPopulacao / 2;
+
+    while((int)protegidos.size() > maxProt){
+        combinado.push_back(move(protegidos.back()));
+        protegidos.pop_back();
+    }
 
     int alvo = TamanhoDaPopulacao - (int)protegidos.size();
     vector<Individuo> nova = selecionaSobreviventes(combinado, alvo);
@@ -737,11 +774,20 @@ void Metaheuristica::injecaoNovosIndividuos(int semMelhora, int i, vector<Indivi
 
     if(dispGaveta){
         int quant = min((int)Gaveta.size(), InjecaoGav);
+        // cout << "gaveeeta:" << quant << "\n";
         for(int k = 0; k < quant && slot >= 1; ++k){
             uniform_int_distribution<int> distGaveta(0, Gaveta.size() - 1);
+            
             Individuo reinserido = Gaveta[distGaveta(gen)];
+            double herdada = reinserido.taxaMutacao;
 
-            mutacaoIndividuo(reinserido, true);
+            double u = uniform_real_distribution<double>(0.0, 1.0)(gen);
+            double taxaSacode = PisoSacode * pow(TetoSacode / PisoSacode, u);   // 0.01 a 0.4, escala log
+
+            mutacaoIndividuo(reinserido, uniform_real_distribution<double>(0.0, 1.0)(gen) < 0.5, taxaSacode);
+            // mutacaoIndividuo(reinserido, true, taxaSacode);
+            reinserido.taxaMutacao = herdada; 
+
             buscaTabu(reinserido);
             aplicaPenalidades(reinserido);
             reinserido.protegidoAte = i + JanelaProtecao;
@@ -897,18 +943,18 @@ pair<vector<double>, Individuo> Metaheuristica::AG(int opc){
         vector<Individuo> filhos = reproducao(paisEscolhidos, populacao);
 
 
-       int itera = 0;
-            for (auto& filho : filhos){
-                buscaTabu(filho);
-                aplicaPenalidades(filho);
-                ++itera;
-            }
+        for (auto& filho : filhos){
+            buscaTabu(filho);
+            aplicaPenalidades(filho);
+        }
       
         
         // ja chega ordenado
         vector<Individuo> novaPopulacao = novaPopTorneioElitista(filhos, populacao, i);
 
         int semMelhora = i - ultimoMelhorGlobal;
+
+        // calculaMutacao(semMelhora);
 
         engavetamento(i, novaPopulacao);
         injecaoNovosIndividuos(semMelhora, i, novaPopulacao, ultimaGaveta, ultimaImig);
@@ -924,7 +970,7 @@ pair<vector<double>, Individuo> Metaheuristica::AG(int opc){
 
         // if (maisViavel(melhorDaGeracao, melhorIndividuo)){
 
-        if (melhorDaGeracao.fitnessPuro + 1e-12 < melhorIndividuo.fitnessPuro){
+        if (melhorDaGeracao.fitness + 1e-12 < melhorIndividuo.fitness){
             melhorIndividuo = melhorDaGeracao;
             historico.push_back({i, melhorIndividuo.fitnessPuro});
             ultimoMelhorGlobal = i;
@@ -939,16 +985,16 @@ pair<vector<double>, Individuo> Metaheuristica::AG(int opc){
 
         double TickingAwayTheMomentsThatMakeUpADullDay = duration<double>(steady_clock::now() - inicio).count();
 
-        if(log && i % 20 == 0){
+        if(log && i % 40 == 0){
             cout << "G [" << i << "] : ";
             cout << "time [" << TickingAwayTheMomentsThatMakeUpADullDay  << "s] : ";
             cout << "ultGaveta [" << ultimaGaveta << "] : ";
             cout << "ultImigrante [" << ultimaImig << "] : ";
             cout << "\n";
             cout << "populacao:\n";
-            for(int imp = 0; imp < min(60, TamanhoDaPopulacao); ++imp){
-                if(imp%10 == 0 && imp !=0) cout << "\n";
-                cout << "" << populacao[imp].fitnessPuro << "(" << populacao[imp].penalidadeFitness << ")" <<  "\t";
+            for(int imp = 0; imp < min(100, TamanhoDaPopulacao); ++imp){
+                if(imp%5 == 0 && imp !=0) cout << "\n";
+                cout << "" << populacao[imp].fitnessPuro << "(" << populacao[imp].penalidadeFitness << ")[" << populacao[imp].taxaMutacao << "]" <<  "\t";
                 // else cout << populacao[imp].fitness << " | ";
             }
 

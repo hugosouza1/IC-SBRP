@@ -46,8 +46,13 @@ struct ParametrosAlgoritmo {
     int janelaProtecao = 10;
 
     // Taxas de mutação
-    double probabilidadeMutacao = 0.0481;
-    double probabilidadeMacroMutacao = 0.2137;
+    double PisoMutacao = 0;
+    double TetoMutacao = 0.1;
+
+    double PisoSacode = 0.01;
+    double TetoSacode = 0.4;
+
+    double FatorMacro = 0.1;
 
     double lambdaFreq = 2.0;      // 0 = desliga 
     double decaimentoFreq = 0.1;  // evaporação por geração
@@ -118,6 +123,8 @@ struct ParametrosAlgoritmo {
 class infoSBRP;
 
 struct Individuo {
+    double taxaMutacao;
+
     int protegidoAte = -1;   // geração até a qual não pode ser eliminado
 
     // índice = aluno
@@ -193,8 +200,13 @@ class Metaheuristica{
             const int JanelaProtecao;
             
             // Taxas de mutação
-            const double ProbabilidadeMutacao; 
-            const double ProbabilidadeMacroMutacao; // mutação violenta (reprodução)
+            const double PisoMutacao;
+            const double TetoMutacao;
+
+            const double PisoSacode;
+            const double TetoSacode;
+
+            const double FatorMacro; 
 
             // reforço de frequencia
             const double LambdaFreq, DecaimentoFreq, ElitePctFreq;
@@ -244,7 +256,11 @@ class Metaheuristica{
             const double TaxaDecaimentoTorneio;
 
             // Selecao
-            const double PesoDistParada;   // peso de paradas vs estrutura de rotas na distância. 0 -> parda, 1 -> rota
+
+                // peso de paradas vs estrutura de rotas na distância. 0 -> rota, 1 -> parada
+                // parada, olha quantos alunos foram atribuidos nas mesmas paradas. o mesmo pra rota.
+                const double PesoDistParada;
+                                               
             const int    NVizinhosDiv;     // quantos vizinhos mais próximos entram na diversidade
             const double PesoDiversidade;   // 0 = só fitness; maior = mais diversidade
             const double EpsClone; // quanto menor, mais parecido
@@ -269,7 +285,6 @@ class Metaheuristica{
         const int NumTrajetorias; // quantidade de instancias paralelas por cada tabu
         const int PeriodoTroca; // a cada iterações, um compartilhamento do tabu
 
-        const int ForcaPerturbacaoTabu; // iteracoes de busca
         const int LimiarEstagnacaoTabu; // iterações estagnadas
         // ================================================================== //
         
@@ -284,8 +299,13 @@ class Metaheuristica{
             // Elitismo(p.elitismo),
             JanelaProtecao(p.janelaProtecao),
 
-            ProbabilidadeMutacao(p.probabilidadeMutacao),
-            ProbabilidadeMacroMutacao(p.probabilidadeMacroMutacao),
+            TetoMutacao(p.TetoMutacao),
+            PisoMutacao(p.PisoMutacao),
+
+            TetoSacode(p.TetoSacode),
+            PisoSacode(p.PisoSacode),
+
+            FatorMacro(p.FatorMacro),
 
             LambdaFreq(p.lambdaFreq), 
             DecaimentoFreq(p.decaimentoFreq),
@@ -332,7 +352,6 @@ class Metaheuristica{
             IteracoesTabu(p.iteracoesTabu),
             NumTrajetorias(p.NumTrajetorias),
             PeriodoTroca(p.PeriodoTroca),
-            ForcaPerturbacaoTabu(p.ForcaPerturbacaoTabu),
             LimiarEstagnacaoTabu(p.LimiarEstagnacaoTabu)
         {
 			quantidadeMaxRota = pobrema.quantidadeRotas; // n precisava, mas depois arrumo
@@ -363,14 +382,19 @@ class Metaheuristica{
         vector<Individuo> novaPopTorneioElitista(vector<Individuo>& filhos, vector<Individuo>& pais, int geracao);
         vector<pair<int,int>> escolhendoPais(vector<Individuo> &populacao);
         vector<Individuo> reproducao(vector<pair<int,int>> &paisEscolhidos, vector<Individuo> &populacao);
-        void mutacaoIndividuo(Individuo &filho, bool forcarMacro = false);
+
+        void mutacaoIndividuo(Individuo &filho, bool forcarMacro = false, double taxaForcada = -1.0);
+
         void engavetamento(int i, vector<Individuo>& novaPopulacao);
         void injecaoNovosIndividuos(int semMelhora, int i, vector<Individuo>& novaPopulacao, int& ultimaGaveta, int& ultimaImig);
         
         double distanciaIndividuos(const Individuo& a, const Individuo& b);
         vector<Individuo> selecionaSobreviventes(vector<Individuo>& pool, int alvo);
 
+
         void crossoverRotas(const Individuo& A, const Individuo& B, Individuo& filho);
+
+        void consolidaParadas(Individuo& ind);
 
         double pesoFreq(int parada);
         int sorteiaParada(const estudante& aluno);
