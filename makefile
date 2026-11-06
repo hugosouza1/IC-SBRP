@@ -3,10 +3,15 @@
 # =======================================
 
 CXX = g++
+
+SAN = -fsanitize=address,undefined -fno-omit-frame-pointer
+# CXXFLAGS = -g -O0 -std=c++17 $(SAN)
 CXXFLAGS = -O3
+
 SRC_DIR = src
 BUILD_DIR = build
-E ?= Instancias/instancia.txt
+# E ?= Instancias/instancia.txt
+E ?= Instancias/Instancias_120/instancia001.txt
 PARAMETROS ?= src/parametros_algoritmo.txt
 
 
@@ -132,6 +137,6 @@ runModelo: clean $(EXEC_MODELO)
 
 clean:
 	rm -rf $(BUILD_DIR)
-	rm -f $(EXEC_HEURISTICA) $(EXEC_MODELO)
+	rm -f $(EXEC_HEURISTICA) $(EXEC_MODELO) $(EXEC_ALNS)
 
 rebuild: clean all

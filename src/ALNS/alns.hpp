@@ -25,7 +25,7 @@ struct ParametrosALNS {
     bool log = true;
 
     // Orçamento
-    double tempoMaxSegundos = 20.0;
+    double tempoMaxSegundos = 600.0;
     long maxIteracoes = 100000;
 
     // Destruição

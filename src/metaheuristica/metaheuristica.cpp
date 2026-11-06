@@ -103,6 +103,9 @@ ParametrosAlgoritmo parseParametros(int argc, char** argv) {
         else if (arg == "--populacao")
             p.tamanhoDaPopulacao = stoi(next("--populacao"));
 
+        else if (arg == "--porcentagem_filhos")
+            p.numeroFilhosTaxa = stod(next("--porcentagem_filhos"));
+
         else if (arg == "--crossover")
             p.probabilidadeCrossover = stod(next("--crossover"));
 
@@ -121,8 +124,8 @@ ParametrosAlgoritmo parseParametros(int argc, char** argv) {
         else if (arg == "--elitePctFreq")
             p.elitePctFreq = stod(next("--elitePctFreq"));
         
-        else if (arg == "--limitar_freq_paradas")
-            p.LimiarFreqParadas = stod(next("--limitar_freq_paradas"));
+        else if (arg == "--limiar_freq_paradas")
+            p.LimiarFreqParadas = stod(next("--limiar_freq_paradas"));
             
         else if (arg == "--lambda_rota")
             p.LambdaRota = stod(next("--lambda_rota"));

@@ -98,5 +98,12 @@ void infoSBRP::leitura(string arquivoEntrada){
     quantidadePassos  = quantidadeParadas * 1.5;
 
     arq.close();
+
+    for(int i = 0; i < (int)alunosParadas.size(); ++i){
+        if(alunosParadas[i].paradasPossiveis.empty()){
+            cerr << "ERRO: aluno (indice " << i << ", id " << alunosParadas[i].id << ") sem parada possivel\n";
+            exit(1);
+        }
+    }
 }
 

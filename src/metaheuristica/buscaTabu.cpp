@@ -217,6 +217,7 @@ double Metaheuristica::tabuSequencia(vector<int>& sequencia, int iteracoes){
 // melhor ordem pra um conjunto de paradas (com cache por conjunto)
 // k <= LimiteExato: exato. senão: NumTrajetorias partidas (1ª gulosa, resto aleatória) + tabuSequencia
 double Metaheuristica::melhorOrdemRota(vector<int> paradas, vector<int>& ordem){
+    if(cacheRotas.size() > 300000) cacheRotas.clear();
     sort(paradas.begin(), paradas.end());
     paradas.erase(unique(paradas.begin(), paradas.end()),    paradas.end());
     paradas.erase(remove(paradas.begin(), paradas.end(), 0), paradas.end());

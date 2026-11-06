@@ -8,6 +8,7 @@
 #include <queue>
 #include <random>
 #include <set>
+#include <map>
 #include <utility>
 #include <algorithm>
 #include <numeric>
@@ -39,7 +40,8 @@ struct ParametrosAlgoritmo {
 
     // Parâmetros gerais
     int numeroMaxGeracoes = 10000;
-    int tamanhoDaPopulacao = 25;
+    int tamanhoDaPopulacao = 100;
+    double numeroFilhosTaxa = 0.25;
     double probabilidadeCrossover = 0.9398;
     int elitismo = 1;
 
@@ -195,6 +197,7 @@ class Metaheuristica{
             // Parametros gerais genetico
             const int numeroMaxGeracoes;
             const int TamanhoDaPopulacao;
+            const double NumeroFilhosTaxa;
             const double ProbabilidadeCrossover;
             // const int Elitismo;
 
@@ -297,6 +300,7 @@ class Metaheuristica{
             log(p.log),
             numeroMaxGeracoes(p.numeroMaxGeracoes),
             TamanhoDaPopulacao(p.tamanhoDaPopulacao),
+            NumeroFilhosTaxa(p.numeroFilhosTaxa),
             ProbabilidadeCrossover(p.probabilidadeCrossover),
             // Elitismo(p.elitismo),
             JanelaProtecao(p.janelaProtecao),
@@ -380,8 +384,11 @@ class Metaheuristica{
         Individuo geraSolucaoInicial();
         vector<Individuo> popIni(int tamanhoPopulacao);
         double aplicaPenalidades(Individuo& individuo);
+        
         bool maisViavel(const Individuo &a, const Individuo &b);
         int selecionaTorneio(vector<Individuo> &populacao);
+
+        vector<pair<int,int>> escolhendoPaisRoleta(vector<Individuo> &populacao);
         vector<Individuo> novaPopTorneioElitista(vector<Individuo>& filhos, vector<Individuo>& pais, int geracao);
         vector<pair<int,int>> escolhendoPais(vector<Individuo> &populacao);
         vector<Individuo> reproducao(vector<pair<int,int>> &paisEscolhidos, vector<Individuo> &populacao);
