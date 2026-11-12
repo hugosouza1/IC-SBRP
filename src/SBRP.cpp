@@ -94,8 +94,14 @@ void infoSBRP::leitura(string arquivoEntrada){
     int media = accumulate(capacidadeOnibus.begin(), capacidadeOnibus.end(), 0) / quantidadeOnibus;
 
     quantidadeAlunos  = (int)alunosParadas.size();
-    quantidadeRotas   = (((quantidadeAlunos + media) / media) + 1) * 2;
+    // quantidadeRotas   = (((quantidadeAlunos + media) / media) + 1) * 1.2;
     quantidadePassos  = quantidadeParadas * 1.5;
+
+    vector<int> caps = capacidadeOnibus;
+    sort(caps.rbegin(), caps.rend());
+    int acum = 0, kmin = 0;
+    while(kmin < (int)caps.size() && acum < quantidadeAlunos) acum += caps[kmin++];
+    quantidadeRotas = kmin * 10; 
 
     arq.close();
 

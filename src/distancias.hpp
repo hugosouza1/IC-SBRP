@@ -7,6 +7,7 @@
 
 inline constexpr double INFINITO = 1e18;
 
+// não mais sob demanda. calcula tudo no inicio mesmo
 struct DistanciasSobDemanda {
 
     std::vector<std::vector<double>> grafo; // 0 = sem aresta

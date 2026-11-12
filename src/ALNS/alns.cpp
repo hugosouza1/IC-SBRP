@@ -72,6 +72,7 @@ SolucaoALNS ALNS::solucaoVazia(){
     s.distanciaRota.assign(quantidadeMaxRota, 0.0);
 
     s.atrOnibusRota.assign(quantidadeMaxRota, 0);
+
     int rotasPorOnibus = max(1, quantidadeMaxRota / problema.quantidadeOnibus);
     for(int r = 0; r < quantidadeMaxRota; ++r){
         s.atrOnibusRota[r] = min(r / rotasPorOnibus, problema.quantidadeOnibus - 1);
@@ -292,7 +293,7 @@ vector<int> ALNS::destruicaoRelacionada(SolucaoALNS& s, int quantidade){
 
 
 // ---------- reparo ----------
-// gulosa (k = 1), regret-k (k >= 2), consolidadora (penalidade de parada nova), com ruído
+// gulosa (k = 1), regret-k (k >= 2), consolidadora (regret-2 com penalidade de parada nova), com ruído (gulosa com ruido)
 
 void ALNS::reparar(SolucaoALNS& s, vector<int> pendentes, const ConfigReparo& config){
     uniform_real_distribution<double> ruido(1.0 - config.amplitudeRuido, 1.0 + config.amplitudeRuido);
@@ -397,7 +398,7 @@ void ALNS::buscaLocal2Opt(SolucaoALNS& s, int rota){
 }
 
 
-// troca de ônibus entre rotas (resolve estouro de capacidade)
+// troca de ônibus entre rotas (resolve estouro de capacidade se deus quiser)
 void ALNS::trocaOnibusEntreRotas(SolucaoALNS& s){
     avaliar(s);
 
@@ -517,16 +518,14 @@ SolucaoALNS ALNS::executar(){
         if(it % TamanhoSegmento == 0){
             for(int i = 0; i < nDestruicoes; ++i){
                 if(usosDestruicao[i]){
-                    pesosDestruicao[i] = (1 - TaxaAprendizado) * pesosDestruicao[i]
-                                       + TaxaAprendizado * pontosDestruicao[i] / usosDestruicao[i];
+                    pesosDestruicao[i] = (1 - TaxaAprendizado) * pesosDestruicao[i] + TaxaAprendizado * pontosDestruicao[i] / usosDestruicao[i];
                 }
-                pesosDestruicao[i] = max(pesosDestruicao[i], 0.01);
+                pesosDestruicao[i] = max(pesosDestruicao[i], 0.01); 
                 pontosDestruicao[i] = 0; usosDestruicao[i] = 0;
             }
             for(int i = 0; i < nReparos; ++i){
                 if(usosReparo[i]){
-                    pesosReparo[i] = (1 - TaxaAprendizado) * pesosReparo[i]
-                                   + TaxaAprendizado * pontosReparo[i] / usosReparo[i];
+                    pesosReparo[i] = (1 - TaxaAprendizado) * pesosReparo[i] + TaxaAprendizado * pontosReparo[i] / usosReparo[i];
                 }
                 pesosReparo[i] = max(pesosReparo[i], 0.01);
                 pontosReparo[i] = 0; usosReparo[i] = 0;

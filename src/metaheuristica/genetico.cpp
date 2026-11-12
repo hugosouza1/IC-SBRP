@@ -650,51 +650,6 @@ void Metaheuristica::mutacaoIndividuo(Individuo &filho, bool forcarMacro, double
     }
 }
 
-
-// void Metaheuristica::consolidaParadas(Individuo& ind){
-//     int R = quantidadeMaxRota, P = problema.quantidadeParadas;
-
-//     // alunos de cada (rota, parada)
-//     vector<vector<vector<int>>> membros(R, vector<vector<int>>(P));
-//     for(int g = 0; g < problema.quantidadeAlunos; ++g)
-//         membros[ind.atrAlunoRota[g]][ind.atrAlunoParada[g]].push_back(g);
-
-//     for(int r = 0; r < R; ++r){
-//         // paradas abertas, da menos povoada para a mais povoada
-//         vector<int> abertas;
-//         for(int p = 0; p < P; ++p) 
-//             if(!membros[r][p].empty()) 
-//                 abertas.push_back(p);
-
-//         sort(abertas.begin(), abertas.end(), [&](int a, int b){
-//             return membros[r][a].size() < membros[r][b].size();
-//         });
-
-//         for(int p : abertas){
-//             // só fecha p se TODOS os alunos dela têm alternativa já aberta na rota
-//             vector<int> destino;
-//             bool pode = true;
-//             for(int g : membros[r][p]){
-//                 int melhorQ = -1; size_t melhorN = 0;
-//                 for(auto& [q, d] : problema.alunosParadas[g].paradasPossiveis){
-//                     if(q == p || membros[r][q].empty()) continue;
-//                     if(membros[r][q].size() > melhorN){ melhorN = membros[r][q].size(); melhorQ = q; }
-//                 }
-                
-//                 if(melhorQ < 0){ pode = false; break; }
-//                 destino.push_back(melhorQ);
-//             }
-//             if(!pode) continue;
-
-//             for(size_t i = 0; i < destino.size(); ++i){
-//                 int g = membros[r][p][i];
-//                 ind.atrAlunoParada[g] = destino[i];
-//                 membros[r][destino[i]].push_back(g);
-//             }
-//             membros[r][p].clear();
-//         }
-//     }
-// }
  
 //  Sorteia, por roleta, para qual rota mover uma parada na mutação, 
 // favorecendo rotas que já têm paradas próximas e que já estão mais cheias.
