@@ -572,7 +572,12 @@ void Metaheuristica::mutacaoIndividuo(Individuo &filho, bool forcarMacro, double
 
         double esperado = taxa * ativas.size();
         int tentativas = (int)esperado;
-        if(muta(gen) < esperado - tentativas) tentativas++;
+        if(muta(gen) < esperado - tentativas) tentativas++;    
+
+        // if(tentativas > 4){
+        //     cout << taxa << " " << esperado << " " << tentativas << "\n"; fflush(stdout);
+        //     exit(EXIT_FAILURE);
+        // }    
 
         for(int t = 0; t < tentativas && mutados < maxMut; ++t){
 
@@ -908,9 +913,16 @@ vector<Individuo> Metaheuristica::selecionaSobreviventes(vector<Individuo>& pool
     int n = pool.size();
 
     vector<vector<double>> D(n, vector<double>(n, 0.0));
+    vector<tuple<double,int,int>> proximos;   // (distância, i, j) com D < EpsForte
+
     for(int i = 0; i < n; ++i)
-        for(int j = i + 1; j < n; ++j)
-            D[i][j] = D[j][i] = distanciaIndividuos(pool[i], pool[j]);
+        for(int j = i + 1; j < n; ++j){
+            double d = distanciaIndividuos(pool[i], pool[j]);
+            D[i][j] = D[j][i] = d;
+            if(d < EpsForte) proximos.push_back({d, i, j});
+        }
+
+    std::sort(proximos.begin(), proximos.end());   // mais próximos primeiro
 
     int melhor = 0;
     for(int i = 1; i < n; ++i)
@@ -918,6 +930,21 @@ vector<Individuo> Metaheuristica::selecionaSobreviventes(vector<Individuo>& pool
 
     vector<bool> vivo(n, true);
     int vivos = n;
+
+    // limpeza: quase-clones saem mesmo que a população já esteja no alvo, até um mínimo
+    int minimo = (int)(alvo * 0.7);
+    for(auto& [d, i, j] : proximos){
+        if(vivos <= minimo) break;
+        if(!vivo[i] || !vivo[j]) continue;
+
+        int v = (pool[i].fitness > pool[j].fitness) ? i : j;
+        if(v == melhor) v = (v == i) ? j : i;
+
+        vivo[v] = false;
+        vivos--;
+    }
+
+    // cout << "tudo tranqu\n";
 
     while(vivos > alvo){ // 1 pra substituir, varioa para a seleção da prox geracao
 
@@ -976,7 +1003,7 @@ vector<Individuo> Metaheuristica::selecionaSobreviventes(vector<Individuo>& pool
     }
 
     vector<Individuo> sobreviventes;
-    sobreviventes.reserve(alvo);
+    sobreviventes.reserve(vivos);
     for(int i = 0; i < n; ++i) if(vivo[i]) sobreviventes.push_back(move(pool[i]));
     return sobreviventes;
 }
@@ -1027,7 +1054,6 @@ pair<vector<double>, Individuo> Metaheuristica::AG(int opc){
 
         int semMelhora = i - ultimoMelhorGlobal;
 
-        // calculaMutacao(semMelhora);
 
         engavetamento(i, novaPopulacao);
         injecaoNovosIndividuos(semMelhora, i, novaPopulacao, ultimaGaveta, ultimaImig);

@@ -100,6 +100,7 @@ struct ParametrosAlgoritmo {
     int nVizinhosDiv = 11;
     double pesoDiversidade = 0.1587;
     double epsClone = 1e-9;
+    double epsForte = 0.01;
 
     // Reprodução
     double taxaDecaimentoRotasRep = 0.924;
@@ -269,6 +270,7 @@ class Metaheuristica{
             const int    NVizinhosDiv;     // quantos vizinhos mais próximos entram na diversidade
             const double PesoDiversidade;   // 0 = só fitness; maior = mais diversidade
             const double EpsClone; // quanto menor, mais parecido
+            const double EpsForte;
             
             // Reproducao
             const double TaxaDecaimentoRotasRep; // selecao dos blocos de rota com mais alunos
@@ -349,6 +351,7 @@ class Metaheuristica{
             NVizinhosDiv(p.nVizinhosDiv),
             PesoDiversidade(p.pesoDiversidade),
             EpsClone(p.epsClone),
+            EpsForte(p.epsForte),
 
             TaxaDecaimentoRotasRep(p.taxaDecaimentoRotasRep),
             ProbabilidadeMutacaoOnibus(p.probabilidadeMutacaoOnibus),

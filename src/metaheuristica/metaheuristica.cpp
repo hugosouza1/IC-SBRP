@@ -243,6 +243,9 @@ ParametrosAlgoritmo parseParametros(int argc, char** argv) {
         else if (arg == "--eps_clone")
             p.epsClone = stod(next("--eps_clone"));
 
+        else if (arg == "--eps_forte") 
+            p.epsForte = stod(next("--eps_forte"));
+
 
         // Reprodução
         else if (arg == "--decaimento_rotas_rep")
